@@ -49,6 +49,9 @@
     margin: 0 0 12px; font-size: 12px; font-weight: 600;
     text-transform: uppercase; letter-spacing: .06em; color: var(--faint);
   }
+  /* 필드가 많아 스크롤해도 URL/미리보기는 화면에 고정 */
+  .panel.right { position: sticky; top: 74px; align-self: start; }
+  @media (max-width: 880px) { .panel.right { position: static; } }
   label { font-size: 12.5px; color: var(--muted); }
   input, select, textarea {
     font: inherit; color: inherit; background: var(--panel);
@@ -62,19 +65,24 @@
   .resource-row .prefix { font-family: var(--mono); color: var(--faint); font-size: 13px; }
   .resource-row input { width: 150px; font-family: var(--mono); }
   #fields { display: flex; flex-direction: column; gap: 7px; }
-  .frow { display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 7px; align-items: center; }
-  .frow input.fname { font-family: var(--mono); font-size: 13px; }
-  .frow .fval-wrap { display: flex; gap: 5px; }
+  .frow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: 7px; align-items: center; }
+  .frow input.fname { font-family: var(--mono); font-size: 13px; min-width: 0; }
+  .frow .fval-wrap { display: flex; gap: 5px; min-width: 0; }
   .frow input.fval { font-family: var(--mono); font-size: 13px; flex: 1; min-width: 0; }
-  .frow .btns { display: flex; gap: 3px; }
-  .frow .btns button {
-    border: none; background: none; border-radius: 7px;
-    width: 26px; height: 30px; cursor: pointer; color: var(--faint); padding: 0; font-size: 13px;
+  .frow input.fval.locked {
+    background: var(--bg); color: var(--muted); border-style: dashed; cursor: default;
+  }
+  .frow input.fval.locked:focus { box-shadow: none; border-color: var(--border-strong); }
+  .frow button.del {
+    border: none; background: none; border-radius: 7px; flex: none;
+    width: 28px; height: 32px; cursor: pointer; color: var(--faint); padding: 0; font-size: 13px;
     transition: all .12s ease;
   }
-  .frow .btns button:hover { color: var(--text); background: var(--bg); }
-  .frow .btns button.del:hover { color: var(--danger); background: #fef1f2; }
-  select.ftype { max-width: 128px; color: var(--faint); font-size: 12px; }
+  .frow button.del:hover { color: var(--danger); background: #fef1f2; }
+  select.ftype {
+    width: 34px; flex: none; color: var(--faint); font-size: 12px; padding: 7px 2px;
+    text-align: center; cursor: pointer;
+  }
   .field-actions { display: flex; gap: 8px; margin-top: 10px; }
   .field-actions button {
     flex: 1; border: 1px dashed var(--border-strong); background: none; border-radius: var(--radius-s);
@@ -193,7 +201,7 @@
     </div>
   </section>
 
-  <section class="panel">
+  <section class="panel right">
     <h2>생성된 URL</h2>
     <div class="urlbox" id="urlBox"></div>
     <div class="url-actions">
@@ -264,6 +272,21 @@
     .replace(/%5B/gi, '[').replace(/%5D/gi, ']').replace(/%2C/gi, ',');
 
   // ---- 필드 행 ----
+  // 인자가 없어 직접 수정할 일이 없는 타입 — 입력 잠금 (▾ 로 교체, ✕ 로 삭제는 가능)
+  const ARGLESS_TYPES = ['uuid', 'index'];
+
+  function applyLock(row) {
+    const fv = row.querySelector('.fval');
+    const locked = ARGLESS_TYPES.includes(fv.value.trim());
+    fv.readOnly = locked;
+    fv.classList.toggle('locked', locked);
+    fv.title = locked
+      ? fv.value + ' — 인자가 없는 타입이라 수정할 게 없어요. 바꾸려면 옆 ▾ 에서 선택하세요.'
+      : fv.value;
+    const fn = row.querySelector('.fname');
+    fn.title = fn.value;
+  }
+
   function addRow(name = '', value = '') {
     const row = document.createElement('div');
     row.className = 'frow';
@@ -271,16 +294,13 @@
       '<input class="fname" placeholder="필드명" spellcheck="false">' +
       '<div class="fval-wrap">' +
         '<input class="fval" placeholder="타입 (예: int:20~60)" spellcheck="false">' +
-        '<select class="ftype"><option value="">타입 선택…</option></select>' +
+        '<select class="ftype" title="타입 선택"><option value="">▾</option></select>' +
       '</div>' +
-      '<div class="btns">' +
-        '<button class="up" title="위로">↑</button>' +
-        '<button class="down" title="아래로">↓</button>' +
-        '<button class="del" title="삭제">✕</button>' +
-      '</div>';
+      '<button class="del" title="필드 삭제">✕</button>';
     row.querySelector('.fname').value = name;
     row.querySelector('.fval').value = value;
     fillTypeSelect(row.querySelector('.ftype'));
+    applyLock(row);
     fieldsEl.appendChild(row);
     return row;
   }
@@ -451,13 +471,18 @@
 
   // ---- 이벤트 ----
   document.addEventListener('input', (e) => {
-    if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select')) update();
+    if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select')) {
+      if (e.target.matches('.fname, .fval')) e.target.title = e.target.value;
+      update();
+    }
   });
   document.addEventListener('change', (e) => {
     if (e.target.matches('select.ftype')) {
       if (e.target.value) {
-        e.target.closest('.fval-wrap').querySelector('.fval').value = e.target.value;
+        const row = e.target.closest('.frow');
+        row.querySelector('.fval').value = e.target.value;
         e.target.selectedIndex = 0;
+        applyLock(row);
         update();
       }
     }
@@ -466,10 +491,7 @@
     if (e.key === 'Escape') closePaste();
   });
   document.addEventListener('click', (e) => {
-    const row = e.target.closest('.frow');
-    if (e.target.matches('.del')) { row.remove(); update(); }
-    else if (e.target.matches('.up') && row.previousElementSibling) { row.parentNode.insertBefore(row, row.previousElementSibling); update(); }
-    else if (e.target.matches('.down') && row.nextElementSibling) { row.parentNode.insertBefore(row.nextElementSibling, row); update(); }
+    if (e.target.matches('.del')) { e.target.closest('.frow').remove(); update(); }
     else if (e.target.id === 'addField') { addRow(); }
     else if (e.target.id === 'pasteBtn') { openPaste(); }
     else if (e.target.id === 'pasteCancel') { closePaste(); }
