@@ -402,21 +402,34 @@
   async function applyPaste() {
     const raw = $('#pasteInput').value.trim();
     if (!raw) { $('#pasteError').textContent = 'JSON 을 입력하세요.'; return; }
-    try { JSON.parse(raw); }
-    catch (e) { $('#pasteError').textContent = 'JSON 파싱 실패: ' + e.message; return; }
+    // "data": {...} 처럼 바깥 중괄호 없는 조각도 감싸서 재시도
+    let body = null;
+    for (const candidate of [raw, '{' + raw + '}', '{' + raw.replace(/,\s*$/, '') + '}']) {
+      try { JSON.parse(candidate); body = candidate; break; } catch {}
+    }
+    if (body === null) {
+      try { JSON.parse(raw); }
+      catch (e) { $('#pasteError').textContent = 'JSON 파싱 실패: ' + e.message; return; }
+    }
     let result;
     try {
-      const res = await fetch('/schema/infer', { method: 'POST', body: raw, headers: { 'content-type': 'application/json' } });
+      const res = await fetch('/schema/infer', { method: 'POST', body, headers: { 'content-type': 'application/json' } });
       result = await res.json();
       if (!res.ok) { $('#pasteError').textContent = (result.error || '추론 실패') + (result.hint ? ' — ' + result.hint : ''); return; }
     } catch (e) { $('#pasteError').textContent = '요청 실패: ' + e; return; }
     fieldsEl.innerHTML = '';
     for (const f of result.fields) addRow(f.name, f.type);
     const note = $('#inferNote');
+    const lines = [];
+    if (result.note) lines.push('ℹ ' + result.note);
     if (result.skipped && result.skipped.length) {
-      note.textContent = '추론에서 제외됨:\n' + result.skipped.map((s) => '· ' + s.path + ' — ' + s.reason).join('\n');
+      lines.push('추론에서 제외됨:');
+      for (const s of result.skipped) lines.push('· ' + s.path + ' — ' + s.reason);
+    }
+    if (lines.length) {
+      note.textContent = lines.join('\n');
       note.style.display = 'block';
-      clearTimeout(note._t); note._t = setTimeout(() => (note.style.display = 'none'), 12000);
+      clearTimeout(note._t); note._t = setTimeout(() => (note.style.display = 'none'), 15000);
     } else {
       note.style.display = 'none';
     }
