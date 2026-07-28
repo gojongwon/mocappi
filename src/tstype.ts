@@ -1,0 +1,121 @@
+/**
+ * 스키마 → TypeScript 타입 생성.
+ * 프론트에서 응답을 받을 때 타입 추론이 되도록, 현재 스키마의 interface 와
+ * 제네릭 envelope(Paginated<T>) + fetch 헬퍼를 복사 가능한 코드로 만들어준다.
+ */
+import type { FieldSpec } from './dsl';
+import { splitArrayLen } from './dsl';
+
+type Tree = Map<string, Tree | FieldSpec>;
+
+/** users → User, products → Product (단순 복수형만 처리) */
+export function interfaceName(resource: string): string {
+  const base = resource.replace(/[^A-Za-z0-9]/g, '') || 'Item';
+  const singular = base.length > 2 && /s$/i.test(base) && !/ss$/i.test(base) ? base.slice(0, -1) : base;
+  return singular.charAt(0).toUpperCase() + singular.slice(1);
+}
+
+function itemTypeRawOf(f: FieldSpec): string {
+  return f.isArray ? splitArrayLen(f.typeRaw).itemType : f.typeRaw;
+}
+
+function escapeLiteral(s: string): string {
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/** 필드 하나의 TS 타입 — enum/const 는 리터럴, 나머지는 샘플 생성으로 판별 */
+function tsTypeOf(f: FieldSpec): string {
+  const raw = itemTypeRawOf(f);
+  if (raw.startsWith('enum:')) {
+    return raw
+      .slice(5)
+      .split('|')
+      .map((v) => `'${escapeLiteral(v)}'`)
+      .join(' | ');
+  }
+  if (raw.startsWith('const:')) {
+    return `'${escapeLiteral(raw.slice(6))}'`;
+  }
+  // 생성 함수를 실제로 한 번 돌려서 값의 타입을 본다 — 레지스트리와 절대 어긋나지 않음
+  const sample = f.gen(12345, { globalIndex: 0, locale: 'en' });
+  switch (typeof sample) {
+    case 'number': return 'number';
+    case 'boolean': return 'boolean';
+    case 'string': return 'string';
+    case 'object': return sample === null ? 'null' : 'Record<string, unknown>';
+    default: return 'unknown';
+  }
+}
+
+function buildTree(fields: FieldSpec[]): Tree {
+  const root: Tree = new Map();
+  for (const f of fields) {
+    let cur = root;
+    for (let i = 0; i < f.path.length - 1; i++) {
+      const k = f.path[i];
+      let next = cur.get(k);
+      if (!(next instanceof Map)) {
+        next = new Map();
+        cur.set(k, next);
+      }
+      cur = next;
+    }
+    cur.set(f.path[f.path.length - 1], f);
+  }
+  return root;
+}
+
+function emitNode(node: Tree, depth: number): string {
+  const pad = '  '.repeat(depth);
+  const lines: string[] = ['{'];
+  for (const [k, v] of node) {
+    if (v instanceof Map) {
+      lines.push(`${pad}${k}: ${emitNode(v, depth + 1)};`);
+    } else {
+      let t = tsTypeOf(v);
+      if (v.isArray) t = t.includes('|') ? `(${t})[]` : `${t}[]`;
+      lines.push(`${pad}${k}: ${t};`);
+    }
+  }
+  lines.push('  '.repeat(depth - 1) + '}');
+  return lines.join('\n');
+}
+
+export function generateTsTypes(fields: FieldSpec[], resource: string, wrap: 'envelope' | 'none'): string {
+  const name = interfaceName(resource);
+  const body = emitNode(buildTree(fields), 1);
+
+  const head = `// ${resource} — Mock API Builder 에서 자동 생성된 타입
+export interface ${name} ${body}
+`;
+
+  if (wrap === 'none') {
+    return `${head}
+// _wrap=none 이므로 응답은 ${name}[] 배열입니다.
+// 사용 예:
+//   const items: ${name}[] = await (await fetch(url)).json();
+`;
+  }
+
+  return `${head}
+export interface Paginated<T> {
+  data: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export async function fetchMock<T>(url: string): Promise<Paginated<T>> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(\`HTTP \${res.status}\`);
+  return res.json() as Promise<Paginated<T>>;
+}
+
+// 사용 예 — res.data[0]. 까지 치면 필드가 자동완성됩니다:
+//   const res = await fetchMock<${name}>('<생성된 URL>');
+//   res.data.map((it) => it.???)
+`;
+}

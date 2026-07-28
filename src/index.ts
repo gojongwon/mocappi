@@ -6,6 +6,7 @@ import guiHtml from './gui.html';
 import { parseQuery } from './dsl';
 import { generateResponse } from './generate';
 import { inferSchema } from './infer';
+import { generateTsTypes } from './tstype';
 import { DslError, TYPE_DOCS } from './registry';
 
 const CORS_HEADERS: Record<string, string> = {
@@ -45,6 +46,22 @@ export default {
 
     if (url.pathname === '/schema/types') {
       return json(TYPE_DOCS);
+    }
+
+    // 현재 스키마 → TypeScript 타입 코드 (text/plain)
+    if (url.pathname === '/schema/ts') {
+      try {
+        const params = new URLSearchParams(url.search);
+        const resource = params.get('_res') || 'item';
+        params.delete('_res');
+        const q = parseQuery(params);
+        return new Response(generateTsTypes(q.fields, resource, q.wrap), {
+          headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', ...CORS_HEADERS },
+        });
+      } catch (e) {
+        if (e instanceof DslError) return json(e.info, 400);
+        return json({ error: 'Internal error', hint: String(e) }, 500);
+      }
     }
 
     // JSON 예시 붙여넣기 → 스키마 추론

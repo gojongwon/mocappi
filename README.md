@@ -6,6 +6,7 @@ URL 만으로 스키마를 정의하는 팀 내부용 목(mock) REST API. 앱 �
 - 데이터: `GET /api/<리소스명>?필드=타입&...`
 - 지원 타입 목록: `GET /schema/types`
 - JSON 예시 → 스키마 추론: `POST /schema/infer`
+- 스키마 → TypeScript 타입: `GET /schema/ts` (GUI 의 "TS 타입 복사" 버튼)
 
 **팀 배포 주소: <https://mock-api.gojongwon.workers.dev>** — 브라우저로 열면 GUI가 뜬다.
 
@@ -97,6 +98,16 @@ tags[]=lorem.word:3           # 배열 — 값의 마지막 :정수 가 길이 (
 ```json
 { "error": "Invalid int range", "field": "age", "value": "int:20-60",
   "hint": "범위 구분자는 '~' 입니다. 예: int:20~60" }
+```
+
+## TypeScript 타입
+
+GUI 의 **TS 타입 복사** 버튼(또는 `GET /schema/ts?<스키마>&_res=리소스명`)이 현재 스키마의 interface,
+제네릭 envelope(`Paginated<T>`), fetch 헬퍼를 복사해준다. `enum:a|b|c` 은 리터럴 유니언으로 변환된다.
+
+```ts
+const res = await fetchMock<User>(url);
+res.data[0].name; // 자동완성 + 타입 체크
 ```
 
 ## 결정론 (스냅샷 테스트 안정성)

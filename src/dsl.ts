@@ -52,7 +52,7 @@ function reqInt(name: string, value: string, min: number, max: number): number {
 }
 
 /** 배열 필드 값에서 길이 접미사 분리 — 마지막 ':순수 정수' 가 길이 */
-function splitArrayLen(value: string): { itemType: string; len: number } {
+export function splitArrayLen(value: string): { itemType: string; len: number } {
   const idx = value.lastIndexOf(':');
   if (idx > 0) {
     const tail = value.slice(idx + 1);
