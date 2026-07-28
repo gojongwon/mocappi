@@ -37,8 +37,8 @@
   }
   .presets button:hover { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
   main {
-    display: grid; grid-template-columns: minmax(380px, 5fr) minmax(380px, 6fr);
-    gap: 18px; padding: 20px 28px 40px; max-width: 1320px; margin: 0 auto;
+    display: grid; grid-template-columns: minmax(400px, 1fr) minmax(380px, 1fr);
+    gap: 18px; padding: 20px 28px 40px; max-width: 1360px; margin: 0 auto;
   }
   @media (max-width: 880px) { main { grid-template-columns: 1fr; } }
   .panel {
@@ -65,10 +65,9 @@
   .resource-row .prefix { font-family: var(--mono); color: var(--faint); font-size: 13px; }
   .resource-row input { width: 150px; font-family: var(--mono); }
   #fields { display: flex; flex-direction: column; gap: 7px; }
-  .frow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto; gap: 7px; align-items: center; }
+  .frow { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) 28px; gap: 7px; align-items: center; }
   .frow input.fname { font-family: var(--mono); font-size: 13px; min-width: 0; }
-  .frow .fval-wrap { display: flex; gap: 5px; min-width: 0; }
-  .frow input.fval { font-family: var(--mono); font-size: 13px; flex: 1; min-width: 0; }
+  .frow input.fval { font-family: var(--mono); font-size: 13px; min-width: 0; }
   .frow input.fval.locked {
     background: var(--bg); color: var(--muted); border-style: dashed; cursor: default;
   }
@@ -79,10 +78,6 @@
     transition: all .12s ease;
   }
   .frow button.del:hover { color: var(--danger); background: #fef1f2; }
-  select.ftype {
-    width: 34px; flex: none; color: var(--faint); font-size: 12px; padding: 7px 2px;
-    text-align: center; cursor: pointer;
-  }
   .field-actions { display: flex; gap: 8px; margin-top: 10px; }
   .field-actions button {
     flex: 1; border: 1px dashed var(--border-strong); background: none; border-radius: var(--radius-s);
@@ -127,17 +122,40 @@
     background: var(--bg); border-radius: 5px; padding: 1px 6px; font-size: 11.5px; font-family: var(--mono);
   }
   .hintbar a { color: var(--accent); }
-  /* ---- 붙여넣기 모달 ---- */
-  #pasteModal {
+  /* ---- 모달 공통 ---- */
+  #pasteModal, #helpModal {
     display: none; position: fixed; inset: 0; background: rgba(25, 31, 40, .45);
     z-index: 20; align-items: center; justify-content: center; padding: 20px;
   }
-  #pasteModal .card {
+  #pasteModal .card, #helpModal .card {
     background: var(--panel); border-radius: var(--radius); box-shadow: 0 12px 40px rgba(2, 32, 71, .18);
     width: 600px; max-width: 100%; padding: 22px;
   }
-  #pasteModal h3 { margin: 0 0 4px; font-size: 16px; }
+  #pasteModal h3, #helpModal h3 { margin: 0 0 4px; font-size: 16px; }
   #pasteModal p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  /* ---- 사용법 모달 ---- */
+  #helpModal .card { width: 720px; }
+  .help-body { max-height: 68vh; overflow-y: auto; padding-right: 6px; }
+  .help-body h4 { margin: 16px 0 6px; font-size: 13.5px; }
+  .help-body h4:first-child { margin-top: 4px; }
+  .help-body p { margin: 4px 0 8px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+  .help-body code {
+    background: var(--bg); border-radius: 5px; padding: 1px 6px;
+    font-size: 12px; font-family: var(--mono); white-space: nowrap;
+  }
+  .help-body table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0 10px; }
+  .help-body th, .help-body td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .help-body th { color: var(--faint); font-weight: 600; font-size: 12px; }
+  .help-body pre {
+    font-family: var(--mono); font-size: 12px; background: var(--bg); border-radius: 7px;
+    padding: 10px 12px; margin: 6px 0; line-height: 1.7; overflow-x: auto;
+  }
+  .helpbtn {
+    border: 1px solid var(--border); background: var(--panel); border-radius: 999px;
+    padding: 5px 14px; cursor: pointer; font-size: 12.5px; color: var(--accent); font-weight: 600;
+    transition: all .12s ease;
+  }
+  .helpbtn:hover { background: var(--accent-soft); border-color: transparent; }
   #pasteInput {
     width: 100%; height: 240px; font-family: var(--mono); font-size: 12.5px;
     resize: vertical; line-height: 1.6;
@@ -159,6 +177,7 @@
   <h1>Mock API Builder</h1>
   <span class="sub">URL 만으로 쓰는 커스텀 목 데이터 · 같은 URL = 항상 같은 데이터</span>
   <div class="presets">
+    <button id="helpBtn" class="helpbtn">사용법</button>
     <span class="plabel">프리셋</span>
     <button data-preset="users">사용자</button>
     <button data-preset="products">상품</button>
@@ -195,9 +214,10 @@
     </div>
 
     <div class="hintbar">
-      중첩: <code>address.city</code> · 배열: <code>tags[]</code> + 값 끝 <code>:개수</code> ·
-      범위: <code>int:20~60</code> · 열거: <code>enum:a|b|c</code> ·
-      전체 문법: <a href="/schema/types" target="_blank">/schema/types</a>
+      타입 칸에 입력하면 자동완성 목록이 뜹니다 ·
+      중첩: <code>address.city</code> · 배열: <code>tags[]</code> ·
+      자세한 건 <a href="#" id="helpLink">사용법</a> ·
+      전체 타입: <a href="/schema/types" target="_blank">/schema/types</a>
     </div>
   </section>
 
@@ -213,6 +233,62 @@
     <pre id="preview">불러오는 중…</pre>
   </section>
 </main>
+
+<datalist id="typeList"></datalist>
+
+<div id="helpModal">
+  <div class="card">
+    <h3>사용법</h3>
+    <div class="help-body">
+      <h4>1. 시작은 둘 중 하나</h4>
+      <p><b>JSON 붙여넣기</b> — 실제 API 응답을 그대로 붙여넣으면 필드와 타입이 자동으로 채워집니다. 가장 빠른 방법.<br>
+         <b>프리셋</b> — 상단 사용자/상품/주문 버튼으로 시작해서 고치기.</p>
+
+      <h4>2. 필드 = 이름 + 타입</h4>
+      <p>왼쪽 칸이 JSON 의 key, 오른쪽 칸이 그 값을 만드는 방법(타입)입니다.
+         타입 칸에 글자를 입력하면 자동완성 목록이 뜹니다. 예를 들어 <code>per</code> 만 쳐도 person 계열이 나옵니다.</p>
+      <table>
+        <tr><th>만들고 싶은 값</th><th>타입</th><th>결과 예</th></tr>
+        <tr><td>이름 / 이메일 / 전화</td><td><code>person.fullName</code> <code>internet.email</code> <code>phone.number</code></td><td>"김민준" / "a@b.co" / "010-…"</td></tr>
+        <tr><td>도시 / 주소 / 회사</td><td><code>location.city</code> <code>location.streetAddress</code> <code>company.name</code></td><td>"서울" / "…로 12" / "주식회사 …"</td></tr>
+        <tr><td>범위 안의 숫자</td><td><code>int:20~60</code> · <code>float:0~100:2</code></td><td>34 · 87.52</td></tr>
+        <tr><td>참/거짓 (확률 지정)</td><td><code>bool:0.8</code></td><td>80% 확률로 true</td></tr>
+        <tr><td>몇 개 중 하나</td><td><code>enum:pending|paid|shipped</code></td><td>셋 중 하나</td></tr>
+        <tr><td>기간 안의 날짜</td><td><code>date:2024-01-01~2026-12-31</code></td><td>"2025-06-01T09:12:00.000Z"</td></tr>
+        <tr><td>항상 같은 값</td><td><code>const:v1</code></td><td>"v1"</td></tr>
+        <tr><td>고유 ID / 순번</td><td><code>uuid</code> · <code>index</code></td><td>"a1b2…" · 0, 1, 2…</td></tr>
+        <tr><td>긴 글 / 이미지</td><td><code>text:50</code> · <code>image:200x200</code></td><td>50자 문장 · 이미지 URL</td></tr>
+      </table>
+
+      <h4>3. 객체 안에 객체 — 이름에 점(.)</h4>
+      <p>필드명에 점을 찍으면 중첩 객체가 됩니다. 타입은 평범하게 쓰면 됩니다.</p>
+      <pre>customer.name          =  person.fullName
+customer.address.city  =  location.city</pre>
+      <pre>{ "customer": { "name": "김민준", "address": { "city": "서울" } } }</pre>
+
+      <h4>4. 배열 — 이름 뒤에 [], 개수는 값 끝에 :N</h4>
+      <pre>tags[]  =  lorem.word:3   →   "tags": ["가방", "나무", "다리"]</pre>
+
+      <h4>5. 페이지네이션과 테스트 옵션</h4>
+      <table>
+        <tr><th>옵션</th><th>용도</th></tr>
+        <tr><td><code>_total</code> / <code>_limit</code> / <code>_page</code></td><td>가상 전체 개수 / 페이지당 개수 / 페이지 번호</td></tr>
+        <tr><td><code>_delay=3000</code></td><td>3초 늦게 응답 — 로딩 스피너 테스트</td></tr>
+        <tr><td><code>_status=500</code></td><td>상태코드 강제 — 에러 화면 테스트</td></tr>
+        <tr><td><code>_locale=en</code></td><td>영어 데이터</td></tr>
+        <tr><td><code>_wrap=none</code></td><td>envelope 없이 배열만</td></tr>
+      </table>
+
+      <h4>알아두면 좋은 것</h4>
+      <p>같은 URL 은 <b>항상 같은 데이터</b>를 돌려줍니다 — 새로고침해도, 내일 다시 열어도 동일합니다. 스냅샷 테스트에 안전합니다.
+         다른 데이터셋이 필요하면 <code>_seed=아무값</code> 을 붙이세요.
+         URL 을 잘못 쓰면 400 응답이 무엇이 왜 틀렸는지 알려줍니다.</p>
+    </div>
+    <div class="modal-actions">
+      <button id="helpClose" style="background:var(--accent);color:#fff">닫기</button>
+    </div>
+  </div>
+</div>
 
 <div id="pasteModal">
   <div class="card">
@@ -281,7 +357,7 @@
     fv.readOnly = locked;
     fv.classList.toggle('locked', locked);
     fv.title = locked
-      ? fv.value + ' — 인자가 없는 타입이라 수정할 게 없어요. 바꾸려면 옆 ▾ 에서 선택하세요.'
+      ? fv.value + ' — 인자가 없는 타입이라 수정할 게 없어요. 직접 고치려면 더블클릭.'
       : fv.value;
     const fn = row.querySelector('.fname');
     fn.title = fn.value;
@@ -291,34 +367,29 @@
     const row = document.createElement('div');
     row.className = 'frow';
     row.innerHTML =
-      '<input class="fname" placeholder="필드명" spellcheck="false">' +
-      '<div class="fval-wrap">' +
-        '<input class="fval" placeholder="타입 (예: int:20~60)" spellcheck="false">' +
-        '<select class="ftype" title="타입 선택"><option value="">▾</option></select>' +
-      '</div>' +
+      '<input class="fname" placeholder="필드명 (중첩은 a.b)" spellcheck="false">' +
+      '<input class="fval" list="typeList" placeholder="타입 — 입력하면 자동완성" spellcheck="false" autocomplete="off">' +
       '<button class="del" title="필드 삭제">✕</button>';
     row.querySelector('.fname').value = name;
     row.querySelector('.fval').value = value;
-    fillTypeSelect(row.querySelector('.ftype'));
     applyLock(row);
     fieldsEl.appendChild(row);
     return row;
   }
 
   let typeOptions = null; // /schema/types 응답 — 단일 소스
-  function fillTypeSelect(sel) {
+  function fillDatalist() {
     if (!typeOptions) return;
-    const gFaker = document.createElement('optgroup'); gFaker.label = '자주 쓰는 값 (faker)';
+    const dl = $('#typeList');
+    dl.innerHTML = '';
     for (const p of typeOptions.fakerPaths) {
-      const o = document.createElement('option'); o.value = p.value; o.textContent = p.label + ' — ' + p.value;
-      gFaker.appendChild(o);
+      const o = document.createElement('option'); o.value = p.value; o.label = p.label;
+      dl.appendChild(o);
     }
-    const gDsl = document.createElement('optgroup'); gDsl.label = 'DSL 타입';
     for (const t of typeOptions.dslTypes) {
-      const o = document.createElement('option'); o.value = t.example; o.textContent = t.label + ' — ' + t.syntax;
-      gDsl.appendChild(o);
+      const o = document.createElement('option'); o.value = t.example; o.label = t.label + ' · ' + t.syntax;
+      dl.appendChild(o);
     }
-    sel.appendChild(gFaker); sel.appendChild(gDsl);
   }
 
   function readState() {
@@ -476,19 +547,20 @@
       update();
     }
   });
-  document.addEventListener('change', (e) => {
-    if (e.target.matches('select.ftype')) {
-      if (e.target.value) {
-        const row = e.target.closest('.frow');
-        row.querySelector('.fval').value = e.target.value;
-        e.target.selectedIndex = 0;
-        applyLock(row);
-        update();
-      }
+  // 잠금은 입력이 끝난 뒤(blur)에만 적용 — 타이핑 중에 잠기지 않도록
+  document.addEventListener('focusout', (e) => {
+    if (e.target.matches && e.target.matches('.fval')) applyLock(e.target.closest('.frow'));
+  });
+  // 잠긴 타입(uuid/index)도 더블클릭하면 직접 수정 가능
+  document.addEventListener('dblclick', (e) => {
+    if (e.target.matches('.fval.locked')) {
+      e.target.readOnly = false;
+      e.target.classList.remove('locked');
+      e.target.focus();
     }
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closePaste();
+    if (e.key === 'Escape') { closePaste(); $('#helpModal').style.display = 'none'; }
   });
   document.addEventListener('click', (e) => {
     if (e.target.matches('.del')) { e.target.closest('.frow').remove(); update(); }
@@ -497,6 +569,8 @@
     else if (e.target.id === 'pasteCancel') { closePaste(); }
     else if (e.target.id === 'pasteApply') { applyPaste(); }
     else if (e.target.id === 'pasteModal') { closePaste(); }
+    else if (e.target.id === 'helpBtn' || e.target.id === 'helpLink') { e.preventDefault(); $('#helpModal').style.display = 'flex'; }
+    else if (e.target.id === 'helpClose' || e.target.id === 'helpModal') { $('#helpModal').style.display = 'none'; }
     else if (e.target.id === 'copyBtn') { copyText(apiUrl(readState()), e.target, '복사됨 ✓'); }
     else if (e.target.id === 'openBtn') { window.open(apiUrl(readState()), '_blank'); }
     else if (e.target.id === 'shareBtn') { copyText(location.href, e.target, '복사됨 ✓'); }
@@ -508,14 +582,13 @@
     try {
       typeOptions = await (await fetch('/schema/types')).json();
     } catch { typeOptions = { fakerPaths: [], dslTypes: [] }; }
+    fillDatalist();
     if (!loadFromAddressBar()) {
       // 첫 방문: 사용자 프리셋으로 온보딩
       const p = PRESETS.users;
       $('#resource').value = p.res;
       for (const [n, v] of p.fields) addRow(n, v);
       for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
-    } else {
-      for (const sel of document.querySelectorAll('select.ftype')) if (sel.options.length <= 1) fillTypeSelect(sel);
     }
     update();
   })();
