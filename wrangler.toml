@@ -1,0 +1,10 @@
+# Cloudflare Workers 설정
+name = "mock-api"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+# gui.html 을 문자열로 임포트
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true

@@ -1,0 +1,136 @@
+# Mock API
+
+URL 만으로 스키마를 정의하는 팀 내부용 목(mock) REST API. 앱 설치도, PR도, 재배포도 없이 **URL만 고쳐 쓰면 된다.** 같은 URL은 항상 같은 데이터를 반환한다.
+
+- GUI (URL 빌더 + 실시간 미리보기): `GET /`
+- 데이터: `GET /api/<리소스명>?필드=타입&...`
+- 지원 타입 목록: `GET /schema/types`
+
+## 5분 시작
+
+배포된 워커 주소를 열면 GUI가 뜬다. 프리셋(사용자/상품/주문) 버튼 → URL 복사 → 끝.
+GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해 팀원에게 보내면 같은 편집 화면이 열린다.
+
+## 사용 예시
+
+**1. 기본 — 한국어 사용자 목록**
+
+```
+/api/users?id=uuid&name=person.fullName&email=internet.email&age=int:20~60&_total=500&_limit=20
+```
+
+```json
+{
+  "data": [ { "id": "...", "name": "김민준", "email": "...", "age": 34 } ],
+  "page": 1, "limit": 20, "total": 500, "totalPages": 25,
+  "hasNext": true, "hasPrev": false
+}
+```
+
+**2. 중첩 객체 + 배열**
+
+```
+/api/users?name=person.fullName&address.city=location.city&address.zip=location.zipCode&tags[]=lorem.word:3
+```
+
+→ `{ "address": { "city": "서울특별시", "zip": "04524" }, "tags": ["...", "...", "..."] }`
+
+**3. 로딩 UI 테스트 — 3초 지연**
+
+```
+/api/products?name=commerce.productName&price=int:1000~99000&_delay=3000
+```
+
+**4. 에러 핸들링 테스트 — 500 강제**
+
+```
+/api/orders?id=uuid&_status=500
+```
+
+(상태코드만 바뀌고 본문은 그대로라 파싱 로직도 함께 테스트 가능)
+
+**5. envelope 없이 배열만 + 영어 데이터**
+
+```
+/api/users?name=person.fullName&_wrap=none&_locale=en
+```
+
+## 예약 파라미터 (`_` 로 시작)
+
+| 파라미터 | 기본값 | 설명 |
+|---|---|---|
+| `_page` | 1 | 페이지 번호 (1-base) |
+| `_limit` | 10 | 페이지당 항목 수 (최대 100) |
+| `_total` | 100 | 전체 항목 수 (가상) |
+| `_seed` | URL 해시 | 명시하면 고정 시드 |
+| `_locale` | ko | `ko` \| `en` |
+| `_delay` | 0 | 응답 지연 ms (최대 5000) |
+| `_status` | 200 | 강제 HTTP 상태코드 |
+| `_wrap` | envelope | `envelope` \| `none`(배열만) |
+
+`_` 로 시작하지 않는 파라미터는 전부 필드 정의다.
+
+## 필드 타입 DSL
+
+```
+name=person.fullName          # faker 경로 (모듈.메서드)
+age=int:20~60                 # 정수 범위
+price=float:0~100:2           # 실수 범위 + 소수점 자릿수
+active=bool:0.8               # true 확률 80%
+role=enum:admin|user|guest    # 열거형 중 택1
+type=const:user               # 고정 리터럴
+bio=text:50                   # 지정 길이 문자열
+avatar=image:200x200          # placeholder 이미지 URL
+createdAt=date:2020-01-01~2024-12-31
+id=uuid
+seq=index                     # 전역 인덱스 (0,1,2…) — 페이지 검증에 유용
+address.city=location.city    # 점 표기법 → 중첩 객체
+tags[]=lorem.word:3           # 배열 — 값의 마지막 :정수 가 길이 (기본 3)
+```
+
+전체 목록과 faker 경로는 `GET /schema/types`. 잘못 쓰면 400 응답이 무엇이 왜 틀렸는지 알려준다:
+
+```json
+{ "error": "Invalid int range", "field": "age", "value": "int:20-60",
+  "hint": "범위 구분자는 '~' 입니다. 예: int:20~60" }
+```
+
+## 결정론 (스냅샷 테스트 안정성)
+
+- 같은 URL → 항상 같은 응답 (바이트 단위 동일)
+- 항목별 시드: 전역 `i`번째 항목은 `_limit`/`_page` 를 바꿔도 동일하다.
+  (`_limit=10&_page=2` 의 1번째 == `_limit=20&_page=1` 의 11번째)
+- 필드 순서만 다른 URL, `_delay`/`_status` 만 다른 URL → 같은 데이터
+- faker `date.*` 계열은 refDate 를 `2026-01-01` 로 고정해 시간이 지나도 값이 변하지 않는다.
+
+주의: faker 라이브러리 버전을 올리면 생성 값이 바뀔 수 있다. 스냅샷을 쓰는 동안은 버전을 고정할 것.
+
+## 개발
+
+```bash
+npm install
+npm test            # vitest — 결정론/DSL/워커 54개 테스트
+npm run typecheck
+npm run dev         # wrangler dev → http://localhost:8787
+npm run size        # 번들 gzip 크기 (Workers 무료 플랜 제한 3MB)
+npm run deploy      # wrangler deploy (Cloudflare 로그인 필요)
+```
+
+배포: `npx wrangler login` 후 `npm run deploy`. 무료 플랜 100K req/일 — 10명 팀 기준 여유가 크다.
+
+## 구조
+
+```
+src/
+  index.ts     # 라우터 (/, /api/:resource, /schema/types) + CORS + _delay/_status
+  dsl.ts       # 쿼리스트링 → 스키마 파싱 + 친절한 에러
+  registry.ts  # 타입 레지스트리 (타입명 → 생성 함수) + /schema/types 문서
+  generate.ts  # 항목별 시드 생성 + 페이지네이션
+  rng.ts       # FNV-1a 해시 + mulberry32 PRNG
+  gui.html     # 단일 파일 GUI
+test/          # dsl / determinism / worker 테스트
+```
+
+## v1 에서 뺀 것 (의도적)
+
+스키마 저장(KV), 쓰기 API(CRUD), 인증. 실사용에서 필요가 확인되면 v2로.

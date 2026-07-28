@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock API Builder</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --border: #e2e5ea; --text: #1c2733;
+    --muted: #6b7684; --accent: #2563eb; --accent-soft: #eff4ff;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 16px 24px; background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  header h1 { margin: 0; font-size: 18px; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  .presets { margin-left: auto; display: flex; gap: 8px; }
+  .presets button {
+    border: 1px solid var(--border); background: var(--panel); border-radius: 6px;
+    padding: 5px 12px; cursor: pointer; font-size: 13px;
+  }
+  .presets button:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  main {
+    display: grid; grid-template-columns: minmax(380px, 5fr) minmax(380px, 6fr);
+    gap: 16px; padding: 16px 24px; max-width: 1280px; margin: 0 auto;
+  }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .panel h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  label { font-size: 13px; color: var(--muted); }
+  input, select {
+    font: inherit; color: inherit; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .resource-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .resource-row .prefix { font-family: var(--mono); color: var(--muted); font-size: 13px; }
+  .resource-row input { width: 140px; font-family: var(--mono); }
+  #fields { display: flex; flex-direction: column; gap: 6px; }
+  .frow { display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 6px; align-items: center; }
+  .frow input.fname { font-family: var(--mono); }
+  .frow .fval-wrap { display: flex; gap: 4px; }
+  .frow input.fval { font-family: var(--mono); flex: 1; min-width: 0; }
+  .frow .btns { display: flex; gap: 2px; }
+  .frow .btns button {
+    border: 1px solid var(--border); background: var(--panel); border-radius: 5px;
+    width: 26px; height: 30px; cursor: pointer; color: var(--muted); padding: 0;
+  }
+  .frow .btns button:hover { color: var(--text); background: var(--bg); }
+  select.ftype { max-width: 130px; color: var(--muted); font-size: 12px; }
+  #addField {
+    margin-top: 8px; border: 1px dashed var(--border); background: none; border-radius: 6px;
+    padding: 7px; width: 100%; cursor: pointer; color: var(--muted); font-size: 13px;
+  }
+  #addField:hover { border-color: var(--accent); color: var(--accent); }
+  .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 4px; }
+  .opts > div { display: flex; flex-direction: column; gap: 3px; }
+  .opts input, .opts select { width: 100%; }
+  .urlbox {
+    font-family: var(--mono); font-size: 12.5px; word-break: break-all;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; min-height: 3em;
+  }
+  .urlbox a { color: var(--accent); text-decoration: none; }
+  .url-actions { display: flex; gap: 8px; margin: 10px 0 4px; }
+  .url-actions button {
+    border: 1px solid var(--accent); background: var(--accent); color: #fff;
+    border-radius: 6px; padding: 7px 16px; cursor: pointer; font-size: 13px;
+  }
+  .url-actions button.ghost { background: var(--panel); color: var(--accent); }
+  #shareBtn { border-color: var(--border); color: var(--muted); background: var(--panel); }
+  pre#preview {
+    font-family: var(--mono); font-size: 12.5px; background: #0f172a; color: #d7e2f0;
+    border-radius: 8px; padding: 14px; overflow: auto; max-height: 520px; min-height: 200px;
+    margin: 0; white-space: pre-wrap; word-break: break-all;
+  }
+  .status-line { font-size: 12.5px; color: var(--muted); margin: 8px 0 6px; font-family: var(--mono); }
+  .status-line .ok { color: #16a34a; } .status-line .err { color: #dc2626; }
+  .hintbar { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.7; }
+  .hintbar code { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; font-size: 11.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mock API Builder</h1>
+  <span class="sub">URL 만으로 쓰는 커스텀 목 데이터 · 같은 URL = 항상 같은 데이터</span>
+  <div class="presets">
+    <span style="align-self:center;color:var(--muted);font-size:12px">프리셋:</span>
+    <button data-preset="users">사용자</button>
+    <button data-preset="products">상품</button>
+    <button data-preset="orders">주문</button>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>스키마</h2>
+    <div class="resource-row">
+      <label for="resource">리소스명</label>
+      <span class="prefix">/api/</span>
+      <input id="resource" value="users" spellcheck="false">
+    </div>
+
+    <div id="fields"></div>
+    <button id="addField">+ 필드 추가</button>
+
+    <h2 style="margin-top:18px">옵션</h2>
+    <div class="opts">
+      <div><label>전체 개수 (_total)</label><input id="oTotal" type="number" min="0" value="100"></div>
+      <div><label>페이지당 (_limit)</label><input id="oLimit" type="number" min="1" max="100" value="10"></div>
+      <div><label>페이지 (_page)</label><input id="oPage" type="number" min="1" value="1"></div>
+      <div><label>로케일 (_locale)</label>
+        <select id="oLocale"><option value="ko">한국어</option><option value="en">English</option></select>
+      </div>
+      <div><label>지연 ms (_delay)</label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
+      <div><label>상태코드 (_status)</label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
+    </div>
+
+    <div class="hintbar">
+      중첩: <code>address.city</code> · 배열: <code>tags[]</code> + 값 끝 <code>:개수</code> ·
+      범위: <code>int:20~60</code> · 열거: <code>enum:a|b|c</code> ·
+      전체 문법: <a href="/schema/types" target="_blank">/schema/types</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>생성된 URL</h2>
+    <div class="urlbox" id="urlBox"></div>
+    <div class="url-actions">
+      <button id="copyBtn">URL 복사</button>
+      <button id="openBtn" class="ghost">새 탭에서 열기</button>
+      <button id="shareBtn" title="이 편집 화면 자체를 공유하는 링크">편집 화면 링크 복사</button>
+    </div>
+    <div class="status-line" id="statusLine">&nbsp;</div>
+    <pre id="preview">불러오는 중…</pre>
+  </section>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const fieldsEl = $('#fields');
+  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200' };
+  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus' };
+
+  const PRESETS = {
+    users: {
+      res: 'users',
+      fields: [
+        ['id', 'uuid'], ['name', 'person.fullName'], ['email', 'internet.email'],
+        ['age', 'int:20~60'], ['address.city', 'location.city'],
+        ['avatar', 'image:200x200'], ['createdAt', 'date:2023-01-01~2026-07-01'],
+      ],
+      opts: { _total: '500', _limit: '20' },
+    },
+    products: {
+      res: 'products',
+      fields: [
+        ['id', 'uuid'], ['name', 'commerce.productName'], ['price', 'int:1000~99000'],
+        ['category', 'commerce.department'], ['inStock', 'bool:0.8'],
+        ['tags[]', 'lorem.word:3'], ['image', 'image:300x300'],
+      ],
+      opts: { _total: '200', _limit: '20' },
+    },
+    orders: {
+      res: 'orders',
+      fields: [
+        ['id', 'uuid'], ['orderNo', 'index'], ['status', 'enum:pending|paid|shipped|delivered'],
+        ['amount', 'int:10000~500000'], ['customer.name', 'person.fullName'],
+        ['customer.phone', 'phone.number'], ['orderedAt', 'date:2025-01-01~2026-07-28'],
+      ],
+      opts: { _total: '300', _limit: '20' },
+    },
+  };
+
+  // ---- 인코딩: 읽기 좋은 URL 을 위해 안전 문자는 되살린다 ----
+  const enc = (s) => encodeURIComponent(s)
+    .replace(/%3A/gi, ':').replace(/%7E/gi, '~').replace(/%7C/gi, '|')
+    .replace(/%5B/gi, '[').replace(/%5D/gi, ']').replace(/%2C/gi, ',');
+
+  // ---- 필드 행 ----
+  function addRow(name = '', value = '') {
+    const row = document.createElement('div');
+    row.className = 'frow';
+    row.innerHTML =
+      '<input class="fname" placeholder="필드명" spellcheck="false">' +
+      '<div class="fval-wrap">' +
+        '<input class="fval" placeholder="타입 (예: int:20~60)" spellcheck="false">' +
+        '<select class="ftype"><option value="">타입 선택…</option></select>' +
+      '</div>' +
+      '<div class="btns">' +
+        '<button class="up" title="위로">↑</button>' +
+        '<button class="down" title="아래로">↓</button>' +
+        '<button class="del" title="삭제">✕</button>' +
+      '</div>';
+    row.querySelector('.fname').value = name;
+    row.querySelector('.fval').value = value;
+    fillTypeSelect(row.querySelector('.ftype'));
+    fieldsEl.appendChild(row);
+    return row;
+  }
+
+  let typeOptions = null; // /schema/types 응답 — 단일 소스
+  function fillTypeSelect(sel) {
+    if (!typeOptions) return;
+    const gFaker = document.createElement('optgroup'); gFaker.label = '자주 쓰는 값 (faker)';
+    for (const p of typeOptions.fakerPaths) {
+      const o = document.createElement('option'); o.value = p.value; o.textContent = p.label + ' — ' + p.value;
+      gFaker.appendChild(o);
+    }
+    const gDsl = document.createElement('optgroup'); gDsl.label = 'DSL 타입';
+    for (const t of typeOptions.dslTypes) {
+      const o = document.createElement('option'); o.value = t.example; o.textContent = t.label + ' — ' + t.syntax;
+      gDsl.appendChild(o);
+    }
+    sel.appendChild(gFaker); sel.appendChild(gDsl);
+  }
+
+  function readState() {
+    const fields = [];
+    for (const row of fieldsEl.querySelectorAll('.frow')) {
+      const n = row.querySelector('.fname').value.trim();
+      const v = row.querySelector('.fval').value.trim();
+      if (n && v) fields.push([n, v]);
+    }
+    const opts = {};
+    for (const [k, sel] of Object.entries(OPT_INPUTS)) {
+      const v = String($(sel).value).trim();
+      if (v !== '' && v !== OPT_DEFAULTS[k]) opts[k] = v;
+    }
+    return { res: $('#resource').value.trim() || 'items', fields, opts };
+  }
+
+  function buildQuery(state) {
+    const parts = [];
+    for (const [n, v] of state.fields) parts.push(enc(n) + '=' + enc(v));
+    for (const [k, v] of Object.entries(state.opts)) parts.push(k + '=' + enc(v));
+    return parts.join('&');
+  }
+
+  function apiUrl(state) {
+    return location.origin + '/api/' + encodeURIComponent(state.res) + '?' + buildQuery(state);
+  }
+
+  // ---- GUI 상태 ↔ 주소창 (현재 URL 이 곧 GUI 상태) ----
+  function syncAddressBar(state) {
+    const q = '_res=' + enc(state.res) + (state.fields.length || Object.keys(state.opts).length ? '&' + buildQuery(state) : '');
+    history.replaceState(null, '', '/?' + q);
+  }
+
+  function loadFromAddressBar() {
+    const params = new URLSearchParams(location.search);
+    if (![...params.keys()].length || !params.has('_res')) return false;
+    $('#resource').value = params.get('_res') || 'items';
+    fieldsEl.innerHTML = '';
+    for (const [k, v] of params) {
+      if (k === '_res') continue;
+      if (k in OPT_INPUTS) { $(OPT_INPUTS[k]).value = v; continue; }
+      if (k.startsWith('_')) continue;
+      addRow(k, v);
+    }
+    if (!fieldsEl.children.length) addRow();
+    return true;
+  }
+
+  function applyPreset(name) {
+    const p = PRESETS[name];
+    $('#resource').value = p.res;
+    fieldsEl.innerHTML = '';
+    for (const [n, v] of p.fields) addRow(n, v);
+    for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
+    update();
+  }
+
+  // ---- 미리보기 (디바운스 300ms) ----
+  let timer = null; let reqSeq = 0;
+  function update() {
+    const state = readState();
+    const url = apiUrl(state);
+    $('#urlBox').innerHTML = '';
+    const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
+    $('#urlBox').appendChild(a);
+    syncAddressBar(state);
+    clearTimeout(timer);
+    timer = setTimeout(() => preview(url), 300);
+  }
+
+  async function preview(url) {
+    const seq = ++reqSeq;
+    const t0 = performance.now();
+    $('#statusLine').textContent = '요청 중… GET ' + url.slice(location.origin.length);
+    try {
+      const res = await fetch(url);
+      const text = await res.text();
+      if (seq !== reqSeq) return; // 오래된 응답 무시
+      const ms = Math.round(performance.now() - t0);
+      const cls = res.ok ? 'ok' : 'err';
+      $('#statusLine').innerHTML = 'HTTP <span class="' + cls + '">' + res.status + '</span> · ' + ms + 'ms';
+      let body = text;
+      try { body = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+      $('#preview').textContent = body;
+    } catch (e) {
+      if (seq !== reqSeq) return;
+      $('#statusLine').innerHTML = '<span class="err">요청 실패</span>';
+      $('#preview').textContent = String(e);
+    }
+  }
+
+  // ---- 클립보드 ----
+  async function copyText(t, btn, done) {
+    try { await navigator.clipboard.writeText(t); }
+    catch {
+      const ta = document.createElement('textarea');
+      ta.value = t; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+    const orig = btn.textContent;
+    btn.textContent = done; setTimeout(() => (btn.textContent = orig), 1200);
+  }
+
+  // ---- 이벤트 ----
+  document.addEventListener('input', (e) => {
+    if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select')) update();
+  });
+  document.addEventListener('change', (e) => {
+    if (e.target.matches('select.ftype')) {
+      if (e.target.value) {
+        e.target.closest('.fval-wrap').querySelector('.fval').value = e.target.value;
+        e.target.selectedIndex = 0;
+        update();
+      }
+    }
+  });
+  document.addEventListener('click', (e) => {
+    const row = e.target.closest('.frow');
+    if (e.target.matches('.del')) { row.remove(); update(); }
+    else if (e.target.matches('.up') && row.previousElementSibling) { row.parentNode.insertBefore(row, row.previousElementSibling); update(); }
+    else if (e.target.matches('.down') && row.nextElementSibling) { row.parentNode.insertBefore(row.nextElementSibling, row); update(); }
+    else if (e.target.id === 'addField') { addRow(); }
+    else if (e.target.id === 'copyBtn') { copyText(apiUrl(readState()), e.target, '복사됨 ✓'); }
+    else if (e.target.id === 'openBtn') { window.open(apiUrl(readState()), '_blank'); }
+    else if (e.target.id === 'shareBtn') { copyText(location.href, e.target, '복사됨 ✓'); }
+    else if (e.target.dataset.preset) { applyPreset(e.target.dataset.preset); }
+  });
+
+  // ---- 초기화 ----
+  (async () => {
+    try {
+      typeOptions = await (await fetch('/schema/types')).json();
+    } catch { typeOptions = { fakerPaths: [], dslTypes: [] }; }
+    if (!loadFromAddressBar()) {
+      // 첫 방문: 사용자 프리셋으로 온보딩
+      const p = PRESETS.users;
+      $('#resource').value = p.res;
+      for (const [n, v] of p.fields) addRow(n, v);
+      for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
+    } else {
+      // 주소창 복원 후에도 드롭다운 채우기
+      for (const sel of document.querySelectorAll('select.ftype')) if (sel.options.length <= 1) fillTypeSelect(sel);
+    }
+    update();
+  })();
+})();
+</script>
+</body>
+</html>
