@@ -6,93 +6,152 @@
 <title>Mock API Builder</title>
 <style>
   :root {
-    --bg: #f6f7f9; --panel: #ffffff; --border: #e2e5ea; --text: #1c2733;
-    --muted: #6b7684; --accent: #2563eb; --accent-soft: #eff4ff;
+    --bg: #f2f4f6; --panel: #ffffff; --border: #e5e8eb; --border-strong: #d1d6db;
+    --text: #191f28; --muted: #6b7684; --faint: #8b95a1;
+    --accent: #3182f6; --accent-hover: #1b64da; --accent-soft: #e8f3ff;
+    --danger: #f04452; --warn-bg: #fff8e5; --warn-border: #ffe28a; --warn-text: #8a6d1a;
+    --radius: 14px; --radius-s: 9px;
+    --shadow: 0 1px 2px rgba(2, 32, 71, .04), 0 4px 16px rgba(2, 32, 71, .05);
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    font: 14px/1.55 Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
   header {
-    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
-    padding: 16px 24px; background: var(--panel); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 14px 28px; background: var(--panel); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 5;
   }
-  header h1 { margin: 0; font-size: 18px; }
-  header .sub { color: var(--muted); font-size: 13px; }
-  .presets { margin-left: auto; display: flex; gap: 8px; }
+  .logo { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); flex: none; }
+  header h1 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+  header .sub { color: var(--faint); font-size: 12.5px; margin-left: 2px; }
+  .presets { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .presets .plabel { color: var(--faint); font-size: 12px; margin-right: 2px; }
   .presets button {
-    border: 1px solid var(--border); background: var(--panel); border-radius: 6px;
-    padding: 5px 12px; cursor: pointer; font-size: 13px;
+    border: 1px solid var(--border); background: var(--panel); border-radius: 999px;
+    padding: 5px 14px; cursor: pointer; font-size: 12.5px; color: var(--muted);
+    transition: all .12s ease;
   }
-  .presets button:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .presets button:hover { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
   main {
     display: grid; grid-template-columns: minmax(380px, 5fr) minmax(380px, 6fr);
-    gap: 16px; padding: 16px 24px; max-width: 1280px; margin: 0 auto;
+    gap: 18px; padding: 20px 28px 40px; max-width: 1320px; margin: 0 auto;
   }
-  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-  .panel h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  label { font-size: 13px; color: var(--muted); }
-  input, select {
+  @media (max-width: 880px) { main { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; box-shadow: var(--shadow);
+  }
+  .panel h2 {
+    margin: 0 0 12px; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .06em; color: var(--faint);
+  }
+  label { font-size: 12.5px; color: var(--muted); }
+  input, select, textarea {
     font: inherit; color: inherit; background: var(--panel);
-    border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px;
+    border: 1px solid var(--border); border-radius: var(--radius-s); padding: 7px 10px;
+    transition: border-color .12s ease, box-shadow .12s ease;
   }
-  input:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
-  .resource-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-  .resource-row .prefix { font-family: var(--mono); color: var(--muted); font-size: 13px; }
-  .resource-row input { width: 140px; font-family: var(--mono); }
-  #fields { display: flex; flex-direction: column; gap: 6px; }
-  .frow { display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 6px; align-items: center; }
-  .frow input.fname { font-family: var(--mono); }
-  .frow .fval-wrap { display: flex; gap: 4px; }
-  .frow input.fval { font-family: var(--mono); flex: 1; min-width: 0; }
-  .frow .btns { display: flex; gap: 2px; }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(49, 130, 246, .15);
+  }
+  .resource-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .resource-row .prefix { font-family: var(--mono); color: var(--faint); font-size: 13px; }
+  .resource-row input { width: 150px; font-family: var(--mono); }
+  #fields { display: flex; flex-direction: column; gap: 7px; }
+  .frow { display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 7px; align-items: center; }
+  .frow input.fname { font-family: var(--mono); font-size: 13px; }
+  .frow .fval-wrap { display: flex; gap: 5px; }
+  .frow input.fval { font-family: var(--mono); font-size: 13px; flex: 1; min-width: 0; }
+  .frow .btns { display: flex; gap: 3px; }
   .frow .btns button {
-    border: 1px solid var(--border); background: var(--panel); border-radius: 5px;
-    width: 26px; height: 30px; cursor: pointer; color: var(--muted); padding: 0;
+    border: none; background: none; border-radius: 7px;
+    width: 26px; height: 30px; cursor: pointer; color: var(--faint); padding: 0; font-size: 13px;
+    transition: all .12s ease;
   }
   .frow .btns button:hover { color: var(--text); background: var(--bg); }
-  select.ftype { max-width: 130px; color: var(--muted); font-size: 12px; }
-  #addField {
-    margin-top: 8px; border: 1px dashed var(--border); background: none; border-radius: 6px;
-    padding: 7px; width: 100%; cursor: pointer; color: var(--muted); font-size: 13px;
+  .frow .btns button.del:hover { color: var(--danger); background: #fef1f2; }
+  select.ftype { max-width: 128px; color: var(--faint); font-size: 12px; }
+  .field-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .field-actions button {
+    flex: 1; border: 1px dashed var(--border-strong); background: none; border-radius: var(--radius-s);
+    padding: 8px; cursor: pointer; color: var(--muted); font-size: 13px; transition: all .12s ease;
   }
-  #addField:hover { border-color: var(--accent); color: var(--accent); }
-  .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 4px; }
-  .opts > div { display: flex; flex-direction: column; gap: 3px; }
+  .field-actions button:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  #inferNote {
+    display: none; margin-top: 10px; padding: 9px 12px; border-radius: var(--radius-s);
+    background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text);
+    font-size: 12px; line-height: 1.6; white-space: pre-line;
+  }
+  .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-top: 4px; }
+  .opts > div { display: flex; flex-direction: column; gap: 4px; }
   .opts input, .opts select { width: 100%; }
   .urlbox {
-    font-family: var(--mono); font-size: 12.5px; word-break: break-all;
-    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-    padding: 10px 12px; min-height: 3em;
+    font-family: var(--mono); font-size: 12.5px; word-break: break-all; line-height: 1.7;
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-s);
+    padding: 12px 14px; min-height: 3.2em;
   }
   .urlbox a { color: var(--accent); text-decoration: none; }
-  .url-actions { display: flex; gap: 8px; margin: 10px 0 4px; }
+  .url-actions { display: flex; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
   .url-actions button {
-    border: 1px solid var(--accent); background: var(--accent); color: #fff;
-    border-radius: 6px; padding: 7px 16px; cursor: pointer; font-size: 13px;
+    border: none; border-radius: var(--radius-s); padding: 8px 18px; cursor: pointer;
+    font-size: 13px; font-weight: 600; transition: all .12s ease;
   }
-  .url-actions button.ghost { background: var(--panel); color: var(--accent); }
-  #shareBtn { border-color: var(--border); color: var(--muted); background: var(--panel); }
+  #copyBtn { background: var(--accent); color: #fff; }
+  #copyBtn:hover { background: var(--accent-hover); }
+  #openBtn { background: var(--accent-soft); color: var(--accent); }
+  #openBtn:hover { background: #d8eafe; }
+  #shareBtn { background: var(--bg); color: var(--muted); font-weight: 500; }
+  #shareBtn:hover { background: var(--border); }
   pre#preview {
-    font-family: var(--mono); font-size: 12.5px; background: #0f172a; color: #d7e2f0;
-    border-radius: 8px; padding: 14px; overflow: auto; max-height: 520px; min-height: 200px;
+    font-family: var(--mono); font-size: 12.5px; background: #131722; color: #dbe4f0;
+    border-radius: var(--radius-s); padding: 16px; overflow: auto; max-height: 540px; min-height: 220px;
     margin: 0; white-space: pre-wrap; word-break: break-all;
   }
-  .status-line { font-size: 12.5px; color: var(--muted); margin: 8px 0 6px; font-family: var(--mono); }
-  .status-line .ok { color: #16a34a; } .status-line .err { color: #dc2626; }
-  .hintbar { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.7; }
-  .hintbar code { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; font-size: 11.5px; }
+  .status-line { font-size: 12.5px; color: var(--faint); margin: 10px 0 8px; font-family: var(--mono); }
+  .status-line .ok { color: #23a55a; font-weight: 700; }
+  .status-line .err { color: var(--danger); font-weight: 700; }
+  .hintbar { font-size: 12px; color: var(--faint); margin-top: 14px; line-height: 1.8; }
+  .hintbar code {
+    background: var(--bg); border-radius: 5px; padding: 1px 6px; font-size: 11.5px; font-family: var(--mono);
+  }
+  .hintbar a { color: var(--accent); }
+  /* ---- 붙여넣기 모달 ---- */
+  #pasteModal {
+    display: none; position: fixed; inset: 0; background: rgba(25, 31, 40, .45);
+    z-index: 20; align-items: center; justify-content: center; padding: 20px;
+  }
+  #pasteModal .card {
+    background: var(--panel); border-radius: var(--radius); box-shadow: 0 12px 40px rgba(2, 32, 71, .18);
+    width: 600px; max-width: 100%; padding: 22px;
+  }
+  #pasteModal h3 { margin: 0 0 4px; font-size: 16px; }
+  #pasteModal p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  #pasteInput {
+    width: 100%; height: 240px; font-family: var(--mono); font-size: 12.5px;
+    resize: vertical; line-height: 1.6;
+  }
+  #pasteError { color: var(--danger); font-size: 12.5px; min-height: 1.2em; margin: 6px 0 4px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+  .modal-actions button {
+    border: none; border-radius: var(--radius-s); padding: 8px 18px; cursor: pointer;
+    font-size: 13px; font-weight: 600;
+  }
+  #pasteApply { background: var(--accent); color: #fff; }
+  #pasteApply:hover { background: var(--accent-hover); }
+  #pasteCancel { background: var(--bg); color: var(--muted); }
 </style>
 </head>
 <body>
 <header>
+  <span class="logo"></span>
   <h1>Mock API Builder</h1>
   <span class="sub">URL 만으로 쓰는 커스텀 목 데이터 · 같은 URL = 항상 같은 데이터</span>
   <div class="presets">
-    <span style="align-self:center;color:var(--muted);font-size:12px">프리셋:</span>
+    <span class="plabel">프리셋</span>
     <button data-preset="users">사용자</button>
     <button data-preset="products">상품</button>
     <button data-preset="orders">주문</button>
@@ -109,9 +168,13 @@
     </div>
 
     <div id="fields"></div>
-    <button id="addField">+ 필드 추가</button>
+    <div class="field-actions">
+      <button id="addField">+ 필드 추가</button>
+      <button id="pasteBtn">{ } JSON 붙여넣기</button>
+    </div>
+    <div id="inferNote"></div>
 
-    <h2 style="margin-top:18px">옵션</h2>
+    <h2 style="margin-top:20px">옵션</h2>
     <div class="opts">
       <div><label>전체 개수 (_total)</label><input id="oTotal" type="number" min="0" value="100"></div>
       <div><label>페이지당 (_limit)</label><input id="oLimit" type="number" min="1" max="100" value="10"></div>
@@ -135,13 +198,27 @@
     <div class="urlbox" id="urlBox"></div>
     <div class="url-actions">
       <button id="copyBtn">URL 복사</button>
-      <button id="openBtn" class="ghost">새 탭에서 열기</button>
+      <button id="openBtn">새 탭에서 열기</button>
       <button id="shareBtn" title="이 편집 화면 자체를 공유하는 링크">편집 화면 링크 복사</button>
     </div>
     <div class="status-line" id="statusLine">&nbsp;</div>
     <pre id="preview">불러오는 중…</pre>
   </section>
 </main>
+
+<div id="pasteModal">
+  <div class="card">
+    <h3>JSON 붙여넣기</h3>
+    <p>실제 API 응답이나 예시 객체를 붙여넣으면 필드와 타입을 자동으로 추론합니다.
+       <code style="font-family:var(--mono);font-size:12px">{"data": [...]}</code> 같은 envelope 도 알아서 벗겨냅니다.</p>
+    <textarea id="pasteInput" spellcheck="false" placeholder='{"id": "a1b2...", "name": "김민준", "age": 34, "tags": ["a", "b"]}'></textarea>
+    <div id="pasteError"></div>
+    <div class="modal-actions">
+      <button id="pasteCancel">취소</button>
+      <button id="pasteApply">추론해서 채우기</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -314,6 +391,39 @@
     }
   }
 
+  // ---- JSON 붙여넣기 → 추론 ----
+  function openPaste() {
+    $('#pasteError').textContent = '';
+    $('#pasteModal').style.display = 'flex';
+    $('#pasteInput').focus();
+  }
+  function closePaste() { $('#pasteModal').style.display = 'none'; }
+
+  async function applyPaste() {
+    const raw = $('#pasteInput').value.trim();
+    if (!raw) { $('#pasteError').textContent = 'JSON 을 입력하세요.'; return; }
+    try { JSON.parse(raw); }
+    catch (e) { $('#pasteError').textContent = 'JSON 파싱 실패: ' + e.message; return; }
+    let result;
+    try {
+      const res = await fetch('/schema/infer', { method: 'POST', body: raw, headers: { 'content-type': 'application/json' } });
+      result = await res.json();
+      if (!res.ok) { $('#pasteError').textContent = (result.error || '추론 실패') + (result.hint ? ' — ' + result.hint : ''); return; }
+    } catch (e) { $('#pasteError').textContent = '요청 실패: ' + e; return; }
+    fieldsEl.innerHTML = '';
+    for (const f of result.fields) addRow(f.name, f.type);
+    const note = $('#inferNote');
+    if (result.skipped && result.skipped.length) {
+      note.textContent = '추론에서 제외됨:\n' + result.skipped.map((s) => '· ' + s.path + ' — ' + s.reason).join('\n');
+      note.style.display = 'block';
+      clearTimeout(note._t); note._t = setTimeout(() => (note.style.display = 'none'), 12000);
+    } else {
+      note.style.display = 'none';
+    }
+    closePaste();
+    update();
+  }
+
   // ---- 클립보드 ----
   async function copyText(t, btn, done) {
     try { await navigator.clipboard.writeText(t); }
@@ -339,12 +449,19 @@
       }
     }
   });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePaste();
+  });
   document.addEventListener('click', (e) => {
     const row = e.target.closest('.frow');
     if (e.target.matches('.del')) { row.remove(); update(); }
     else if (e.target.matches('.up') && row.previousElementSibling) { row.parentNode.insertBefore(row, row.previousElementSibling); update(); }
     else if (e.target.matches('.down') && row.nextElementSibling) { row.parentNode.insertBefore(row.nextElementSibling, row); update(); }
     else if (e.target.id === 'addField') { addRow(); }
+    else if (e.target.id === 'pasteBtn') { openPaste(); }
+    else if (e.target.id === 'pasteCancel') { closePaste(); }
+    else if (e.target.id === 'pasteApply') { applyPaste(); }
+    else if (e.target.id === 'pasteModal') { closePaste(); }
     else if (e.target.id === 'copyBtn') { copyText(apiUrl(readState()), e.target, '복사됨 ✓'); }
     else if (e.target.id === 'openBtn') { window.open(apiUrl(readState()), '_blank'); }
     else if (e.target.id === 'shareBtn') { copyText(location.href, e.target, '복사됨 ✓'); }
@@ -363,7 +480,6 @@
       for (const [n, v] of p.fields) addRow(n, v);
       for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
     } else {
-      // 주소창 복원 후에도 드롭다운 채우기
       for (const sel of document.querySelectorAll('select.ftype')) if (sel.options.length <= 1) fillTypeSelect(sel);
     }
     update();

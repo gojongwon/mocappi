@@ -5,12 +5,14 @@ URL 만으로 스키마를 정의하는 팀 내부용 목(mock) REST API. 앱 �
 - GUI (URL 빌더 + 실시간 미리보기): `GET /`
 - 데이터: `GET /api/<리소스명>?필드=타입&...`
 - 지원 타입 목록: `GET /schema/types`
+- JSON 예시 → 스키마 추론: `POST /schema/infer`
 
 **팀 배포 주소: <https://mock-api.gojongwon.workers.dev>** — 브라우저로 열면 GUI가 뜬다.
 
 ## 5분 시작
 
 배포된 워커 주소를 열면 GUI가 뜬다. 프리셋(사용자/상품/주문) 버튼 → URL 복사 → 끝.
+실제 API 응답 JSON이 있으면 **JSON 붙여넣기** 버튼에 그대로 붙여넣으면 필드와 타입이 자동 추론된다 (`{"data":[...]}` envelope 도 자동 언랩).
 GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해 팀원에게 보내면 같은 편집 화면이 열린다.
 
 ## 사용 예시
