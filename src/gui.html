@@ -156,6 +156,19 @@
     transition: all .12s ease;
   }
   .helpbtn:hover { background: var(--accent-soft); border-color: transparent; }
+  /* ---- 타입 자동완성 드롭다운 ---- */
+  .ac {
+    position: absolute; z-index: 30; display: none;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(2, 32, 71, .14);
+    max-height: 240px; overflow-y: auto;
+  }
+  .ac-item {
+    display: flex; gap: 10px; align-items: baseline; padding: 7px 12px; cursor: pointer;
+  }
+  .ac-item.sel, .ac-item:hover { background: var(--accent-soft); }
+  .ac-item .v { font-family: var(--mono); font-size: 12.5px; }
+  .ac-item .l { color: var(--faint); font-size: 12px; margin-left: auto; white-space: nowrap; }
   #pasteInput {
     width: 100%; height: 240px; font-family: var(--mono); font-size: 12.5px;
     resize: vertical; line-height: 1.6;
@@ -233,8 +246,6 @@
     <pre id="preview">불러오는 중…</pre>
   </section>
 </main>
-
-<datalist id="typeList"></datalist>
 
 <div id="helpModal">
   <div class="card">
@@ -368,7 +379,7 @@ customer.address.city  =  location.city</pre>
     row.className = 'frow';
     row.innerHTML =
       '<input class="fname" placeholder="필드명 (중첩은 a.b)" spellcheck="false">' +
-      '<input class="fval" list="typeList" placeholder="타입 — 입력하면 자동완성" spellcheck="false" autocomplete="off">' +
+      '<input class="fval" placeholder="타입 — 클릭하면 목록" spellcheck="false" autocomplete="off">' +
       '<button class="del" title="필드 삭제">✕</button>';
     row.querySelector('.fname').value = name;
     row.querySelector('.fval').value = value;
@@ -378,19 +389,72 @@ customer.address.city  =  location.city</pre>
   }
 
   let typeOptions = null; // /schema/types 응답 — 단일 소스
-  function fillDatalist() {
+
+  // ---- 타입 자동완성 (커스텀 드롭다운 — 높이 제한 + 스크롤 + 키보드) ----
+  let AC_ITEMS = [];
+  function buildAcItems() {
+    AC_ITEMS = [];
     if (!typeOptions) return;
-    const dl = $('#typeList');
-    dl.innerHTML = '';
-    for (const p of typeOptions.fakerPaths) {
-      const o = document.createElement('option'); o.value = p.value; o.label = p.label;
-      dl.appendChild(o);
-    }
-    for (const t of typeOptions.dslTypes) {
-      const o = document.createElement('option'); o.value = t.example; o.label = t.label + ' · ' + t.syntax;
-      dl.appendChild(o);
-    }
+    for (const p of typeOptions.fakerPaths) AC_ITEMS.push({ v: p.value, l: p.label });
+    for (const t of typeOptions.dslTypes) AC_ITEMS.push({ v: t.example, l: t.label });
   }
+
+  const ac = document.createElement('div');
+  ac.className = 'ac';
+  document.body.appendChild(ac);
+  let acInput = null, acSel = -1, acList = [];
+
+  function acClose() { ac.style.display = 'none'; acInput = null; acSel = -1; }
+
+  function acRender(input) {
+    if (input.readOnly || !AC_ITEMS.length) return;
+    acInput = input;
+    const q = input.value.trim().toLowerCase();
+    acList = q ? AC_ITEMS.filter((it) => it.v.toLowerCase().includes(q) || it.l.toLowerCase().includes(q)) : AC_ITEMS;
+    if (!acList.length) { ac.style.display = 'none'; return; }
+    acSel = -1;
+    ac.innerHTML = '';
+    acList.forEach((it, i) => {
+      const d = document.createElement('div');
+      d.className = 'ac-item';
+      d.dataset.i = i;
+      const v = document.createElement('span'); v.className = 'v'; v.textContent = it.v;
+      const l = document.createElement('span'); l.className = 'l'; l.textContent = it.l;
+      d.append(v, l);
+      ac.appendChild(d);
+    });
+    const r = input.getBoundingClientRect();
+    ac.style.display = 'block';
+    ac.style.left = (r.left + scrollX) + 'px';
+    ac.style.top = (r.bottom + scrollY + 4) + 'px';
+    ac.style.width = Math.max(r.width, 280) + 'px';
+    ac.scrollTop = 0;
+  }
+
+  function acHighlight() {
+    [...ac.children].forEach((el, i) => el.classList.toggle('sel', i === acSel));
+    if (acSel >= 0) ac.children[acSel].scrollIntoView({ block: 'nearest' });
+  }
+
+  function acApply(i) {
+    if (!acInput || i < 0 || i >= acList.length) return;
+    acInput.value = acList[i].v;
+    const row = acInput.closest('.frow');
+    acClose();
+    applyLock(row);
+    update();
+  }
+
+  ac.addEventListener('mousedown', (e) => {
+    e.preventDefault(); // 포커스 유지 (blur 방지)
+    const item = e.target.closest('.ac-item');
+    if (item) acApply(parseInt(item.dataset.i, 10));
+  });
+  window.addEventListener('scroll', (e) => {
+    if (e.target === ac || ac.contains(e.target)) return;
+    acClose();
+  }, true);
+  window.addEventListener('resize', acClose);
 
   function readState() {
     const fields = [];
@@ -544,12 +608,19 @@ customer.address.city  =  location.city</pre>
   document.addEventListener('input', (e) => {
     if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select')) {
       if (e.target.matches('.fname, .fval')) e.target.title = e.target.value;
+      if (e.target.matches('.fval')) acRender(e.target);
       update();
     }
   });
+  document.addEventListener('focusin', (e) => {
+    if (e.target.matches && e.target.matches('.fval')) acRender(e.target);
+  });
   // 잠금은 입력이 끝난 뒤(blur)에만 적용 — 타이핑 중에 잠기지 않도록
   document.addEventListener('focusout', (e) => {
-    if (e.target.matches && e.target.matches('.fval')) applyLock(e.target.closest('.frow'));
+    if (e.target.matches && e.target.matches('.fval')) {
+      applyLock(e.target.closest('.frow'));
+      acClose();
+    }
   });
   // 잠긴 타입(uuid/index)도 더블클릭하면 직접 수정 가능
   document.addEventListener('dblclick', (e) => {
@@ -560,6 +631,12 @@ customer.address.city  =  location.city</pre>
     }
   });
   document.addEventListener('keydown', (e) => {
+    if (acInput && ac.style.display === 'block') {
+      if (e.key === 'ArrowDown') { e.preventDefault(); acSel = Math.min(acSel + 1, acList.length - 1); acHighlight(); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); acSel = Math.max(acSel - 1, 0); acHighlight(); return; }
+      if (e.key === 'Enter' && acSel >= 0) { e.preventDefault(); acApply(acSel); return; }
+      if (e.key === 'Escape') { acClose(); return; }
+    }
     if (e.key === 'Escape') { closePaste(); $('#helpModal').style.display = 'none'; }
   });
   document.addEventListener('click', (e) => {
@@ -582,7 +659,7 @@ customer.address.city  =  location.city</pre>
     try {
       typeOptions = await (await fetch('/schema/types')).json();
     } catch { typeOptions = { fakerPaths: [], dslTypes: [] }; }
-    fillDatalist();
+    buildAcItems();
     if (!loadFromAddressBar()) {
       // 첫 방문: 사용자 프리셋으로 온보딩
       const p = PRESETS.users;
