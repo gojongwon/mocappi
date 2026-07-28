@@ -6,6 +6,8 @@ URL 만으로 스키마를 정의하는 팀 내부용 목(mock) REST API. 앱 �
 - 데이터: `GET /api/<리소스명>?필드=타입&...`
 - 지원 타입 목록: `GET /schema/types`
 
+**팀 배포 주소: <https://mock-api.gojongwon.workers.dev>** — 브라우저로 열면 GUI가 뜬다.
+
 ## 5분 시작
 
 배포된 워커 주소를 열면 GUI가 뜬다. 프리셋(사용자/상품/주문) 버튼 → URL 복사 → 끝.
