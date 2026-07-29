@@ -215,9 +215,7 @@
     background: var(--panel); color: var(--ink); box-shadow: var(--btn-shadow);
   }
   .url-actions button:hover { background: var(--accent-soft); }
-  #openBtn, #tsBtn, #saveBtn { background: var(--panel); color: var(--ink); }
-  #shareBtn { border-style: dashed; color: var(--muted); box-shadow: none; }
-  #shareBtn:hover { background: var(--code-bg); }
+  #tsBtn, #saveBtn { background: var(--panel); color: var(--ink); }
 
   /* ===== 미리보기 ===== */
   .preview-wrap { position: relative; }
@@ -424,9 +422,7 @@
     </div>
     <div class="url-actions">
       <button id="tsBtn" title="현재 스키마의 TypeScript 인터페이스 + 제네릭 fetch 헬퍼를 복사">TS 타입 복사</button>
-      <button id="openBtn">새 탭에서 열기</button>
       <button id="saveBtn" title="현재 스키마를 워크스페이스 프리셋으로 저장 — 짧은 URL(_s=ID)이 생깁니다">프리셋으로 저장</button>
-      <button id="shareBtn" title="이 편집 화면 자체를 공유하는 링크">편집 화면 링크 복사</button>
     </div>
     <div class="status-line" id="statusLine">&nbsp;</div>
     <div class="preview-wrap">
@@ -1196,8 +1192,6 @@ npm run deploy</pre>
       case 'saveApply': applySave(); break;
       case 'shortCopy': copyIcon($('#shortUrlBox').dataset.url || '', btn); break;
       case 'shortLineCopy': copyIcon($('#shortLine').dataset.url || '', btn); break;
-      case 'openBtn': window.open(apiUrl(readState()), '_blank'); break;
-      case 'shareBtn': copyText(location.href, btn, '복사됨 ✓'); break;
     }
   });
 
