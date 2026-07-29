@@ -82,7 +82,7 @@
   .paste-primary {
     width: 100%; border: none; background: var(--accent); color: #fff;
     border-radius: var(--radius-s); padding: 11px 14px; cursor: pointer; text-align: center;
-    font-size: 14px; font-weight: 700; margin-bottom: 16px; transition: all .12s ease;
+    font-size: 14px; font-weight: 700; margin-top: 18px; transition: all .12s ease;
     font-family: inherit;
   }
   .paste-primary:hover { background: var(--accent-hover); }
@@ -272,10 +272,6 @@
 <main>
   <section class="panel">
     <h2>스키마</h2>
-    <button id="pasteBtn" class="paste-primary">
-      { } JSON 붙여넣기
-      <span class="sub2">실제 API 응답을 붙여넣으면 스키마가 자동으로 만들어집니다</span>
-    </button>
     <div class="resource-row">
       <label for="resource">리소스명</label>
       <span class="prefix">/api/</span>
@@ -304,6 +300,11 @@
       <div><label>지연 ms (_delay)</label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
       <div><label>상태코드 (_status)</label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
     </div>
+
+    <button id="pasteBtn" class="paste-primary">
+      { } JSON 붙여넣기
+      <span class="sub2">실제 API 응답을 붙여넣으면 스키마가 자동으로 만들어집니다</span>
+    </button>
 
     <div class="hintbar">
       타입 칸에 입력하면 자동완성 목록이 뜹니다 ·
