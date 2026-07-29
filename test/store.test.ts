@@ -30,9 +30,14 @@ const env = () => ({ SCHEMAS: new MemKV() });
 const QUERY = 'name=person.fullName&id=uuid&age=int:20~60&_total=50';
 const TESTWS = 'testws000001'; // 저장은 워크스페이스 전용
 
+let saveIpSeq = 0; // 저장 리미터(IP당 분당 제한) 회피 — 호출마다 다른 IP 사용
 async function save(e: { SCHEMAS: MemKV }, name = '기술자 목록', res = 'users', query = QUERY, ws: string | null = TESTWS) {
   const r = await worker.fetch(
-    new Request(BASE + '/schema/save', { method: 'POST', body: JSON.stringify({ name, res, query, ws: ws ?? undefined }) }),
+    new Request(BASE + '/schema/save', {
+      method: 'POST',
+      headers: { 'cf-connecting-ip': `10.9.${Math.floor(saveIpSeq / 250)}.${(saveIpSeq++ % 250) + 1}` },
+      body: JSON.stringify({ name, res, query, ws: ws ?? undefined }),
+    }),
     e,
   );
   return { status: r.status, body: (await r.json()) as { id: string; sid: string; apiUrl: string; query: string } };

@@ -119,7 +119,10 @@ email=internet.email?0.2      # 20% 확률 null — 모든 타입 뒤에 ?확률
 
 ### 공개 운영 체크리스트
 
-- Cloudflare 대시보드 → Security → WAF 에서 `/schema/save` rate limiting rule 추가 권장
+- `/schema/save` 에 rate limiting rule 추가 — KV 일일 쓰기 한도(무료 1,000/일)의 1차 방어선. 대시보드 → 도메인 → **Security → WAF → Rate limiting rules** → Create:
+  - 조건: `URI Path equals /schema/save`
+  - 제한: IP당 **1분에 10회** 초과 시 1분 차단
+  - (워커 자체에도 IP당 베스트에포트 리미터와 중복 쓰기 스킵이 있지만, 전역 방어는 WAF 룰이 정석)
 - 사용량 알림 설정 (Workers 무료 100K req/일, KV 쓰기 1K/일)
 - 트래픽 증가 시 Workers Paid($5/월) 전환
 

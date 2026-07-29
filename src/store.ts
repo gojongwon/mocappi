@@ -47,6 +47,7 @@ const ID_RE = /^[a-z0-9]{4,16}$/;
 export const WS_RE = /^[a-z0-9]{6,24}$/;
 export const MAX_PER_WORKSPACE = 100;
 const WS_TTL_SECONDS = 60 * 60 * 24 * 180; // 180일 — 재저장 시 갱신
+const REWRITE_AFTER_MS = 7 * 24 * 60 * 60 * 1000; // 동일 내용 재저장 시 7일 이내면 쓰기 스킵
 
 function fail(error: string, hint: string): never {
   throw new DslError({ error, hint });
@@ -129,6 +130,12 @@ export async function saveSchema(
       const prev = JSON.parse(existingRaw) as SavedSchema;
       if (prev.query !== canonical || prev.res !== res) {
         fail('ID collision', '해시 충돌이 감지되었습니다. 필드를 하나 추가하는 등 스키마를 조금 바꿔 다시 저장해 주세요.');
+      }
+      // 중복 쓰기 스킵 — 같은 내용·같은 이름이 최근에 저장돼 있으면 KV 쓰기를 아낀다.
+      // (무료 플랜 쓰기 1,000/일 보호. 7일이 지나면 TTL 갱신을 위해 다시 쓴다)
+      const age = Date.now() - Date.parse(prev.createdAt);
+      if (prev.name === name.trim() && Number.isFinite(age) && age >= 0 && age < REWRITE_AFTER_MS) {
+        return prev;
       }
     } catch (e) {
       if (e instanceof DslError) throw e;
