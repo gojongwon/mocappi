@@ -1,4 +1,4 @@
-# Mock API
+# <img src="./assets/logo.svg" height="30" alt="Mock API logo"> Mock API
 
 A mock REST API you define entirely in the URL. No app to install, no config to commit, no redeploy — edit the query string and you're done. **The same URL always returns the same data.**
 

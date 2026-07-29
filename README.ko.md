@@ -1,4 +1,4 @@
-# Mock API
+# <img src="./assets/logo.svg" height="30" alt="Mock API logo"> Mock API
 
 [English](./README.md)
 
