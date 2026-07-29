@@ -107,6 +107,23 @@
     padding: 12px 14px; min-height: 3.2em;
   }
   .urlbox a { color: var(--accent); text-decoration: none; }
+  /* 저장된 프리셋의 짧은 URL 표시줄 */
+  #shortLine {
+    display: flex; align-items: center; gap: 8px; margin-top: 8px;
+    font-family: var(--mono); font-size: 12.5px;
+    background: var(--accent-soft); border: 1px solid #c9e0fc; border-radius: var(--radius-s);
+    padding: 8px 12px; word-break: break-all;
+  }
+  #shortLine .stag {
+    font-family: inherit; font-size: 11px; font-weight: 700; color: var(--accent);
+    background: #fff; border-radius: 5px; padding: 2px 8px; flex: none;
+  }
+  #shortLine a { color: var(--accent); text-decoration: none; flex: 1; min-width: 0; }
+  #shortLine button {
+    border: none; background: var(--accent); color: #fff; border-radius: 6px;
+    padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; flex: none;
+  }
+  #shortLine button:hover { background: var(--accent-hover); }
   .url-actions { display: flex; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
   .url-actions button {
     border: none; border-radius: var(--radius-s); padding: 8px 18px; cursor: pointer;
@@ -325,6 +342,11 @@
   <section class="panel right">
     <h2>생성된 URL</h2>
     <div class="urlbox" id="urlBox"></div>
+    <div id="shortLine" style="display:none">
+      <span class="stag">짧은 URL</span>
+      <a id="shortA" target="_blank"></a>
+      <button id="shortLineCopy" title="짧은 URL 복사">복사</button>
+    </div>
     <div class="url-actions">
       <button id="copyBtn">URL 복사</button>
       <button id="tsBtn" title="현재 스키마의 TypeScript 인터페이스 + 제네릭 fetch 헬퍼를 복사">TS 타입 복사</button>
@@ -655,6 +677,14 @@ npm run deploy</pre>
     $('#urlBox').innerHTML = '';
     const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
     $('#urlBox').appendChild(a);
+    // 저장된 프리셋 기반이면 짧은 URL 도 함께 표시
+    const short = shortApiUrl(state);
+    $('#shortLine').style.display = short ? 'flex' : 'none';
+    if (short) {
+      const sa = $('#shortA');
+      sa.href = short; sa.textContent = short;
+      $('#shortLine').dataset.url = short;
+    }
     syncAddressBar(state);
     clearTimeout(timer);
     timer = setTimeout(() => preview(url), 300);
@@ -771,13 +801,40 @@ npm run deploy</pre>
     update();
   }
 
+  // 현재 불러온/저장한 프리셋 — 짧은 URL 표시의 근거
+  let loadedPreset = null; // { id, res, query(정규형) }
+
   async function loadTeamPreset(id) {
     try {
       const res = await fetch('/schema/saved/' + id);
       if (!res.ok) return;
       const rec = await res.json();
+      loadedPreset = { id: rec.id, res: rec.res, query: rec.query };
       applyQueryString(rec.res, rec.query);
     } catch {}
+  }
+
+  /**
+   * 짧은 URL 계산 — 저장본과 현재 상태를 비교해:
+   * 예약 옵션/필드 값 변경·추가는 _s 뒤 오버라이드로 표현,
+   * 저장본 필드의 삭제·이름변경은 표현 불가 → null (숨김)
+   */
+  function shortApiUrl(state) {
+    if (!loadedPreset) return null;
+    const saved = new URLSearchParams(loadedPreset.query);
+    const cur = new URLSearchParams(buildQuery(state));
+    for (const [k] of saved) {
+      if (!k.startsWith('_') && !cur.has(k)) return null; // 필드 삭제됨
+    }
+    const overrides = [];
+    for (const [k, v] of cur) {
+      if (saved.get(k) !== v) overrides.push(enc(k) + '=' + enc(v));
+    }
+    for (const k of Object.keys(OPT_DEFAULTS)) {
+      if (saved.has(k) && !cur.has(k)) overrides.push(k + '=' + OPT_DEFAULTS[k]); // 기본값으로 되돌림도 명시
+    }
+    return location.origin + '/api/' + encodeURIComponent(state.res) +
+      '?_s=' + loadedPreset.id + (overrides.length ? '&' + overrides.join('&') : '');
   }
 
   function openSave() {
@@ -808,7 +865,9 @@ npm run deploy</pre>
       $('#shortUrlBox').textContent = shortUrl;
       $('#shortUrlBox').dataset.url = shortUrl;
       $('#saveResult').style.display = 'block';
+      loadedPreset = { id: body.id, res: body.res, query: body.query }; // 이후 URL 박스에도 짧은 URL 상시 표시
       refreshTeam();
+      update();
     } catch (e) {
       $('#saveError').textContent = '요청 실패: ' + e;
     }
@@ -898,6 +957,7 @@ npm run deploy</pre>
     else if (e.target.id === 'saveCancel' || e.target.id === 'saveModal') { $('#saveModal').style.display = 'none'; }
     else if (e.target.id === 'saveApply') { applySave(); }
     else if (e.target.id === 'shortCopy') { copyText($('#shortUrlBox').dataset.url || '', e.target, '복사됨 ✓'); }
+    else if (e.target.id === 'shortLineCopy') { copyText($('#shortLine').dataset.url || '', e.target, '✓'); }
     else if (e.target.id === 'openBtn') { window.open(apiUrl(readState()), '_blank'); }
     else if (e.target.id === 'shareBtn') { copyText(location.href, e.target, '복사됨 ✓'); }
     else if (e.target.dataset.preset) { applyPreset(e.target.dataset.preset); }
