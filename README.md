@@ -4,6 +4,8 @@ A mock REST API you define entirely in the URL. No app to install, no config to 
 
 [한국어 문서 (Korean)](./README.ko.md)
 
+**Live demo:** https://mock-api.gojongwon.workers.dev
+
 - GUI (URL builder + live preview): `GET /`
 - Data: `GET /api/<resource>?field=type&...`
 - Supported types: `GET /schema/types`
@@ -17,7 +19,7 @@ A mock REST API you define entirely in the URL. No app to install, no config to 
 **Deploy your own:**
 
 ```bash
-git clone <this repo> && cd mock-api
+git clone https://github.com/gojongwon/mock-api.git && cd mock-api
 npm install
 npx wrangler login
 npm run deploy
@@ -99,7 +101,7 @@ Note: upgrading the faker library may change generated values — pin the versio
 
 Storage is isolated by **workspace** — a capability-URL model with no login:
 
-- Header storage button → "새 워크스페이스 만들기" → share the link (`/?_ws=<ID>`) with your team. You can also paste a received ID/link in the same modal to switch.
+- **Saving requires a workspace** — the public pool is read-only. Header storage button → "새 워크스페이스 만들기" → share the link (`/?_ws=<ID>`) with your team. You can also paste a received ID/link in the same modal to switch.
 - Only people who know the link see that workspace's preset list.
 - Short URLs: `?_s=<ws>.<id>` (public pool: `?_s=<id>`).
 - Limits: 100 saved schemas per workspace; workspace entries expire after 180 days of no re-save (public pool is permanent).

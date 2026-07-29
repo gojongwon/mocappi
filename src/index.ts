@@ -89,6 +89,12 @@ export default {
       }
       try {
         const ws = validateWs(body.ws);
+        if (!ws) {
+          return json(
+            { error: 'Workspace required', hint: '저장은 워크스페이스에서만 가능합니다. GUI 의 저장소 버튼에서 워크스페이스를 만들어 주세요. 공용 풀은 조회 전용입니다.' },
+            400,
+          );
+        }
         const rec = await saveSchema(env.SCHEMAS, ws, body.name, body.res, body.query);
         return json({ ...rec, apiUrl: `/api/${rec.res}?_s=${rec.sid}` });
       } catch (e) {

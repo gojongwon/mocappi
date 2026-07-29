@@ -428,7 +428,7 @@ customer.address.city  =  location.city</pre>
   <div class="card" style="width:520px">
     <h3>워크스페이스</h3>
     <p>저장·목록이 워크스페이스별로 분리됩니다. <b>링크를 아는 사람만</b> 그 워크스페이스의 프리셋을 볼 수 있어요.<br>
-       공용 저장소는 이 서버의 모든 사용자에게 보입니다.</p>
+       <b>저장은 워크스페이스에서만 가능</b>하고, 공용 저장소는 조회 전용입니다.</p>
     <div class="wsid" id="wsCurrent"></div>
     <div class="modal-actions" style="justify-content:flex-start">
       <button id="wsNew" style="background:var(--accent);color:#fff">새 워크스페이스 만들기</button>
@@ -461,6 +461,14 @@ customer.address.city  =  location.city</pre>
 # 출력된 id 를 wrangler.toml 의 [[kv_namespaces]] 블록에 붙여넣고 주석 해제
 npm run deploy</pre>
       <p>연결 전에도 다른 기능은 전부 정상 동작합니다.</p>
+    </div>
+    <div id="saveWsRequired" style="display:none">
+      <p style="margin-top:0"><b>저장은 워크스페이스에서만 가능합니다.</b><br>
+      공용 화면은 조회 전용이에요. 워크스페이스를 만들면 링크를 아는 사람끼리만 공유됩니다.</p>
+      <div class="modal-actions" style="justify-content:flex-start">
+        <button id="saveWsCreate" style="background:var(--accent);color:#fff">새 워크스페이스 만들고 계속</button>
+        <button id="saveWsJoin" style="background:var(--accent-soft);color:var(--accent)">기존 워크스페이스로 전환</button>
+      </div>
     </div>
     <input id="saveName" placeholder="이름 (예: 기술자 목록 — 강남 현장)" style="width:100%" maxlength="60">
     <div id="saveError"></div>
@@ -818,7 +826,7 @@ npm run deploy</pre>
     const btn = $('#wsBtn');
     btn.textContent = WS ? '워크스페이스 · ' + WS.slice(0, 6) + '…' : '공용 저장소';
     btn.classList.toggle('ws-on', !!WS);
-    $('#wsCurrent').textContent = WS ? '현재: ' + WS : '현재: 공용 저장소 (모든 사용자에게 보임)';
+    $('#wsCurrent').textContent = WS ? '현재: ' + WS : '현재: 공용 저장소 (조회 전용)';
   }
 
   function switchWs(ws) {
@@ -941,12 +949,14 @@ npm run deploy</pre>
   function openSave() {
     $('#saveError').textContent = '';
     $('#saveResult').style.display = 'none';
-    const ready = teamAvailable;
-    $('#saveSetup').style.display = ready ? 'none' : 'block';
-    $('#saveName').style.display = ready ? '' : 'none';
-    $('#saveApply').style.display = ready ? '' : 'none';
+    const kvReady = teamAvailable;
+    const wsReady = kvReady && !!WS; // 저장은 워크스페이스 전용
+    $('#saveSetup').style.display = kvReady ? 'none' : 'block';
+    $('#saveWsRequired').style.display = kvReady && !WS ? 'block' : 'none';
+    $('#saveName').style.display = wsReady ? '' : 'none';
+    $('#saveApply').style.display = wsReady ? '' : 'none';
     $('#saveModal').style.display = 'flex';
-    if (ready) $('#saveName').focus();
+    if (wsReady) $('#saveName').focus();
   }
 
   async function applySave() {
@@ -1061,6 +1071,8 @@ npm run deploy</pre>
     else if (e.target.id === 'wsPublic') { switchWs(null); }
     else if (e.target.id === 'wsShare') { copyText(location.href, e.target, '복사됨 ✓'); }
     else if (e.target.id === 'wsJoinBtn') { joinWs(); }
+    else if (e.target.id === 'saveWsCreate') { switchWs(randWs()); openSave(); } // 새 워크스페이스 → 저장 이어서
+    else if (e.target.id === 'saveWsJoin') { $('#saveModal').style.display = 'none'; syncWsUi(); $('#wsModal').style.display = 'flex'; }
     else if (e.target.id === 'saveCancel' || e.target.id === 'saveModal') { $('#saveModal').style.display = 'none'; }
     else if (e.target.id === 'saveApply') { applySave(); }
     else if (e.target.id === 'shortCopy') { copyText($('#shortUrlBox').dataset.url || '', e.target, '복사됨 ✓'); }

@@ -28,10 +28,11 @@ class MemKV implements KVNamespaceLike {
 const BASE = 'https://mock.test';
 const env = () => ({ SCHEMAS: new MemKV() });
 const QUERY = 'name=person.fullName&id=uuid&age=int:20~60&_total=50';
+const TESTWS = 'testws000001'; // 저장은 워크스페이스 전용
 
-async function save(e: { SCHEMAS: MemKV }, name = '기술자 목록', res = 'users', query = QUERY, ws?: string) {
+async function save(e: { SCHEMAS: MemKV }, name = '기술자 목록', res = 'users', query = QUERY, ws: string | null = TESTWS) {
   const r = await worker.fetch(
-    new Request(BASE + '/schema/save', { method: 'POST', body: JSON.stringify({ name, res, query, ws }) }),
+    new Request(BASE + '/schema/save', { method: 'POST', body: JSON.stringify({ name, res, query, ws: ws ?? undefined }) }),
     e,
   );
   return { status: r.status, body: (await r.json()) as { id: string; sid: string; apiUrl: string; query: string } };
@@ -62,25 +63,32 @@ describe('저장/조회/목록/삭제 라우트', () => {
     const e = env();
     const first = await save(e);
     expect(first.status).toBe(200);
-    expect(first.body.apiUrl).toBe(`/api/users?_s=${first.body.id}`);
+    expect(first.body.apiUrl).toBe(`/api/users?_s=${TESTWS}.${first.body.id}`);
 
     const again = await save(e, '다른 이름, 같은 내용');
     expect(again.body.id).toBe(first.body.id); // content-addressed
 
-    const list = (await (await worker.fetch(new Request(BASE + '/schema/saved'), e)).json()) as { items: Array<{ id: string; name: string }> };
+    const list = (await (await worker.fetch(new Request(`${BASE}/schema/saved?ws=${TESTWS}`), e)).json()) as { items: Array<{ id: string; name: string }> };
     expect(list.items).toHaveLength(1);
     expect(list.items[0].name).toBe('다른 이름, 같은 내용');
 
-    const got = (await (await worker.fetch(new Request(`${BASE}/schema/saved/${first.body.id}`), e)).json()) as { query: string };
+    const got = (await (await worker.fetch(new Request(`${BASE}/schema/saved/${first.body.sid}`), e)).json()) as { query: string };
     expect(got.query).toBe(canonicalQuery(QUERY));
+  });
+
+  it('공용 풀 저장은 차단 (조회 전용)', async () => {
+    const e = env();
+    const r = await save(e, '공용 시도', 'users', QUERY, null);
+    expect(r.status).toBe(400);
+    expect((r.body as unknown as { error: string }).error).toBe('Workspace required');
   });
 
   it('삭제 후 _s 호출 → 404', async () => {
     const e = env();
     const { body } = await save(e);
-    const del = await worker.fetch(new Request(`${BASE}/schema/saved/${body.id}`, { method: 'DELETE' }), e);
+    const del = await worker.fetch(new Request(`${BASE}/schema/saved/${body.sid}`, { method: 'DELETE' }), e);
     expect(del.status).toBe(200);
-    const res = await worker.fetch(new Request(`${BASE}/api/users?_s=${body.id}`), e);
+    const res = await worker.fetch(new Request(`${BASE}/api/users?_s=${body.sid}`), e);
     expect(res.status).toBe(404);
   });
 
@@ -129,16 +137,25 @@ describe('워크스페이스', () => {
     expect(await listOf('?ws=zzzzzz999999')).toHaveLength(0); // 다른 워크스페이스에도 없음
   });
 
-  it('복합 sid 로 _s 호출 == 전개 URL (바이트 동일), 공용 sid 는 기존대로', async () => {
+  it('복합 sid 로 _s 호출 == 전개 URL (바이트 동일), 레거시 공용 sid 도 계속 동작', async () => {
     const e = env();
     const inWs = await save(e, 'ws', 'users', QUERY, WS);
-    const inPublic = await save(e, 'public', 'users', QUERY);
+    // v0.6 이전에 공용 풀에 저장된 레거시 레코드 직접 시딩 (조회 호환 확인)
+    const canonical = canonicalQuery(QUERY);
+    const legacyId = schemaId('users', canonical);
+    await e.SCHEMAS.put(
+      's:' + legacyId,
+      JSON.stringify({ id: legacyId, name: '레거시', res: 'users', query: canonical, createdAt: '2026-01-01T00:00:00Z' }),
+      { metadata: { name: '레거시', res: 'users', createdAt: '2026-01-01T00:00:00Z' } },
+    );
     const short1 = await (await worker.fetch(new Request(`${BASE}/api/users?_s=${inWs.body.sid}`), e)).text();
-    const short2 = await (await worker.fetch(new Request(`${BASE}/api/users?_s=${inPublic.body.sid}`), e)).text();
+    const short2 = await (await worker.fetch(new Request(`${BASE}/api/users?_s=${legacyId}`), e)).text();
     const long = await (await worker.fetch(new Request(`${BASE}/api/users?${QUERY}`), e)).text();
     expect(short1).toBe(long);
     expect(short2).toBe(long);
-    expect(inPublic.body.sid).toBe(inPublic.body.id); // 공용은 점 없는 기존 형식
+    // 공용 풀 목록 조회도 계속 동작 (조회 전용)
+    const pub = (await (await worker.fetch(new Request(BASE + '/schema/saved'), e)).json()) as { items: unknown[] };
+    expect(pub.items).toHaveLength(1);
   });
 
   it('잘못된 ws → 400', async () => {
@@ -166,7 +183,7 @@ describe('_s 호출의 결정론', () => {
   it('_s URL 응답 == 전개된 URL 응답 (바이트 동일)', async () => {
     const e = env();
     const { body } = await save(e);
-    const short = await (await worker.fetch(new Request(`${BASE}/api/users?_s=${body.id}`), e)).text();
+    const short = await (await worker.fetch(new Request(`${BASE}/api/users?_s=${body.sid}`), e)).text();
     const long = await (await worker.fetch(new Request(`${BASE}/api/users?${QUERY}`), e)).text();
     expect(short).toBe(long);
   });
@@ -175,7 +192,7 @@ describe('_s 호출의 결정론', () => {
     const e = env();
     const { body } = await save(e);
     const short = (await (
-      await worker.fetch(new Request(`${BASE}/api/users?_s=${body.id}&_page=2&_limit=5`), e)
+      await worker.fetch(new Request(`${BASE}/api/users?_s=${body.sid}&_page=2&_limit=5`), e)
     ).json()) as { page: number; limit: number; data: unknown[] };
     expect(short.page).toBe(2);
     expect(short.limit).toBe(5);
@@ -190,7 +207,7 @@ describe('_s 호출의 결정론', () => {
     const e = env();
     const { body } = await save(e);
     const res = (await (
-      await worker.fetch(new Request(`${BASE}/api/users?_s=${body.id}&age=const:fixed&_limit=1`), e)
+      await worker.fetch(new Request(`${BASE}/api/users?_s=${body.sid}&age=const:fixed&_limit=1`), e)
     ).json()) as { data: Array<{ age: string }> };
     expect(res.data[0].age).toBe('fixed');
   });
