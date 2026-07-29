@@ -57,13 +57,14 @@ Loading and error-state testing:
 | Param | Default | Description |
 |---|---|---|
 | `_page` | 1 | Page number (1-based) |
-| `_limit` | 10 | Items per page (max 100) |
+| `_limit` | 10 | Items per page (max 1000) |
 | `_total` | 100 | Virtual total count |
 | `_seed` | URL hash | Explicit seed |
 | `_locale` | ko | `ko` \| `en` |
 | `_delay` | 0 | Response delay in ms (max 5000) |
 | `_status` | 200 | Forced HTTP status code |
 | `_wrap` | envelope | `envelope` \| `none` (bare array) |
+| `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv stream items only |
 | `_s` | — | Saved schema ID (see Workspaces) |
 
 Anything not starting with `_` is a field definition.
@@ -91,6 +92,23 @@ tags[]=lorem.word:3           # array — trailing :N is length (default 3)
 ```
 
 Full list at `GET /schema/types`. Invalid DSL returns a 400 that explains what's wrong and how to fix it.
+
+## Large datasets
+
+`_limit` goes up to **1000**, and `_format=ndjson` / `_format=csv` stream items line by line (no envelope) — ideal for infinite scroll, virtualized lists, and data pipelines:
+
+```
+/api/logs?id=uuid&level=enum:info*8|warn*2&at=date:2026-01-01~2026-12-31&_limit=1000&_format=ndjson
+/api/users?name=person.fullName&age=int:20~60&_limit=1000&_format=csv
+```
+
+The data is identical across formats (`_format` does not affect the seed). CSV flattens nested objects into dot-notation columns and JSON-encodes arrays (RFC 4180 escaping).
+
+Note (free plan): the 10ms CPU budget comfortably fits ~1000 mixed-schema items. If every field is a faker path, large pages may hit the limit — split into pages:
+
+```bash
+for p in 1 2 3 4 5; do curl -s "https://<worker>/api/users?...&_limit=1000&_page=$p&_format=ndjson"; done > all.ndjson
+```
 
 ## Determinism
 

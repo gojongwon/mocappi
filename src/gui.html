@@ -396,7 +396,7 @@
     <h2 style="margin-top:20px">옵션</h2>
     <div class="opts">
       <div><label>전체 개수 <code>_total</code></label><input id="oTotal" type="number" min="0" value="100"></div>
-      <div><label>페이지당 <code>_limit</code></label><input id="oLimit" type="number" min="1" max="100" value="10"></div>
+      <div><label>페이지당 <code>_limit</code></label><input id="oLimit" type="number" min="1" max="1000" value="10"></div>
       <div><label>페이지 <code>_page</code></label><input id="oPage" type="number" min="1" value="1"></div>
       <div><label>로케일 <code>_locale</code></label>
         <select id="oLocale"><option value="ko">한국어</option><option value="en">English</option></select>
@@ -491,6 +491,7 @@ customer.address.city  =  location.city</pre>
         <tr><td><code>_status=500</code></td><td>상태코드 강제 — 에러 화면 테스트</td></tr>
         <tr><td><code>_locale=en</code></td><td>영어 데이터</td></tr>
         <tr><td><code>_wrap=none</code></td><td>envelope 없이 배열만</td></tr>
+        <tr><td><code>_format=ndjson</code></td><td>아이템만 줄 단위 스트리밍 — 대용량 (<code>csv</code> 도 가능)</td></tr>
       </table>
 
       <h4><span class="n">✓</span>알아두면 좋은 것</h4>

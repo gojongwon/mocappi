@@ -66,6 +66,34 @@ export function generateResponse(q: ParsedQuery): Envelope | unknown[] {
   };
 }
 
+// ---------------------------------------------------------------------------
+// CSV (_format=csv) — 중첩은 점 표기 컬럼, 배열은 JSON 문자열, RFC 4180 이스케이프
+// ---------------------------------------------------------------------------
+
+export function csvEscape(v: unknown): string {
+  let s: string;
+  if (v === null || v === undefined) s = '';
+  else if (typeof v === 'object') s = JSON.stringify(v);
+  else s = String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+export function csvHeader(q: ParsedQuery): string {
+  return q.fields.map((f) => csvEscape(f.path.join('.'))).join(',');
+}
+
+export function csvRow(item: Record<string, unknown>, q: ParsedQuery): string {
+  return q.fields
+    .map((f) => {
+      let cur: unknown = item;
+      for (const s of f.path) {
+        cur = cur && typeof cur === 'object' ? (cur as Record<string, unknown>)[s] : undefined;
+      }
+      return csvEscape(cur);
+    })
+    .join(',');
+}
+
 function setPath(obj: Record<string, unknown>, f: FieldSpec, value: unknown): void {
   let cur = obj;
   for (let i = 0; i < f.path.length - 1; i++) {

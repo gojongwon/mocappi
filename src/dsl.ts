@@ -25,15 +25,17 @@ export interface ParsedQuery {
   delay: number;
   status: number;
   wrap: 'envelope' | 'none';
+  /** 응답 형식 — ndjson/csv 는 아이템 스트리밍 (envelope 없음) */
+  format: 'json' | 'ndjson' | 'csv';
   seedParam: string | null;
   /** name 기준 정렬 완료 상태 */
   fields: FieldSpec[];
-  /** baseSeed 계산용 정규화 문자열 (_page/_limit/_delay/_status/_wrap 제외, 정렬됨) */
+  /** baseSeed 계산용 정규화 문자열 (_page/_limit/_delay/_status/_wrap/_format 제외, 정렬됨) */
   normalized: string;
 }
 
-const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap'];
-const MAX_LIMIT = 100;
+const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format'];
+const MAX_LIMIT = 1000;
 const MAX_DELAY = 5000;
 const MAX_ARRAY_LEN = 100;
 const DEFAULT_ARRAY_LEN = 3;
@@ -85,6 +87,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   let delay = 0;
   let status = 200;
   let wrap: 'envelope' | 'none' = 'envelope';
+  let format: 'json' | 'ndjson' | 'csv' = 'json';
   let seedParam: string | null = null;
 
   const fields: FieldSpec[] = [];
@@ -117,6 +120,12 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
         case '_wrap':
           if (value !== 'envelope' && value !== 'none') fail('Invalid reserved parameter', key, value, "_wrap 은 'envelope' 또는 'none' 입니다.");
           wrap = value;
+          break;
+        case '_format':
+          if (value !== 'json' && value !== 'ndjson' && value !== 'csv') {
+            fail('Invalid reserved parameter', key, value, "_format 은 'json' | 'ndjson' | 'csv' 입니다. ndjson/csv 는 아이템만 스트리밍합니다.");
+          }
+          format = value;
           break;
         default:
           fail(
@@ -188,7 +197,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   for (const f of fields) parts.push(`${f.name}=${f.typeRaw}`);
   const normalized = parts.join('&');
 
-  return { page, limit, total, locale, delay, status, wrap, seedParam, fields, normalized };
+  return { page, limit, total, locale, delay, status, wrap, format, seedParam, fields, normalized };
 }
 
 function checkPathConflicts(fields: FieldSpec[]): void {

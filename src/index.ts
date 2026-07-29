@@ -3,8 +3,8 @@
  * 의존성 없이 URL.pathname 분기.
  */
 import guiHtml from './gui.html';
-import { parseQuery } from './dsl';
-import { generateResponse } from './generate';
+import { parseQuery, type ParsedQuery } from './dsl';
+import { baseSeedOf, csvHeader, csvRow, generateItem, generateResponse } from './generate';
 import { inferSchema } from './infer';
 import { generateTsTypes } from './tstype';
 import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateWs, type KVNamespaceLike } from './store';
@@ -26,6 +26,44 @@ const NO_KV = {
   error: 'Storage not configured',
   hint: 'KV 네임스페이스가 연결되지 않아 팀 저장을 쓸 수 없습니다. README 의 "팀 저장 활성화" 절차를 따라주세요.',
 };
+
+/**
+ * _format=ndjson|csv — 아이템을 배치 단위로 생성하며 스트리밍.
+ * 데이터는 JSON 응답과 완전히 동일하다 (_format 은 baseSeed 에서 제외).
+ */
+function streamResponse(q: ParsedQuery): Response {
+  const baseSeed = baseSeedOf(q);
+  const start = (q.page - 1) * q.limit;
+  const count = Math.max(0, Math.min(q.limit, q.total - start));
+  const enc = new TextEncoder();
+  const BATCH = 100;
+  let i = 0;
+  let headerSent = false;
+  const stream = new ReadableStream({
+    pull(controller) {
+      let chunk = '';
+      if (q.format === 'csv' && !headerSent) {
+        chunk += csvHeader(q) + '\r\n';
+        headerSent = true;
+      }
+      const end = Math.min(i + BATCH, count);
+      for (; i < end; i++) {
+        const item = generateItem(baseSeed, start + i, q);
+        chunk += q.format === 'csv' ? csvRow(item, q) + '\r\n' : JSON.stringify(item) + '\n';
+      }
+      if (chunk) controller.enqueue(enc.encode(chunk));
+      if (i >= count) controller.close();
+    },
+  });
+  return new Response(stream, {
+    status: q.status,
+    headers: {
+      'content-type': q.format === 'csv' ? 'text/csv; charset=utf-8' : 'application/x-ndjson; charset=utf-8',
+      'cache-control': 'no-store',
+      ...CORS_HEADERS,
+    },
+  });
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body, null, 2), {
@@ -165,6 +203,10 @@ export default {
           params = mergeQuery(rec.query, params);
         }
         const q = parseQuery(params);
+        if (q.format !== 'json') {
+          if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
+          return streamResponse(q);
+        }
         const body = generateResponse(q); // 생성 먼저 — _delay/_status 가 달라도 데이터는 동일
         if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
         return json(body, q.status);

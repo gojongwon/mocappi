@@ -90,10 +90,10 @@ describe('페이지네이션', () => {
     expect(r.hasNext).toBe(false);
   });
 
-  it('_limit 상한 100 강제', () => {
-    const r = run(`id=uuid&_total=500&_limit=9999`);
-    expect(r.limit).toBe(100);
-    expect(r.data).toHaveLength(100);
+  it('_limit 상한 1000 강제', () => {
+    const r = run(`id=uuid&_total=5000&_limit=9999`);
+    expect(r.limit).toBe(1000);
+    expect(r.data).toHaveLength(1000);
   });
 
   it('envelope 필드 구성', () => {

@@ -74,6 +74,7 @@ GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해
 | `_delay` | 0 | 응답 지연 ms (최대 5000) |
 | `_status` | 200 | 강제 HTTP 상태코드 |
 | `_wrap` | envelope | `envelope` \| `none`(배열만) |
+| `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv 는 아이템만 스트리밍 |
 
 `_` 로 시작하지 않는 파라미터는 전부 필드 정의다.
 
@@ -152,6 +153,19 @@ GUI 의 **TS 타입 복사** 버튼(또는 `GET /schema/ts?<스키마>&_res=리�
 const res = await fetchMock<User>(url);
 res.data[0].name; // 자동완성 + 타입 체크
 ```
+
+## 대용량 데이터
+
+`_limit` 은 최대 **1000**, `_format=ndjson` / `_format=csv` 는 아이템을 줄 단위로 스트리밍한다(envelope 없음) — 무한스크롤·가상 리스트·데이터 파이프라인 테스트용:
+
+```
+/api/logs?id=uuid&level=enum:info*8|warn*2&at=date:2026-01-01~2026-12-31&_limit=1000&_format=ndjson
+/api/users?name=person.fullName&age=int:20~60&_limit=1000&_format=csv
+```
+
+형식이 달라도 데이터는 완전히 동일하다 (`_format` 은 시드에 영향 없음). CSV 는 중첩 객체를 점 표기 컬럼으로 펼치고 배열은 JSON 문자열로 넣는다 (RFC 4180 이스케이프).
+
+참고(무료 플랜): 혼합 스키마 1000개는 10ms CPU 예산 안에 여유 있게 들어간다. 모든 필드가 faker 경로면 큰 페이지가 제한에 걸릴 수 있으니 페이지를 나눠 받을 것.
 
 ## 결정론 (스냅샷 테스트 안정성)
 
