@@ -172,6 +172,16 @@ export default {
         return json({ ...rec, apiUrl: `/api/${rec.res}?_s=${rec.sid}` });
       } catch (e) {
         if (e instanceof DslError) return json(e.info, 400);
+        // KV 일일 쓰기 한도(무료 1,000/일) 소진 — put 거부를 친절한 안내로 변환
+        if (/429|too many|quota|limit exceeded/i.test(String(e))) {
+          return json(
+            {
+              error: 'Daily save quota exceeded',
+              hint: '오늘의 저장 한도가 모두 사용되었습니다 (무료 플랜: KV 쓰기 1,000회/일). UTC 자정(한국 오전 9시)에 초기화됩니다. 저장된 프리셋 불러오기와 데이터 생성 API 는 정상 동작합니다.',
+            },
+            503,
+          );
+        }
         return json({ error: 'Internal error', hint: String(e) }, 500);
       }
     }

@@ -1074,8 +1074,8 @@ npm run deploy</pre>
       });
       const body = await res.json();
       if (!res.ok) {
-        $('#saveError').textContent = res.status === 429
-          ? (body.hint || '너무 많이 시도해서 잠시 차단되었습니다. 잠시 후 다시 시도하세요.')
+        $('#saveError').textContent = (res.status === 429 || res.status === 503)
+          ? (body.hint || '지금은 저장할 수 없습니다. 잠시 후 다시 시도하세요.')
           : (body.error || '저장 실패') + (body.hint ? ' — ' + body.hint : '');
         return;
       }

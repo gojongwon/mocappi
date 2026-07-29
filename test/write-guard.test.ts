@@ -63,6 +63,25 @@ describe('중복 쓰기 스킵', () => {
   });
 });
 
+describe('KV 일일 쓰기 한도 소진', () => {
+  it('put 이 429 로 거부되면 503 + 친절한 안내', async () => {
+    const kv = new CountingKV();
+    kv.put = async () => { throw new Error('KV PUT failed: 429 Too Many Requests'); };
+    const res = await worker.fetch(
+      new Request('https://x/schema/save', {
+        method: 'POST',
+        headers: { 'cf-connecting-ip': '10.3.0.1' },
+        body: JSON.stringify({ name: 'q', res: 'users', query: 'a=int:1~5', ws: WS }),
+      }),
+      { SCHEMAS: kv },
+    );
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { hint: string };
+    expect(body.hint).toContain('저장 한도');
+    expect(body.hint).toContain('초기화');
+  });
+});
+
 describe('저장 리미터 (베스트에포트)', () => {
   const save = (kv: KVNamespaceLike, ip: string, i: number) =>
     worker.fetch(
