@@ -68,7 +68,8 @@ const KEY = {
   url: /(url|link|website|homepage)$/,
 };
 
-function inferString(keyLc: string, v: string): string {
+/** 값/키가 특정 의미를 강하게 가리키는 경우 (uuid/email/date/url/faker 매핑) — 아니면 null */
+function inferStringKeyed(keyLc: string, v: string): string | null {
   if (UUID_RE.test(v)) return 'uuid';
   if (EMAIL_RE.test(v) || KEY.email.test(keyLc)) return 'internet.email';
   const dm = v.match(ISO_DATE_RE);
@@ -91,10 +92,19 @@ function inferString(keyLc: string, v: string): string {
   if (KEY.company.test(keyLc)) return 'company.name';
   if (KEY.job.test(keyLc)) return 'person.jobTitle';
   if (KEY.longText.test(keyLc)) return `text:${clampLen(v.length)}`;
+  return null;
+}
+
+/** 특정 의미가 없을 때의 보수적 폴백 */
+function inferStringTail(keyLc: string, v: string): string {
   if (KEY.enumish.test(keyLc) && v !== '' && !/[|\s]/.test(v)) return `enum:${v}`;
   if (v === '') return 'const:';
   if (!/\s/.test(v) && v.length <= 15) return 'lorem.word';
   return `text:${clampLen(v.length)}`;
+}
+
+function inferString(keyLc: string, v: string): string {
+  return inferStringKeyed(keyLc, v) ?? inferStringTail(keyLc, v);
 }
 
 function inferNumber(keyLc: string, v: number): string {
@@ -120,6 +130,106 @@ function inferScalar(key: string, v: unknown): string {
   if (typeof v === 'number') return inferNumber(key.toLowerCase(), v);
   if (typeof v === 'string') return inferString(key.toLowerCase(), v);
   return `const:${String(v)}`;
+}
+
+// ---------------------------------------------------------------------------
+// 컬럼 샘플 기반 고급 감지 — 여러 항목의 같은 필드 값들을 보고
+// enum(반복 값) / pattern(코드 형태) / 분포(bool 확률, 숫자 범위)를 추론한다.
+// ---------------------------------------------------------------------------
+
+const round1 = (x: number): number => Math.round(x * 10) / 10;
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+
+/** enum 값으로 안전한 문자열 — '|'(구분자), '*'(가중치), '?'(nullable), 공백 제외 */
+const ENUM_SAFE_RE = /^[^|*?\s]{1,24}$/;
+
+/** 반복되는 소수의 문자열 값 → enum. 빈도가 뚜렷이 다르면 표본 개수를 가중치로 */
+function tryEnum(keyLc: string, vals: string[]): string | null {
+  if (vals.length < 3) return null;
+  if (!vals.every((v) => ENUM_SAFE_RE.test(v))) return null;
+  const counts = new Map<string, number>();
+  for (const v of vals) counts.set(v, (counts.get(v) || 0) + 1);
+  const distinct = counts.size;
+  const strongRepeat = distinct <= 6 && distinct <= Math.ceil(vals.length / 2);
+  const enumishKey = KEY.enumish.test(keyLc) && distinct <= 6;
+  if (distinct < 2 || !(strongRepeat || enumishKey)) return null;
+  // 빈도 내림차순(동률은 사전순) — 입력 순서와 무관하게 결정적
+  const entries = [...counts.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+  const ws = entries.map((e) => e[1]);
+  if (ws[0] < ws[ws.length - 1] * 2) return `enum:${entries.map((e) => e[0]).join('|')}`;
+  const g = ws.reduce((a, b) => gcd(a, b));
+  return `enum:${entries.map(([v, c]) => `${v}*${c / g}`).join('|')}`;
+}
+
+const PATTERN_CHARS_RE = /^[A-Z0-9\-_/.:]+$/;
+const KEY_CODE = /(sku|code|serial|ref|reference|invoice|tracking|voucher|coupon|orderno)$/;
+
+/** 같은 길이·같은 구조의 대문자/숫자 코드 → pattern 템플릿 (#숫자 ?대문자 *영숫자) */
+function tryPattern(keyLc: string, vals: string[]): string | null {
+  if (vals.length < 2) return null;
+  const L = vals[0].length;
+  if (L < 4 || L > 32) return null;
+  if (!vals.every((v) => v.length === L && PATTERN_CHARS_RE.test(v))) return null;
+  let tpl = '';
+  let wildcards = 0;
+  let literals = 0;
+  for (let i = 0; i < L; i++) {
+    const chars = vals.map((v) => v[i]);
+    const digits = chars.filter((c) => c >= '0' && c <= '9').length;
+    const uppers = chars.filter((c) => c >= 'A' && c <= 'Z').length;
+    if (digits === chars.length) {
+      tpl += '#';
+      wildcards++;
+    } else if (chars.every((c) => c === chars[0])) {
+      tpl += chars[0]; // 모두 같은 문자(구분자 포함) → 리터럴
+      literals++;
+    } else if (uppers === chars.length) {
+      tpl += '?';
+      wildcards++;
+    } else if (digits + uppers === chars.length) {
+      tpl += '*';
+      wildcards++;
+    } else {
+      return null; // 구분자 위치가 흔들림 — 패턴 아님
+    }
+  }
+  if (wildcards < 2 || !(literals >= 1 || KEY_CODE.test(keyLc))) return null;
+  return `pattern:${tpl}`;
+}
+
+/** 숫자 표본 → 실측 범위 기반 int/float (특수 키/epoch 은 기존 단일값 로직 우선) */
+function inferNumberSamples(keyLc: string, rep: number, nums: number[]): string {
+  if (
+    Number.isInteger(rep) &&
+    (keyLc === 'id' || keyLc.endsWith('index') || keyLc === 'seq' || keyLc === 'sequence' ||
+      keyLc === 'no' || keyLc === 'age' || (rep >= 1000000000 && rep <= 9999999999999))
+  ) {
+    return inferNumber(keyLc, rep);
+  }
+  const hi = niceMax(Math.max(...nums.map((v) => Math.abs(v))));
+  const lo = Math.min(...nums) < 0 ? -hi : 0;
+  if (nums.every((v) => Number.isInteger(v))) return `int:${lo}~${hi}`;
+  const decimals = Math.min(4, Math.max(1, ...nums.map((v) => (String(v).split('.')[1] || '').length)));
+  return `float:${lo}~${hi}:${decimals}`;
+}
+
+/** 표본이 2개 이상일 때의 스칼라 추론 — 단일값 추론보다 우선 적용 */
+function inferScalarSamples(key: string, rep: unknown, nonNull: unknown[]): string {
+  const keyLc = key.toLowerCase();
+  if (typeof rep === 'string' && nonNull.every((v) => typeof v === 'string')) {
+    const keyed = inferStringKeyed(keyLc, rep);
+    if (keyed) return keyed;
+    const vals = nonNull as string[];
+    return tryEnum(keyLc, vals) ?? tryPattern(keyLc, vals) ?? inferStringTail(keyLc, rep);
+  }
+  if (typeof rep === 'number' && nonNull.every((v) => typeof v === 'number')) {
+    return inferNumberSamples(keyLc, rep, nonNull as number[]);
+  }
+  if (typeof rep === 'boolean' && nonNull.length >= 5 && nonNull.every((v) => typeof v === 'boolean')) {
+    const r = round1((nonNull as boolean[]).filter(Boolean).length / nonNull.length);
+    return r === 0.5 ? 'bool' : `bool:${r}`;
+  }
+  return inferScalar(key, rep);
 }
 
 const WRAP_KEYS = new Set([
@@ -162,8 +272,8 @@ function mergeInto(dst: Obj, src: Obj): void {
  * 이중 envelope 도 처리. 알려진 래퍼 키({data,items,...}) + 배열 길이로 점수를 매겨
  * 가장 그럴듯한 배열을 고르고, 샘플들을 병합해 반환한다.
  */
-function findItemsArray(root: unknown): { merged: Obj; key: string; count: number } | null {
-  let best: { merged: Obj; key: string; count: number; score: number } | null = null;
+function findItemsArray(root: unknown): { merged: Obj; items: Obj[]; key: string; count: number } | null {
+  let best: { merged: Obj; items: Obj[]; key: string; count: number; score: number } | null = null;
   const visit = (v: unknown, key: string, depth: number): void => {
     if (depth > SCAN_DEPTH || v === null || typeof v !== 'object') return;
     if (Array.isArray(v)) {
@@ -172,7 +282,8 @@ function findItemsArray(root: unknown): { merged: Obj; key: string; count: numbe
       if (v.some(isObj) && (key === '' || WRAP_KEYS.has(key.toLowerCase()))) {
         const score = 100 + Math.min(v.length, 50) - depth * 2;
         if (!best || score > best.score) {
-          best = { merged: mergeSamples(v.filter(isObj)), key: key || '(루트)', count: v.length, score };
+          const items = v.filter(isObj);
+          best = { merged: mergeSamples(items), items, key: key || '(루트)', count: v.length, score };
         }
       }
       return; // 배열 내부는 더 내려가지 않음
@@ -186,13 +297,29 @@ function findItemsArray(root: unknown): { merged: Obj; key: string; count: numbe
 export function inferSchema(input: unknown): InferResult {
   let root: unknown;
   let note: string | undefined;
+  let items: Obj[] = [];
 
   const found = findItemsArray(input);
   if (found) {
     root = found.merged;
-    note = `'${found.key}' 배열의 ${Math.min(found.count, MERGE_SAMPLES)}개 항목을 병합해 추론했습니다 (null 필드는 다른 항목 값으로 보완).`;
+    items = found.items.slice(0, MERGE_SAMPLES);
+    note = `'${found.key}' 배열의 ${Math.min(found.count, MERGE_SAMPLES)}개 항목을 병합해 추론했습니다 (null 비율·반복 값·코드 형태는 nullable/enum/pattern 으로 자동 반영).`;
   } else {
     root = input;
+  }
+
+  /** 항목 배열에서 경로의 값들을 수집 — 없는/끊긴 경로는 null */
+  function samplesAt(path: string): unknown[] {
+    if (items.length === 0) return [];
+    const segs = path.split('.');
+    return items.map((it) => {
+      let cur: unknown = it;
+      for (const s of segs) {
+        if (!isObj(cur)) return null;
+        cur = cur[s];
+      }
+      return cur === undefined ? null : cur;
+    });
   }
 
   if (root === null || typeof root !== 'object' || Array.isArray(root)) {
@@ -236,7 +363,16 @@ export function inferSchema(input: unknown): InferResult {
         }
         continue;
       }
-      push(path, inferScalar(k, v), path);
+      // 스칼라 리프 — 컬럼 샘플이 있으면 분포 기반 추론 + null 비율 반영
+      const samples = samplesAt(path);
+      const nonNull = samples.filter((s) => s !== null && typeof s !== 'object');
+      let type = nonNull.length >= 2 ? inferScalarSamples(k, v, nonNull) : inferScalar(k, v);
+      const nulls = samples.filter((s) => s === null).length;
+      if (nulls > 0 && samples.length >= 2) {
+        const p = Math.min(0.9, Math.max(0.1, round1(nulls / samples.length)));
+        type = `${type}?${p}`;
+      }
+      push(path, type, path);
     }
   }
 

@@ -66,7 +66,8 @@ describe('실제 응답 추론', () => {
     expect(t.phone).toBe('phone.number');
     expect(t.is_active).toBe('bool');
     expect(t['cardiovascular_cuff.sys']).toMatch(/^int:/);
-    expect(t['cardiovascular_cuff.measurement_type']).toBe('enum:cuff');
+    // 2개 항목 중 1개가 null → nullable 자동 감지 (v0.12)
+    expect(t['cardiovascular_cuff.measurement_type']).toBe('enum:cuff?0.5');
     expect(t['daily_cold_related_status.status']).toBe('enum:asymptomatic');
     // statistics/page 같은 envelope 메타는 항목 스키마에 안 들어감
     expect(t['statistics.total_technician']).toBeUndefined();
@@ -78,12 +79,12 @@ describe('실제 응답 추론', () => {
     const r = inferSchema(REAL);
     const t = Object.fromEntries(r.fields.map((f) => [f.name, f.type]));
     // item[0] 의 survey_id 는 uuid, item[1] 은 null → uuid 로 추론돼야 함
-    expect(t['daily_cold_related_status.survey_id']).toBe('uuid');
+    expect(t['daily_cold_related_status.survey_id']).toBe('uuid?0.5'); // 절반이 null
     expect(t['daily_cold_related_status.created_at']).toMatch(/^date:/);
     // item[1] 의 cardiovascular_cuff 는 null 이지만 item[0] 에 있음
     expect(t['cardiovascular_cuff.dia']).toMatch(/^int:/);
     // item[0] 의 smart_band_device 로 중첩 추론
-    expect(t['smart_band_device.smart_band_device_id']).toBe('uuid');
+    expect(t['smart_band_device.smart_band_device_id']).toBe('uuid?0.5'); // 절반이 null
   });
 
   it('전 항목 null / 객체 배열은 이유와 함께 제외', () => {
