@@ -119,10 +119,8 @@ email=internet.email?0.2      # 20% 확률 null — 모든 타입 뒤에 ?확률
 
 ### 공개 운영 체크리스트
 
-- `/schema/save` 에 rate limiting rule 추가 — KV 일일 쓰기 한도(무료 1,000/일)의 1차 방어선. 대시보드 → 도메인 → **Security → WAF → Rate limiting rules** → Create:
-  - 조건: `URI Path equals /schema/save`
-  - 제한: IP당 **1분에 10회** 초과 시 1분 차단
-  - (워커 자체에도 IP당 베스트에포트 리미터와 중복 쓰기 스킵이 있지만, 전역 방어는 WAF 룰이 정석)
+- 저장 레이트리밋은 **저장소에 포함돼 있다** — `wrangler.toml` 의 Workers Rate Limiting 바인딩(`SAVE_RL`, IP당 분당 10회)이 `workers.dev` 에서도 동작하며 배포하면 자동 활성화된다. 동일 내용 재저장의 중복 쓰기 스킵도 내장. 대시보드 설정 불필요.
+  - zone WAF 레이트리밋 룰은 커스텀 도메인으로 서비스할 때만 가능한 선택적 추가 계층.
 - 사용량 알림 설정 (Workers 무료 100K req/일, KV 쓰기 1K/일)
 - 트래픽 증가 시 Workers Paid($5/월) 전환
 

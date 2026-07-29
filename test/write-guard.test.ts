@@ -85,6 +85,25 @@ describe('저장 리미터 (베스트에포트)', () => {
     expect(other.status).toBe(200);
   });
 
+  it('SAVE_RL 바인딩이 있으면 그것을 우선 사용', async () => {
+    const kv = new CountingKV();
+    const calls: string[] = [];
+    const rl = (ok: boolean) => ({ limit: async ({ key }: { key: string }) => (calls.push(key), { success: ok }) });
+    const req = (ip: string) =>
+      new Request('https://x/schema/save', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'cf-connecting-ip': ip },
+        body: JSON.stringify({ name: 'rl', res: 'users', query: 'a=int:1~5', ws: WS }),
+      });
+    // 바인딩이 거부하면 첫 호출도 429
+    const denied = await worker.fetch(req('10.1.0.1'), { SCHEMAS: kv, SAVE_RL: rl(false) });
+    expect(denied.status).toBe(429);
+    // 바인딩이 허용하면 200, key 로 IP 가 전달됨
+    const allowed = await worker.fetch(req('10.1.0.2'), { SCHEMAS: kv, SAVE_RL: rl(true) });
+    expect(allowed.status).toBe(200);
+    expect(calls).toContain('10.1.0.2');
+  });
+
   it('데이터 생성 API 는 리미터와 무관', async () => {
     for (let i = 0; i < 15; i++) {
       const res = await worker.fetch(

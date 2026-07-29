@@ -13,6 +13,11 @@ import { DslError, TYPE_DOCS } from './registry';
 export interface Env {
   /** wrangler.toml 의 kv_namespaces 바인딩 — 없으면 팀 저장 기능만 비활성 */
   SCHEMAS?: KVNamespaceLike;
+  /**
+   * Workers Rate Limiting 바인딩 (wrangler.toml unsafe.bindings) —
+   * workers.dev 에서도 동작하는 분산 리미터. 없으면 메모리 리미터로 폴백.
+   */
+  SAVE_RL?: { limit(opts: { key: string }): Promise<{ success: boolean }> };
 }
 
 const CORS_HEADERS: Record<string, string> = {
@@ -139,7 +144,10 @@ export default {
         return json({ error: 'Method not allowed', hint: '{name, res, query} 를 POST 로 보내세요.' }, 405);
       }
       if (!env.SCHEMAS) return json(NO_KV, 501);
-      if (saveLimited(request.headers.get('cf-connecting-ip') ?? 'unknown')) {
+      const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
+      // 1차: Workers Rate Limiting 바인딩 (분산) → 폴백: isolate 메모리 리미터
+      const limited = env.SAVE_RL ? !(await env.SAVE_RL.limit({ key: ip })).success : saveLimited(ip);
+      if (limited) {
         return json({ error: 'Too many saves', hint: `저장은 분당 ${SAVE_MAX_PER_WINDOW}회까지입니다. 잠시 후 다시 시도하세요.` }, 429);
       }
       let body: { name?: unknown; res?: unknown; query?: unknown; ws?: unknown };

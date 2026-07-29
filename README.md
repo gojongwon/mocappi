@@ -149,10 +149,8 @@ Without the KV binding everything else works; only the save UI is disabled.
 
 ### Operating publicly
 
-- Add a rate limiting rule for `/schema/save` — this is the primary guard for the KV daily write quota (free plan: 1,000/day). Dashboard → your domain → **Security → WAF → Rate limiting rules** → Create:
-  - If incoming requests match: `URI Path equals /schema/save`
-  - Rate: **10 requests / 1 minute** per IP → Block for 1 minute
-  - (The Worker also has a built-in best-effort per-IP limiter and skips redundant re-writes, but the WAF rule is the global backstop.)
+- Save rate limiting **ships with the repo** — `wrangler.toml` includes a Workers Rate Limiting binding (`SAVE_RL`, 10 saves/min/IP) that works on `workers.dev` and activates automatically on deploy. The Worker also skips redundant re-writes of identical content. No dashboard setup needed.
+  - Zone WAF rate limiting rules are only available if you serve the Worker on a custom domain you own — optional extra layer in that case.
 - Set usage alerts (free tier: 100K req/day, 1K KV writes/day). Move to Workers Paid ($5/mo) if traffic grows.
 
 ## TypeScript types
