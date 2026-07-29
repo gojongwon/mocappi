@@ -190,6 +190,23 @@
     transition: all .12s ease; flex: none;
   }
   .helpbtn:hover { background: var(--accent-hover); }
+  /* ---- 첫 방문 웰컴 배너 (URL 에 스키마가 없을 때만) ---- */
+  #welcome { display: none; max-width: 1360px; margin: 16px auto -6px; padding: 0 28px; }
+  #welcome .strip {
+    background: var(--accent-soft); border: 1px solid #c9e0fc; border-radius: var(--radius);
+    padding: 12px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    font-size: 13.5px; color: #1e4f9c; line-height: 1.6;
+  }
+  #welcome .go {
+    border: none; background: var(--accent); color: #fff; border-radius: 8px;
+    padding: 7px 16px; font-weight: 600; cursor: pointer; font-size: 13px; flex: none;
+  }
+  #welcome .go:hover { background: var(--accent-hover); }
+  #welcome .x {
+    margin-left: auto; border: none; background: none; color: #6d92c4;
+    cursor: pointer; font-size: 15px; flex: none; padding: 4px 6px;
+  }
+  #welcome .x:hover { color: #1e4f9c; }
   /* ---- 타입 자동완성 드롭다운 ---- */
   .ac {
     position: absolute; z-index: 30; display: none;
@@ -231,6 +248,15 @@
   </div>
   <button id="helpBtn" class="helpbtn">사용법</button>
 </header>
+
+<div id="welcome">
+  <div class="strip">
+    <span><b>처음이신가요?</b> 실제 API 응답 JSON 을 <b>붙여넣기</b>만 하면 목 API 가 만들어지고,
+    아래 필드를 고치면 URL 과 미리보기가 실시간으로 바뀝니다.</span>
+    <button class="go" id="welcomeHelp">1분 사용법 보기</button>
+    <button class="x" id="welcomeClose" title="닫기">✕</button>
+  </div>
+</div>
 
 <main>
   <section class="panel">
@@ -720,8 +746,9 @@ customer.address.city  =  location.city</pre>
     else if (e.target.id === 'pasteCancel') { closePaste(); }
     else if (e.target.id === 'pasteApply') { applyPaste(); }
     else if (e.target.id === 'pasteModal') { closePaste(); }
-    else if (e.target.id === 'helpBtn' || e.target.id === 'helpLink') { e.preventDefault(); $('#helpModal').style.display = 'flex'; }
+    else if (e.target.id === 'helpBtn' || e.target.id === 'helpLink' || e.target.id === 'welcomeHelp') { e.preventDefault(); $('#helpModal').style.display = 'flex'; }
     else if (e.target.id === 'helpClose' || e.target.id === 'helpModal') { $('#helpModal').style.display = 'none'; }
+    else if (e.target.id === 'welcomeClose') { $('#welcome').style.display = 'none'; }
     else if (e.target.id === 'copyBtn') { copyText(apiUrl(readState()), e.target, '복사됨 ✓'); }
     else if (e.target.id === 'tsBtn') { copyTsTypes(e.target); }
     else if (e.target.id === 'respCopyBtn') { copyText(lastPreviewText, e.target, '복사됨 ✓'); }
@@ -737,11 +764,13 @@ customer.address.city  =  location.city</pre>
     } catch { typeOptions = { fakerPaths: [], dslTypes: [] }; }
     buildAcItems();
     if (!loadFromAddressBar()) {
-      // 첫 방문: 사용자 프리셋으로 온보딩
+      // 첫 방문(맨 주소): 사용자 프리셋으로 온보딩 + 웰컴 배너.
+      // 공유 링크로 들어오면 URL 에 스키마가 있으므로 배너를 띄우지 않는다.
       const p = PRESETS.users;
       $('#resource').value = p.res;
       for (const [n, v] of p.fields) addRow(n, v);
       for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
+      $('#welcome').style.display = 'block';
     }
     update();
   })();
