@@ -295,7 +295,7 @@
     <button data-preset="products">상품</button>
     <button data-preset="orders">주문</button>
     <select id="teamSel" style="display:none" title="이 워크스페이스에 저장된 스키마">
-      <option value="">팀 프리셋…</option>
+      <option value="">저장된 프리셋…</option>
     </select>
   </div>
   <span class="hdiv"></span>
@@ -372,7 +372,7 @@
       <button id="copyBtn">URL 복사</button>
       <button id="tsBtn" title="현재 스키마의 TypeScript 인터페이스 + 제네릭 fetch 헬퍼를 복사">TS 타입 복사</button>
       <button id="openBtn">새 탭에서 열기</button>
-      <button id="saveBtn" title="팀 전체가 쓸 수 있게 저장 — 짧은 URL(_s=ID)이 생깁니다">팀에 저장</button>
+      <button id="saveBtn" title="현재 스키마를 워크스페이스 프리셋으로 저장 — 짧은 URL(_s=ID)이 생깁니다">프리셋으로 저장</button>
       <button id="shareBtn" title="이 편집 화면 자체를 공유하는 링크">편집 화면 링크 복사</button>
     </div>
     <div class="status-line" id="statusLine">&nbsp;</div>
@@ -446,7 +446,7 @@ customer.address.city  =  location.city</pre>
     <div class="wsid" id="wsCurrent"></div>
     <div class="modal-actions" style="justify-content:flex-start">
       <button id="wsNew" style="background:var(--accent);color:#fff">새 워크스페이스 만들기</button>
-      <button id="wsShare" style="background:var(--accent-soft);color:var(--accent)">워크스페이스 링크 복사</button>
+      <button id="wsShare" style="background:var(--accent);color:#fff">워크스페이스 링크 복사</button>
       <button id="wsPublic" style="background:var(--bg);color:var(--muted)">워크스페이스 나가기</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:14px">
@@ -465,8 +465,9 @@ customer.address.city  =  location.city</pre>
 
 <div id="saveModal">
   <div class="card">
-    <h3>팀에 저장</h3>
-    <p>저장하면 팀 전체가 상단 "팀 프리셋" 목록에서 불러올 수 있고, 짧은 URL 이 생깁니다.<br>
+    <h3>프리셋으로 저장</h3>
+    <p>저장하면 이 워크스페이스의 "저장된 프리셋" 목록에 추가되고, 짧은 URL 이 생깁니다.
+       링크를 아는 팀원 모두 불러올 수 있어요.<br>
        같은 내용은 항상 같은 ID — 스키마를 고쳐서 다시 저장하면 새 ID 가 나오고 기존 URL 은 그대로 유지됩니다.</p>
     <div id="saveSetup" style="display:none">
       <p style="margin-top:0"><b>팀 저장이 아직 활성화되지 않았습니다.</b><br>
@@ -838,10 +839,17 @@ npm run deploy</pre>
 
   function syncWsUi() {
     const btn = $('#wsBtn');
-    $('#wsBtnLabel').textContent = WS ? WS.slice(0, 8) + '…' : '워크스페이스';
-    btn.classList.toggle('ws-on', !!WS);
-    btn.title = WS ? '현재 워크스페이스: ' + WS : '프리셋 저장·공유 공간 만들기/전환';
-    $('#wsCurrent').textContent = WS ? '현재 워크스페이스: ' + WS : '아직 워크스페이스를 사용하고 있지 않습니다.';
+    const inWs = !!WS;
+    $('#wsBtnLabel').textContent = inWs ? WS.slice(0, 8) + '…' : '워크스페이스';
+    btn.classList.toggle('ws-on', inWs);
+    btn.title = inWs ? '현재 워크스페이스: ' + WS : '프리셋 저장·공유 공간 만들기/전환';
+    $('#wsCurrent').textContent = inWs ? '현재 워크스페이스: ' + WS : '아직 워크스페이스를 사용하고 있지 않습니다.';
+    // 상태에 맞는 동작만 노출: 링크 복사/나가기는 워크스페이스 안에서만 의미가 있음
+    $('#wsShare').style.display = inWs ? '' : 'none';
+    $('#wsPublic').style.display = inWs ? '' : 'none';
+    // 만들기는 밖에서는 주요 동작(파랑), 안에서는 보조 동작(연파랑)
+    $('#wsNew').style.background = inWs ? 'var(--accent-soft)' : 'var(--accent)';
+    $('#wsNew').style.color = inWs ? 'var(--accent)' : '#fff';
   }
 
   function switchWs(ws) {
@@ -896,11 +904,11 @@ npm run deploy</pre>
       const sel = $('#teamSel');
       // 프리셋 목록·저장은 워크스페이스 전용 — 미사용 시 숨김
       sel.style.display = WS ? '' : 'none';
-      sel.innerHTML = '<option value="">팀 프리셋…</option>';
+      sel.innerHTML = '<option value="">저장된 프리셋…</option>';
       if (WS && body.items.length === 0) {
         const o = document.createElement('option');
         o.disabled = true;
-        o.textContent = '아직 없음 — "팀에 저장"으로 첫 항목을 만들어보세요';
+        o.textContent = '아직 없음 — "프리셋으로 저장"으로 첫 항목을 만들어보세요';
         sel.appendChild(o);
       }
       for (const it of body.items) {
