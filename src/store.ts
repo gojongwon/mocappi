@@ -1,9 +1,14 @@
 /**
- * KV 기반 팀 스키마 저장 — content-addressed 불변 저장.
+ * KV 기반 스키마 저장 — content-addressed 불변 저장 + 워크스페이스 격리.
  *
  * 저장 내용의 해시가 곧 ID 다. 같은 스키마 = 같은 ID (저장은 멱등),
- * 스키마를 고치면 새 ID 가 나온다. 따라서 한 번 공유된 `_s=<id>` URL 은
- * 영원히 같은 데이터를 반환한다 — v1 의 결정론 보장이 저장 기능에도 그대로 유지된다.
+ * 스키마를 고치면 새 ID 가 나온다. 따라서 한 번 공유된 `_s=<sid>` URL 은
+ * 영원히 같은 데이터를 반환한다.
+ *
+ * 워크스페이스: 랜덤 ID 를 아는 사람만 그 목록에 접근하는 capability-URL 모델.
+ *  - sid 형식: "<ws>.<id>" (워크스페이스) 또는 "<id>" (공용 풀 — 기존 데이터 호환)
+ *  - KV 키:    w:<ws>:<id>            또는 s:<id>
+ *  - 워크스페이스 저장물은 TTL(180일) — 재저장(멱등)하면 갱신. 공용 풀은 무기한.
  */
 import { parseQuery } from './dsl';
 import { DslError } from './registry';
@@ -12,13 +17,16 @@ import { hashString } from './rng';
 /** Cloudflare KV 최소 인터페이스 — 테스트에서 인메모리 목으로 대체 */
 export interface KVNamespaceLike {
   get(key: string): Promise<string | null>;
-  put(key: string, value: string, options?: { metadata?: unknown }): Promise<void>;
+  put(key: string, value: string, options?: { metadata?: unknown; expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
   list(options?: { prefix?: string; limit?: number }): Promise<{ keys: Array<{ name: string; metadata?: unknown }> }>;
 }
 
 export interface SavedSchema {
   id: string;
+  /** 전체 참조자 — "<ws>.<id>" 또는 "<id>" */
+  sid: string;
+  ws: string | null;
   name: string;
   res: string;
   /** 정규화(정렬)된 쿼리스트링 */
@@ -28,17 +36,51 @@ export interface SavedSchema {
 
 export interface SavedMeta {
   id: string;
+  sid: string;
   name: string;
   res: string;
   createdAt: string;
 }
 
-const KEY_PREFIX = 's:';
 const RES_RE = /^[A-Za-z0-9_-]{1,50}$/;
-export const ID_RE = /^[a-z0-9]{4,16}$/;
+const ID_RE = /^[a-z0-9]{4,16}$/;
+export const WS_RE = /^[a-z0-9]{6,24}$/;
+export const MAX_PER_WORKSPACE = 100;
+const WS_TTL_SECONDS = 60 * 60 * 24 * 180; // 180일 — 재저장 시 갱신
 
 function fail(error: string, hint: string): never {
   throw new DslError({ error, hint });
+}
+
+function keyOf(ws: string | null, id: string): string {
+  return ws ? `w:${ws}:${id}` : `s:${id}`;
+}
+
+function prefixOf(ws: string | null): string {
+  return ws ? `w:${ws}:` : 's:';
+}
+
+export function sidOf(ws: string | null, id: string): string {
+  return ws ? `${ws}.${id}` : id;
+}
+
+/** "<ws>.<id>" 또는 "<id>" 파싱. 형식이 아니면 null */
+export function parseSid(sid: string): { ws: string | null; id: string } | null {
+  const dot = sid.indexOf('.');
+  if (dot === -1) {
+    return ID_RE.test(sid) ? { ws: null, id: sid } : null;
+  }
+  const ws = sid.slice(0, dot);
+  const id = sid.slice(dot + 1);
+  return WS_RE.test(ws) && ID_RE.test(id) ? { ws, id } : null;
+}
+
+export function validateWs(ws: unknown): string | null {
+  if (ws === undefined || ws === null || ws === '') return null;
+  if (typeof ws !== 'string' || !WS_RE.test(ws)) {
+    fail('Invalid workspace', '워크스페이스 ID 는 소문자 영숫자 6~24자입니다.');
+  }
+  return ws;
 }
 
 /** 쿼리 검증 + key 정렬 → 저장/ID 계산의 기준이 되는 정규형 */
@@ -58,7 +100,13 @@ export function schemaId(res: string, canonical: string): string {
   return (h1 + h2).slice(0, 10);
 }
 
-export async function saveSchema(kv: KVNamespaceLike, name: unknown, res: unknown, query: unknown): Promise<SavedSchema> {
+export async function saveSchema(
+  kv: KVNamespaceLike,
+  ws: string | null,
+  name: unknown,
+  res: unknown,
+  query: unknown,
+): Promise<SavedSchema> {
   if (typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 60) {
     fail('Invalid name', '이름은 1~60자 문자열이어야 합니다.');
   }
@@ -70,32 +118,52 @@ export async function saveSchema(kv: KVNamespaceLike, name: unknown, res: unknow
   }
   const canonical = canonicalQuery(query);
   const id = schemaId(res, canonical);
+  const key = keyOf(ws, id);
+
+  // 남용 방어: 워크스페이스당 저장 개수 상한 (재저장/이름변경은 기존 키라 허용)
+  const exists = (await kv.get(key)) !== null;
+  if (!exists) {
+    const { keys } = await kv.list({ prefix: prefixOf(ws), limit: MAX_PER_WORKSPACE });
+    if (keys.length >= MAX_PER_WORKSPACE) {
+      fail('Workspace full', `워크스페이스당 최대 ${MAX_PER_WORKSPACE}개까지 저장할 수 있습니다. 안 쓰는 항목을 삭제하세요.`);
+    }
+  }
+
   const createdAt = new Date().toISOString();
-  const rec: SavedSchema = { id, name: name.trim(), res, query: canonical, createdAt };
-  await kv.put(KEY_PREFIX + id, JSON.stringify(rec), {
+  const rec: SavedSchema = { id, sid: sidOf(ws, id), ws, name: name.trim(), res, query: canonical, createdAt };
+  await kv.put(key, JSON.stringify(rec), {
     metadata: { name: rec.name, res, createdAt },
+    ...(ws ? { expirationTtl: WS_TTL_SECONDS } : {}), // 공용 풀은 무기한 (기존 팀 데이터 보존)
   });
   return rec;
 }
 
-export async function getSchema(kv: KVNamespaceLike, id: string): Promise<SavedSchema | null> {
-  if (!ID_RE.test(id)) return null;
-  const raw = await kv.get(KEY_PREFIX + id);
+export async function getSchema(kv: KVNamespaceLike, sid: string): Promise<SavedSchema | null> {
+  const parsed = parseSid(sid);
+  if (!parsed) return null;
+  const raw = await kv.get(keyOf(parsed.ws, parsed.id));
   if (raw === null) return null;
   try {
-    return JSON.parse(raw) as SavedSchema;
+    const rec = JSON.parse(raw) as SavedSchema;
+    // 구버전 레코드(sid/ws 없음) 호환
+    rec.ws = parsed.ws;
+    rec.sid = sidOf(parsed.ws, parsed.id);
+    return rec;
   } catch {
     return null;
   }
 }
 
-export async function listSchemas(kv: KVNamespaceLike): Promise<SavedMeta[]> {
-  const { keys } = await kv.list({ prefix: KEY_PREFIX, limit: 1000 });
+export async function listSchemas(kv: KVNamespaceLike, ws: string | null): Promise<SavedMeta[]> {
+  const prefix = prefixOf(ws);
+  const { keys } = await kv.list({ prefix, limit: 1000 });
   const items: SavedMeta[] = [];
   for (const k of keys) {
     const meta = (k.metadata ?? {}) as Partial<SavedMeta>;
+    const id = k.name.slice(prefix.length);
     items.push({
-      id: k.name.slice(KEY_PREFIX.length),
+      id,
+      sid: sidOf(ws, id),
       name: meta.name ?? '(이름 없음)',
       res: meta.res ?? 'item',
       createdAt: meta.createdAt ?? '',
@@ -106,10 +174,12 @@ export async function listSchemas(kv: KVNamespaceLike): Promise<SavedMeta[]> {
   return items;
 }
 
-export async function deleteSchema(kv: KVNamespaceLike, id: string): Promise<boolean> {
-  const rec = await getSchema(kv, id);
-  if (!rec) return false;
-  await kv.delete(KEY_PREFIX + id);
+export async function deleteSchema(kv: KVNamespaceLike, sid: string): Promise<boolean> {
+  const parsed = parseSid(sid);
+  if (!parsed) return false;
+  const key = keyOf(parsed.ws, parsed.id);
+  if ((await kv.get(key)) === null) return false;
+  await kv.delete(key);
   return true;
 }
 

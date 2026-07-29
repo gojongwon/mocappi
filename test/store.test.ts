@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalQuery, schemaId, type KVNamespaceLike } from '../src/store';
+import { MAX_PER_WORKSPACE, canonicalQuery, parseSid, schemaId, type KVNamespaceLike } from '../src/store';
 import { DslError } from '../src/registry';
 import worker from '../src/index';
 
@@ -29,12 +29,12 @@ const BASE = 'https://mock.test';
 const env = () => ({ SCHEMAS: new MemKV() });
 const QUERY = 'name=person.fullName&id=uuid&age=int:20~60&_total=50';
 
-async function save(e: { SCHEMAS: MemKV }, name = '기술자 목록', res = 'users', query = QUERY) {
+async function save(e: { SCHEMAS: MemKV }, name = '기술자 목록', res = 'users', query = QUERY, ws?: string) {
   const r = await worker.fetch(
-    new Request(BASE + '/schema/save', { method: 'POST', body: JSON.stringify({ name, res, query }) }),
+    new Request(BASE + '/schema/save', { method: 'POST', body: JSON.stringify({ name, res, query, ws }) }),
     e,
   );
-  return { status: r.status, body: (await r.json()) as { id: string; apiUrl: string; query: string } };
+  return { status: r.status, body: (await r.json()) as { id: string; sid: string; apiUrl: string; query: string } };
 }
 
 describe('content-addressed ID', () => {
@@ -101,6 +101,64 @@ describe('저장/조회/목록/삭제 라우트', () => {
       expect(res.status).toBe(501);
       expect(((await res.json()) as { hint: string }).hint).toContain('KV');
     }
+  });
+});
+
+describe('워크스페이스', () => {
+  const WS = 'x7kp2m9qab3z';
+
+  it('parseSid — 복합/단일/불량 형식', () => {
+    expect(parseSid('18l8dn41ai')).toEqual({ ws: null, id: '18l8dn41ai' });
+    expect(parseSid(`${WS}.18l8dn41ai`)).toEqual({ ws: WS, id: '18l8dn41ai' });
+    expect(parseSid('UPPER.18l8dn41ai')).toBeNull();
+    expect(parseSid('a.b')).toBeNull();
+    expect(parseSid('')).toBeNull();
+  });
+
+  it('격리 — 워크스페이스 저장물은 공용/다른 워크스페이스 목록에 안 보임', async () => {
+    const e = env();
+    const saved = await save(e, '내 프리셋', 'users', QUERY, WS);
+    expect(saved.status).toBe(200);
+    expect(saved.body.sid).toBe(`${WS}.${saved.body.id}`);
+    expect(saved.body.apiUrl).toBe(`/api/users?_s=${WS}.${saved.body.id}`);
+
+    const listOf = async (q: string) =>
+      ((await (await worker.fetch(new Request(BASE + '/schema/saved' + q), e)).json()) as { items: unknown[] }).items;
+    expect(await listOf('?ws=' + WS)).toHaveLength(1);
+    expect(await listOf('')).toHaveLength(0); // 공용 풀에는 없음
+    expect(await listOf('?ws=zzzzzz999999')).toHaveLength(0); // 다른 워크스페이스에도 없음
+  });
+
+  it('복합 sid 로 _s 호출 == 전개 URL (바이트 동일), 공용 sid 는 기존대로', async () => {
+    const e = env();
+    const inWs = await save(e, 'ws', 'users', QUERY, WS);
+    const inPublic = await save(e, 'public', 'users', QUERY);
+    const short1 = await (await worker.fetch(new Request(`${BASE}/api/users?_s=${inWs.body.sid}`), e)).text();
+    const short2 = await (await worker.fetch(new Request(`${BASE}/api/users?_s=${inPublic.body.sid}`), e)).text();
+    const long = await (await worker.fetch(new Request(`${BASE}/api/users?${QUERY}`), e)).text();
+    expect(short1).toBe(long);
+    expect(short2).toBe(long);
+    expect(inPublic.body.sid).toBe(inPublic.body.id); // 공용은 점 없는 기존 형식
+  });
+
+  it('잘못된 ws → 400', async () => {
+    const e = env();
+    expect((await save(e, 'n', 'users', QUERY, 'BAD_WS!')).status).toBe(400);
+    const res = await worker.fetch(new Request(BASE + '/schema/saved?ws=BAD_WS!'), e);
+    expect(res.status).toBe(400);
+  });
+
+  it('워크스페이스 저장 한도 초과 → 400', async () => {
+    const e = env();
+    for (let i = 0; i < MAX_PER_WORKSPACE; i++) {
+      const r = await save(e, 'p' + i, 'users', `id=uuid&n=const:v${i}`, WS);
+      expect(r.status).toBe(200);
+    }
+    const over = await save(e, '초과', 'users', 'id=uuid&n=const:overflow', WS);
+    expect(over.status).toBe(400);
+    // 기존 항목 재저장(멱등)은 한도와 무관하게 허용
+    const resave = await save(e, '이름만 변경', 'users', 'id=uuid&n=const:v0', WS);
+    expect(resave.status).toBe(200);
   });
 });
 

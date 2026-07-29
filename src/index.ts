@@ -7,7 +7,7 @@ import { parseQuery } from './dsl';
 import { generateResponse } from './generate';
 import { inferSchema } from './infer';
 import { generateTsTypes } from './tstype';
-import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, type KVNamespaceLike } from './store';
+import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateWs, type KVNamespaceLike } from './store';
 import { DslError, TYPE_DOCS } from './registry';
 
 export interface Env {
@@ -81,27 +81,34 @@ export default {
         return json({ error: 'Method not allowed', hint: '{name, res, query} 를 POST 로 보내세요.' }, 405);
       }
       if (!env.SCHEMAS) return json(NO_KV, 501);
-      let body: { name?: unknown; res?: unknown; query?: unknown };
+      let body: { name?: unknown; res?: unknown; query?: unknown; ws?: unknown };
       try {
         body = (await request.json()) as typeof body;
       } catch {
         return json({ error: 'Invalid JSON', hint: '{name, res, query} 형식의 JSON 이어야 합니다.' }, 400);
       }
       try {
-        const rec = await saveSchema(env.SCHEMAS, body.name, body.res, body.query);
-        return json({ ...rec, apiUrl: `/api/${rec.res}?_s=${rec.id}` });
+        const ws = validateWs(body.ws);
+        const rec = await saveSchema(env.SCHEMAS, ws, body.name, body.res, body.query);
+        return json({ ...rec, apiUrl: `/api/${rec.res}?_s=${rec.sid}` });
       } catch (e) {
         if (e instanceof DslError) return json(e.info, 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);
       }
     }
 
-    // 저장 목록 / 개별 조회 / 삭제
+    // 저장 목록 / 개별 조회 / 삭제 (?ws=<워크스페이스> — 없으면 공용 풀)
     if (url.pathname === '/schema/saved') {
       if (!env.SCHEMAS) return json(NO_KV, 501);
-      return json({ items: await listSchemas(env.SCHEMAS) });
+      try {
+        const ws = validateWs(url.searchParams.get('ws'));
+        return json({ ws, items: await listSchemas(env.SCHEMAS, ws) });
+      } catch (e) {
+        if (e instanceof DslError) return json(e.info, 400);
+        throw e;
+      }
     }
-    const sm = url.pathname.match(/^\/schema\/saved\/([a-z0-9]{4,16})$/);
+    const sm = url.pathname.match(/^\/schema\/saved\/([a-z0-9.]{4,42})$/);
     if (sm) {
       if (!env.SCHEMAS) return json(NO_KV, 501);
       if (request.method === 'DELETE') {
