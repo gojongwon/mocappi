@@ -101,19 +101,29 @@
   .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-top: 4px; }
   .opts > div { display: flex; flex-direction: column; gap: 4px; }
   .opts input, .opts select { width: 100%; }
+  .urlwrap { position: relative; }
   .urlbox {
     font-family: var(--mono); font-size: 12.5px; word-break: break-all; line-height: 1.7;
     background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-s);
-    padding: 12px 14px; min-height: 3.2em;
+    padding: 12px 64px 12px 14px; min-height: 3.2em;
   }
   .urlbox a { color: var(--accent); text-decoration: none; }
-  /* 저장된 프리셋의 짧은 URL 표시줄 */
+  /* URL 박스 안 복사 버튼 */
+  .box-copy {
+    position: absolute; top: 8px; right: 8px;
+    border: 1px solid var(--border); background: var(--panel); color: var(--muted);
+    border-radius: 6px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all .12s ease;
+  }
+  .box-copy:hover { color: var(--accent); border-color: var(--accent); }
+  /* 저장된 프리셋의 짧은 URL 표시줄 — 자리를 항상 확보해 레이아웃 점프 방지 */
   #shortLine {
     display: flex; align-items: center; gap: 8px; margin-top: 8px;
     font-family: var(--mono); font-size: 12.5px;
     background: var(--accent-soft); border: 1px solid #c9e0fc; border-radius: var(--radius-s);
-    padding: 8px 12px; word-break: break-all;
+    padding: 8px 12px; word-break: break-all; min-height: 38px;
   }
+  #shortLine.ghosted { visibility: hidden; }
   #shortLine .stag {
     font-family: inherit; font-size: 11px; font-weight: 700; color: var(--accent);
     background: #fff; border-radius: 5px; padding: 2px 8px; flex: none;
@@ -138,7 +148,8 @@
   .preview-wrap { position: relative; }
   pre#preview {
     font-family: var(--mono); font-size: 12.5px; background: #131722; color: #8b9bb4;
-    border-radius: var(--radius-s); padding: 16px; overflow: auto; max-height: 540px; min-height: 220px;
+    border-radius: var(--radius-s); padding: 16px; overflow: auto;
+    height: clamp(300px, 52vh, 540px); /* 고정 높이 — 내용이 바뀌어도 레이아웃이 안 튐 */
     margin: 0; white-space: pre-wrap; word-break: break-all; line-height: 1.75;
   }
   /* JSON 구문 색상 (다크 배경 기준) */
@@ -177,7 +188,12 @@
   #saveError { color: var(--danger); font-size: 12.5px; min-height: 1.2em; margin: 6px 0 2px; }
   #saveBtn { background: var(--accent-soft); color: var(--accent); }
   #saveBtn:hover { background: #d8eafe; }
-  #teamSel { max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; padding: 5px 10px; }
+  #teamSel {
+    max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px;
+    -webkit-appearance: none; appearance: none; padding: 5px 28px 5px 14px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7684' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 11px center; background-size: 10px;
+  }
   #teamSel.active { color: var(--text); font-weight: 700; border-color: var(--accent); background: var(--accent-soft); }
   /* 워크스페이스 칩 — 프리셋(알약)과 구별되는 각진 상태 칩 */
   .hdiv { width: 1px; height: 20px; background: var(--border); flex: none; }
@@ -362,14 +378,16 @@
 
   <section class="panel right">
     <h2>생성된 URL</h2>
-    <div class="urlbox" id="urlBox"></div>
-    <div id="shortLine" style="display:none">
+    <div class="urlwrap">
+      <div class="urlbox" id="urlBox"></div>
+      <button class="box-copy" id="copyBtn" title="URL 복사">복사</button>
+    </div>
+    <div id="shortLine" class="ghosted">
       <span class="stag">짧은 URL</span>
       <a id="shortA" target="_blank"></a>
       <button id="shortLineCopy" title="짧은 URL 복사">복사</button>
     </div>
     <div class="url-actions">
-      <button id="copyBtn">URL 복사</button>
       <button id="tsBtn" title="현재 스키마의 TypeScript 인터페이스 + 제네릭 fetch 헬퍼를 복사">TS 타입 복사</button>
       <button id="openBtn">새 탭에서 열기</button>
       <button id="saveBtn" title="현재 스키마를 워크스페이스 프리셋으로 저장 — 짧은 URL(_s=ID)이 생깁니다">프리셋으로 저장</button>
@@ -489,9 +507,9 @@ npm run deploy</pre>
     <div id="saveError"></div>
     <div id="saveResult" style="display:none">
       <p style="margin:0 0 8px;color:#23a55a;font-weight:600">✓ 저장되었습니다 — 이 URL 로 어디서든 호출할 수 있어요</p>
-      <div class="urlbox" id="shortUrlBox"></div>
-      <div class="modal-actions" style="justify-content:flex-start; margin-top:8px">
-        <button id="shortCopy" style="background:var(--accent);color:#fff">URL 복사</button>
+      <div class="urlwrap">
+        <div class="urlbox" id="shortUrlBox"></div>
+        <button class="box-copy" id="shortCopy" title="URL 복사">복사</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -736,8 +754,9 @@ npm run deploy</pre>
     const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
     $('#urlBox').appendChild(a);
     // 저장된 프리셋 기반이면 짧은 URL + 프리셋 이름 표시, 드롭다운 선택 상태도 동기화
+    // (자리는 항상 유지 — visibility 로만 토글해 레이아웃 점프 방지)
     const short = shortApiUrl(state);
-    $('#shortLine').style.display = short ? 'flex' : 'none';
+    $('#shortLine').classList.toggle('ghosted', !short);
     if (short) {
       const sa = $('#shortA');
       sa.href = short; sa.textContent = short;
@@ -1089,7 +1108,7 @@ npm run deploy</pre>
     else if (e.target.id === 'helpBtn' || e.target.id === 'helpLink' || e.target.id === 'welcomeHelp') { e.preventDefault(); $('#helpModal').style.display = 'flex'; }
     else if (e.target.id === 'helpClose' || e.target.id === 'helpModal') { $('#helpModal').style.display = 'none'; }
     else if (e.target.id === 'welcomeClose') { $('#welcome').style.display = 'none'; }
-    else if (e.target.id === 'copyBtn') { copyText(apiUrl(readState()), e.target, '복사됨 ✓'); }
+    else if (e.target.id === 'copyBtn') { copyText(apiUrl(readState()), e.target, '✓'); }
     else if (e.target.id === 'tsBtn') { copyTsTypes(e.target); }
     else if (e.target.id === 'respCopyBtn') { copyText(lastPreviewText, e.target, '복사됨 ✓'); }
     else if (e.target.id === 'saveBtn') { openSave(); }
@@ -1103,7 +1122,7 @@ npm run deploy</pre>
     else if (e.target.id === 'saveWsJoin') { $('#saveModal').style.display = 'none'; syncWsUi(); $('#wsModal').style.display = 'flex'; }
     else if (e.target.id === 'saveCancel' || e.target.id === 'saveModal') { $('#saveModal').style.display = 'none'; }
     else if (e.target.id === 'saveApply') { applySave(); }
-    else if (e.target.id === 'shortCopy') { copyText($('#shortUrlBox').dataset.url || '', e.target, '복사됨 ✓'); }
+    else if (e.target.id === 'shortCopy') { copyText($('#shortUrlBox').dataset.url || '', e.target, '✓'); }
     else if (e.target.id === 'shortLineCopy') { copyText($('#shortLine').dataset.url || '', e.target, '✓'); }
     else if (e.target.id === 'openBtn') { window.open(apiUrl(readState()), '_blank'); }
     else if (e.target.id === 'shareBtn') { copyText(location.href, e.target, '복사됨 ✓'); }
