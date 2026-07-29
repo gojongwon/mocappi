@@ -79,6 +79,14 @@
     transition: all .12s ease;
   }
   .frow button.del:hover { color: var(--danger); background: #fef1f2; }
+  .paste-primary {
+    width: 100%; border: none; background: var(--accent); color: #fff;
+    border-radius: var(--radius-s); padding: 11px 14px; cursor: pointer; text-align: center;
+    font-size: 14px; font-weight: 700; margin-bottom: 16px; transition: all .12s ease;
+    font-family: inherit;
+  }
+  .paste-primary:hover { background: var(--accent-hover); }
+  .paste-primary .sub2 { display: block; font-weight: 400; font-size: 12px; opacity: .88; margin-top: 3px; }
   .field-actions { display: flex; gap: 8px; margin-top: 10px; }
   .field-actions button {
     flex: 1; border: 1px dashed var(--border-strong); background: none; border-radius: var(--radius-s);
@@ -202,6 +210,8 @@
     padding: 7px 16px; font-weight: 600; cursor: pointer; font-size: 13px; flex: none;
   }
   #welcome .go:hover { background: var(--accent-hover); }
+  #welcome .go.ghost { background: #fff; color: var(--accent); border: 1px solid #c9e0fc; }
+  #welcome .go.ghost:hover { background: var(--accent-soft); }
   #welcome .x {
     margin-left: auto; border: none; background: none; color: #6d92c4;
     cursor: pointer; font-size: 15px; flex: none; padding: 4px 6px;
@@ -253,7 +263,8 @@
   <div class="strip">
     <span><b>처음이신가요?</b> 실제 API 응답 JSON 을 <b>붙여넣기</b>만 하면 목 API 가 만들어지고,
     아래 필드를 고치면 URL 과 미리보기가 실시간으로 바뀝니다.</span>
-    <button class="go" id="welcomeHelp">사용법 보기</button>
+    <button class="go" id="welcomePaste">JSON 붙여넣기</button>
+    <button class="go ghost" id="welcomeHelp">사용법 보기</button>
     <button class="x" id="welcomeClose" title="닫기">✕</button>
   </div>
 </div>
@@ -261,6 +272,10 @@
 <main>
   <section class="panel">
     <h2>스키마</h2>
+    <button id="pasteBtn" class="paste-primary">
+      { } JSON 붙여넣기
+      <span class="sub2">실제 API 응답을 붙여넣으면 스키마가 자동으로 만들어집니다</span>
+    </button>
     <div class="resource-row">
       <label for="resource">리소스명</label>
       <span class="prefix">/api/</span>
@@ -275,7 +290,6 @@
     <div id="fields"></div>
     <div class="field-actions">
       <button id="addField">+ 필드 추가</button>
-      <button id="pasteBtn">{ } JSON 붙여넣기</button>
     </div>
     <div id="inferNote"></div>
 
@@ -742,7 +756,8 @@ customer.address.city  =  location.city</pre>
   document.addEventListener('click', (e) => {
     if (e.target.matches('.del')) { e.target.closest('.frow').remove(); update(); }
     else if (e.target.id === 'addField') { addRow(); }
-    else if (e.target.id === 'pasteBtn') { openPaste(); }
+    else if (e.target.closest && e.target.closest('#pasteBtn')) { openPaste(); } // 내부 span 클릭 포함
+    else if (e.target.id === 'welcomePaste') { openPaste(); }
     else if (e.target.id === 'pasteCancel') { closePaste(); }
     else if (e.target.id === 'pasteApply') { applyPaste(); }
     else if (e.target.id === 'pasteModal') { closePaste(); }
