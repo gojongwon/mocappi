@@ -179,7 +179,18 @@
   #saveBtn:hover { background: #d8eafe; }
   #teamSel { max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; padding: 5px 10px; }
   #teamSel.active { color: var(--text); font-weight: 700; border-color: var(--accent); background: var(--accent-soft); }
-  #wsBtn.ws-on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+  /* 워크스페이스 칩 — 프리셋(알약)과 구별되는 각진 상태 칩 */
+  .hdiv { width: 1px; height: 20px; background: var(--border); flex: none; }
+  .ws-chip {
+    display: inline-flex; align-items: center; gap: 7px; flex: none;
+    border: 1px solid var(--border-strong); background: var(--bg); border-radius: 9px;
+    padding: 6px 14px; cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 600;
+    transition: all .12s ease;
+  }
+  .ws-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .ws-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); flex: none; }
+  .ws-chip.ws-on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .ws-chip.ws-on .dot { background: var(--accent); }
   #wsModal .wsid {
     font-family: var(--mono); font-size: 13px; background: var(--bg); border-radius: 7px;
     padding: 8px 12px; margin: 8px 0; word-break: break-all;
@@ -286,8 +297,11 @@
     <select id="teamSel" style="display:none" title="이 워크스페이스에 저장된 스키마">
       <option value="">팀 프리셋…</option>
     </select>
-    <button id="wsBtn" style="display:none" title="저장 공간 분리 — 링크를 아는 사람만 접근">공용 저장소</button>
   </div>
+  <span class="hdiv"></span>
+  <button id="wsBtn" class="ws-chip" style="display:none" title="프리셋 저장·공유 공간 만들기/전환">
+    <span class="dot"></span><span id="wsBtnLabel">워크스페이스</span>
+  </button>
   <button id="helpBtn" class="helpbtn">사용법</button>
 </header>
 
@@ -427,13 +441,13 @@ customer.address.city  =  location.city</pre>
 <div id="wsModal">
   <div class="card" style="width:520px">
     <h3>워크스페이스</h3>
-    <p>저장·목록이 워크스페이스별로 분리됩니다. <b>링크를 아는 사람만</b> 그 워크스페이스의 프리셋을 볼 수 있어요.<br>
-       <b>저장은 워크스페이스에서만 가능</b>하고, 공용 저장소는 조회 전용입니다.</p>
+    <p>프리셋 저장·공유는 <b>워크스페이스 단위</b>로 이뤄집니다.
+       <b>링크를 아는 사람만</b> 그 워크스페이스의 프리셋을 보고 저장할 수 있어요 (로그인 없음).</p>
     <div class="wsid" id="wsCurrent"></div>
     <div class="modal-actions" style="justify-content:flex-start">
       <button id="wsNew" style="background:var(--accent);color:#fff">새 워크스페이스 만들기</button>
       <button id="wsShare" style="background:var(--accent-soft);color:var(--accent)">워크스페이스 링크 복사</button>
-      <button id="wsPublic" style="background:var(--bg);color:var(--muted)">공용으로 전환</button>
+      <button id="wsPublic" style="background:var(--bg);color:var(--muted)">워크스페이스 나가기</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <input id="wsJoin" placeholder="전달받은 워크스페이스 ID 또는 링크 붙여넣기" style="flex:1;font-family:var(--mono);font-size:12.5px" spellcheck="false">
@@ -463,8 +477,8 @@ npm run deploy</pre>
       <p>연결 전에도 다른 기능은 전부 정상 동작합니다.</p>
     </div>
     <div id="saveWsRequired" style="display:none">
-      <p style="margin-top:0"><b>저장은 워크스페이스에서만 가능합니다.</b><br>
-      공용 화면은 조회 전용이에요. 워크스페이스를 만들면 링크를 아는 사람끼리만 공유됩니다.</p>
+      <p style="margin-top:0"><b>프리셋을 저장하려면 워크스페이스가 필요합니다.</b><br>
+      워크스페이스를 만들면 링크를 아는 사람끼리만 프리셋이 공유됩니다.</p>
       <div class="modal-actions" style="justify-content:flex-start">
         <button id="saveWsCreate" style="background:var(--accent);color:#fff">새 워크스페이스 만들고 계속</button>
         <button id="saveWsJoin" style="background:var(--accent-soft);color:var(--accent)">기존 워크스페이스로 전환</button>
@@ -811,7 +825,7 @@ npm run deploy</pre>
   }
 
   // ---- 워크스페이스 (링크를 아는 사람만 접근하는 저장 공간) ----
-  let WS = null; // null = 공용 저장소
+  let WS = null; // null = 워크스페이스 미사용 (프리셋 기능 비활성)
 
   function randWs() {
     const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -824,9 +838,10 @@ npm run deploy</pre>
 
   function syncWsUi() {
     const btn = $('#wsBtn');
-    btn.textContent = WS ? '워크스페이스 · ' + WS.slice(0, 6) + '…' : '공용 저장소';
+    $('#wsBtnLabel').textContent = WS ? WS.slice(0, 8) + '…' : '워크스페이스';
     btn.classList.toggle('ws-on', !!WS);
-    $('#wsCurrent').textContent = WS ? '현재: ' + WS : '현재: 공용 저장소 (조회 전용)';
+    btn.title = WS ? '현재 워크스페이스: ' + WS : '프리셋 저장·공유 공간 만들기/전환';
+    $('#wsCurrent').textContent = WS ? '현재 워크스페이스: ' + WS : '아직 워크스페이스를 사용하고 있지 않습니다.';
   }
 
   function switchWs(ws) {
@@ -879,7 +894,7 @@ npm run deploy</pre>
       $('#wsBtn').style.display = '';
       syncWsUi();
       const sel = $('#teamSel');
-      // 프리셋 목록·저장은 워크스페이스 전용 — 공용 모드에서는 숨김
+      // 프리셋 목록·저장은 워크스페이스 전용 — 미사용 시 숨김
       sel.style.display = WS ? '' : 'none';
       sel.innerHTML = '<option value="">팀 프리셋…</option>';
       if (WS && body.items.length === 0) {
@@ -1066,7 +1081,7 @@ npm run deploy</pre>
     else if (e.target.id === 'tsBtn') { copyTsTypes(e.target); }
     else if (e.target.id === 'respCopyBtn') { copyText(lastPreviewText, e.target, '복사됨 ✓'); }
     else if (e.target.id === 'saveBtn') { openSave(); }
-    else if (e.target.id === 'wsBtn') { syncWsUi(); $('#wsModal').style.display = 'flex'; }
+    else if (e.target.closest && e.target.closest('#wsBtn')) { syncWsUi(); $('#wsModal').style.display = 'flex'; } // 칩 내부 span 클릭 포함
     else if (e.target.id === 'wsClose' || e.target.id === 'wsModal') { $('#wsModal').style.display = 'none'; }
     else if (e.target.id === 'wsNew') { switchWs(randWs()); }
     else if (e.target.id === 'wsPublic') { switchWs(null); }
