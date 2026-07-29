@@ -149,7 +149,7 @@ Without the KV binding everything else works; only the save UI is disabled.
 
 ### Operating publicly
 
-- Save rate limiting **ships with the repo** — `wrangler.toml` includes a Workers Rate Limiting binding (`SAVE_RL`, 10 saves/min/IP) that works on `workers.dev` and activates automatically on deploy. The Worker also skips redundant re-writes of identical content. No dashboard setup needed.
+- Save rate limiting **ships with the repo** — `wrangler.toml` includes a Workers Rate Limiting binding (`SAVE_RL`, burst guard) that works on `workers.dev` and activates automatically on deploy, plus an in-Worker cap of **10 saves/hour/IP** (429 with a clear message). The Worker also skips redundant re-writes of identical content. No dashboard setup needed.
   - Zone WAF rate limiting rules are only available if you serve the Worker on a custom domain you own — optional extra layer in that case.
 - Set usage alerts (free tier: 100K req/day, 1K KV writes/day). Move to Workers Paid ($5/mo) if traffic grows.
 

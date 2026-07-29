@@ -32,10 +32,11 @@ const NO_KV = {
   hint: 'KV 네임스페이스가 연결되지 않아 팀 저장을 쓸 수 없습니다. README 의 "팀 저장 활성화" 절차를 따라주세요.',
 };
 
-// 저장 베스트에포트 리미터 — isolate 단위 메모리라 완전하지 않다 (PoP/인스턴스마다 별도).
-// 목적: 단일 소스의 버그 루프·스팸이 KV 쓰기 일일 한도(무료 1,000)를 태우는 것을 지연/차단.
-// 전역 보호는 Cloudflare WAF rate limiting rule 로 거는 것이 정석 (README 운영 체크리스트).
-const SAVE_WINDOW_MS = 60_000;
+// 저장 리미터 2계층:
+//  1) SAVE_RL 바인딩 — 분산 버스트 방어 (Rate Limiting 바인딩은 창을 10/60초만 지원)
+//  2) 아래 메모리 리미터 — 시간당 상한 (isolate 단위 베스트에포트)
+// 목적: 버그 루프·스팸이 KV 쓰기 일일 한도(무료 1,000)를 태우는 것을 차단.
+const SAVE_WINDOW_MS = 60 * 60 * 1000; // 1시간
 const SAVE_MAX_PER_WINDOW = 10;
 const saveHits = new Map<string, number[]>();
 
@@ -145,10 +146,13 @@ export default {
       }
       if (!env.SCHEMAS) return json(NO_KV, 501);
       const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
-      // 1차: Workers Rate Limiting 바인딩 (분산) → 폴백: isolate 메모리 리미터
-      const limited = env.SAVE_RL ? !(await env.SAVE_RL.limit({ key: ip })).success : saveLimited(ip);
-      if (limited) {
-        return json({ error: 'Too many saves', hint: `저장은 분당 ${SAVE_MAX_PER_WINDOW}회까지입니다. 잠시 후 다시 시도하세요.` }, 429);
+      // 버스트(바인딩, 분산) 와 시간당 상한(메모리) 둘 다 통과해야 저장
+      const burstLimited = env.SAVE_RL ? !(await env.SAVE_RL.limit({ key: ip })).success : false;
+      if (burstLimited || saveLimited(ip)) {
+        return json(
+          { error: 'Too many saves', hint: `너무 많이 시도해서 잠시 차단되었습니다. 저장은 1시간에 ${SAVE_MAX_PER_WINDOW}회까지 — 잠시 후 다시 시도하세요.` },
+          429,
+        );
       }
       let body: { name?: unknown; res?: unknown; query?: unknown; ws?: unknown };
       try {

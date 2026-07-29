@@ -74,13 +74,14 @@ describe('저장 리미터 (베스트에포트)', () => {
       { SCHEMAS: kv },
     );
 
-  it('분당 10회 초과 시 429, 다른 IP 는 영향 없음', async () => {
+  it('시간당 10회 초과 시 429 + 차단 안내, 다른 IP 는 영향 없음', async () => {
     const kv = new CountingKV();
     for (let i = 0; i < 10; i++) {
       expect((await save(kv, '10.0.0.1', i)).status).toBe(200);
     }
     const blocked = await save(kv, '10.0.0.1', 10);
     expect(blocked.status).toBe(429);
+    expect(((await blocked.json()) as { hint: string }).hint).toContain('차단');
     const other = await save(kv, '10.0.0.2', 99);
     expect(other.status).toBe(200);
   });

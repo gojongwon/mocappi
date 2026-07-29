@@ -14,8 +14,9 @@ type = "Text"
 globs = ["**/*.html"]
 fallthrough = true
 
-# 저장 레이트리밋 — workers.dev 에서도 동작하는 Workers Rate Limiting 바인딩.
-# IP당 60초에 10회. namespace_id 는 계정 내에서 고유하면 됨.
+# 저장 레이트리밋(버스트 계층) — workers.dev 에서도 동작하는 Workers Rate Limiting 바인딩.
+# 바인딩은 창을 10/60초만 지원 → 60초 10회 버스트 방어. 시간당 10회 상한은 워커 코드에서.
+# namespace_id 는 계정 내에서 고유하면 됨.
 [[unsafe.bindings]]
 name = "SAVE_RL"
 type = "ratelimit"

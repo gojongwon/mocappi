@@ -1073,7 +1073,12 @@ npm run deploy</pre>
         body: JSON.stringify({ name, res: state.res, query: buildQuery(state), ws: WS || undefined }),
       });
       const body = await res.json();
-      if (!res.ok) { $('#saveError').textContent = (body.error || '저장 실패') + (body.hint ? ' — ' + body.hint : ''); return; }
+      if (!res.ok) {
+        $('#saveError').textContent = res.status === 429
+          ? (body.hint || '너무 많이 시도해서 잠시 차단되었습니다. 잠시 후 다시 시도하세요.')
+          : (body.error || '저장 실패') + (body.hint ? ' — ' + body.hint : '');
+        return;
+      }
       $('#saveError').textContent = '';
       const shortUrl = location.origin + body.apiUrl;
       $('#shortUrlBox').textContent = shortUrl;
