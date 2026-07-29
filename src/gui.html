@@ -488,9 +488,10 @@ npm run deploy</pre>
     <input id="saveName" placeholder="이름 (예: 기술자 목록 — 강남 현장)" style="width:100%" maxlength="60">
     <div id="saveError"></div>
     <div id="saveResult" style="display:none">
+      <p style="margin:0 0 8px;color:#23a55a;font-weight:600">✓ 저장되었습니다 — 이 URL 로 어디서든 호출할 수 있어요</p>
       <div class="urlbox" id="shortUrlBox"></div>
       <div class="modal-actions" style="justify-content:flex-start; margin-top:8px">
-        <button id="shortCopy" style="background:var(--accent);color:#fff">짧은 URL 복사</button>
+        <button id="shortCopy" style="background:var(--accent);color:#fff">URL 복사</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -999,6 +1000,9 @@ npm run deploy</pre>
       const shortUrl = location.origin + body.apiUrl;
       $('#shortUrlBox').textContent = shortUrl;
       $('#shortUrlBox').dataset.url = shortUrl;
+      // 저장 완료 상태로 전환 — 입력칸과 저장 버튼은 치우고 결과만
+      $('#saveName').style.display = 'none';
+      $('#saveApply').style.display = 'none';
       $('#saveResult').style.display = 'block';
       loadedPreset = { sid: body.sid, res: body.res, query: body.query, name: body.name }; // 이후 URL 박스에도 짧은 URL 상시 표시
       refreshTeam();
