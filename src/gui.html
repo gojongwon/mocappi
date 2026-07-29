@@ -117,14 +117,14 @@
     transition: all .12s ease;
   }
   .box-copy:hover { color: var(--accent); border-color: var(--accent); }
-  /* 저장된 프리셋의 짧은 URL 표시줄 — 자리를 항상 확보해 레이아웃 점프 방지 */
+  /* 저장된 프리셋의 짧은 URL 표시줄 */
   #shortLine {
     display: flex; align-items: center; gap: 8px; margin-top: 8px;
     font-family: var(--mono); font-size: 12.5px;
     background: var(--accent-soft); border: 1px solid #c9e0fc; border-radius: var(--radius-s);
-    padding: 8px 12px; word-break: break-all; min-height: 38px;
+    padding: 8px 12px; word-break: break-all;
   }
-  #shortLine.ghosted { visibility: hidden; }
+  #shortLine.ghosted { display: none; }
   #shortLine .stag {
     font-family: inherit; font-size: 11px; font-weight: 700; color: var(--accent);
     background: #fff; border-radius: 5px; padding: 2px 8px; flex: none;
@@ -153,6 +153,7 @@
     border-radius: var(--radius-s); padding: 16px; overflow: auto;
     height: clamp(300px, 52vh, 540px); /* 고정 높이 — 내용이 바뀌어도 레이아웃이 안 튐 */
     margin: 0; white-space: pre-wrap; word-break: break-all; line-height: 1.75;
+    transition: opacity .2s ease;
   }
   /* JSON 구문 색상 (다크 배경 기준) */
   .j-key { color: #7dd3fc; }
@@ -169,7 +170,8 @@
   #respCopyBtn:hover { color: #fff; background: #26304a; }
   .status-line {
     font-size: 12.5px; color: var(--faint); margin: 10px 0 8px; font-family: var(--mono);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* 긴 URL 로 줄바꿈되며 튀는 것 방지 */
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: opacity .2s ease;
   }
   .status-line .ok { color: #23a55a; font-weight: 700; }
   .status-line .err { color: var(--danger); font-weight: 700; }
@@ -779,14 +781,25 @@ npm run deploy</pre>
     timer = setTimeout(() => preview(url), 300);
   }
 
+  let loadingTimer = null;
+  function setLoading(on) {
+    $('#statusLine').style.opacity = on ? '.4' : '';
+    $('#preview').style.opacity = on ? '.55' : '';
+  }
+
   async function preview(url) {
     const seq = ++reqSeq;
     const t0 = performance.now();
-    $('#statusLine').textContent = '요청 중… GET ' + url.slice(location.origin.length);
+    // 빠른 응답(<250ms)은 로딩 표시 없이 조용히 교체 — 깜빡임 방지.
+    // 느린 응답(_delay 등)만 기존 내용을 흐리게 해서 진행 중임을 알림.
+    clearTimeout(loadingTimer);
+    loadingTimer = setTimeout(() => setLoading(true), 250);
     try {
       const res = await fetch(url);
       const text = await res.text();
       if (seq !== reqSeq) return; // 오래된 응답 무시
+      clearTimeout(loadingTimer);
+      setLoading(false);
       const ms = Math.round(performance.now() - t0);
       const cls = res.ok ? 'ok' : 'err';
       $('#statusLine').innerHTML = 'HTTP <span class="' + cls + '">' + res.status + '</span> · ' + ms + 'ms';
@@ -798,6 +811,8 @@ npm run deploy</pre>
       else $('#preview').textContent = body;
     } catch (e) {
       if (seq !== reqSeq) return;
+      clearTimeout(loadingTimer);
+      setLoading(false);
       $('#statusLine').innerHTML = '<span class="err">요청 실패</span>';
       lastPreviewText = String(e);
       $('#preview').textContent = String(e);
