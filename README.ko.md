@@ -93,6 +93,10 @@ id=uuid
 seq=index                     # 전역 인덱스 (0,1,2…) — 페이지 검증에 유용
 address.city=location.city    # 점 표기법 → 중첩 객체
 tags[]=lorem.word:3           # 배열 — 값의 마지막 :정수 가 길이 (기본 3)
+sku=pattern:ORD-####-???      # 패턴 — #숫자 ?대문자 *영숫자
+                              #   (URL 을 직접 쓸 땐 # 를 %23 으로 — GUI 는 자동 인코딩)
+status=enum:paid*8|refund*2   # 가중치 택1
+email=internet.email?0.2      # 20% 확률 null — 모든 타입 뒤에 ?확률
 ```
 
 전체 목록과 faker 경로는 `GET /schema/types`. 잘못 쓰면 400 응답이 무엇이 왜 틀렸는지 알려준다:

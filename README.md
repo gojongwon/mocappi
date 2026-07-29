@@ -82,6 +82,10 @@ avatar=image:200x200          # placeholder image URL
 createdAt=date:2020-01-01~2024-12-31
 id=uuid
 seq=index                     # global index (0,1,2…)
+sku=pattern:ORD-####-???      # pattern — # digit, ? uppercase, * alphanumeric
+                              #   (in raw URLs encode # as %23 — the GUI does this for you)
+status=enum:paid*8|refund*2   # weighted choice
+email=internet.email?0.2      # 20% null — append ?p to any type
 address.city=location.city    # dot notation → nested object
 tags[]=lorem.word:3           # array — trailing :N is length (default 3)
 ```
@@ -136,7 +140,7 @@ res.data[0].name; // autocompleted & type-checked
 
 ```bash
 npm install
-npm test            # vitest — 97 tests (determinism / DSL / worker / store)
+npm test            # vitest (determinism / DSL / worker / store)
 npm run typecheck
 npm run dev         # wrangler dev → http://localhost:8787 (local simulated KV)
 npm run size        # bundle gzip size (3MB free-plan limit)

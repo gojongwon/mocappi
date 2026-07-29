@@ -5,6 +5,7 @@
  */
 import type { FieldSpec } from './dsl';
 import { splitArrayLen } from './dsl';
+import { compileType, NULLABLE_RE, type Generator } from './registry';
 
 type Tree = Map<string, Tree | FieldSpec>;
 
@@ -24,12 +25,19 @@ function escapeLiteral(s: string): string {
 }
 
 /** 필드 하나의 TS 타입 — enum/const 는 리터럴, 나머지는 샘플 생성으로 판별 */
-function tsTypeOf(f: FieldSpec): string {
-  const raw = itemTypeRawOf(f);
+function tsTypeOfRaw(raw: string, gen: Generator): string {
+  // nullable 수식자 — 내부 타입 | null. 샘플은 내부 생성기로 뽑는다
+  // (nullable 생성기의 샘플은 시드에 따라 null 이 나와 타입 판별이 흔들린다).
+  const nm = raw.match(NULLABLE_RE);
+  if (nm) {
+    const t = tsTypeOfRaw(nm[1], compileType(nm[1]));
+    return `${t} | null`;
+  }
   if (raw.startsWith('enum:')) {
     return raw
       .slice(5)
       .split('|')
+      .map((v) => v.replace(/\*\d+(?:\.\d+)?$/, '')) // 가중치 제거
       .map((v) => `'${escapeLiteral(v)}'`)
       .join(' | ');
   }
@@ -37,7 +45,7 @@ function tsTypeOf(f: FieldSpec): string {
     return `'${escapeLiteral(raw.slice(6))}'`;
   }
   // 생성 함수를 실제로 한 번 돌려서 값의 타입을 본다 — 레지스트리와 절대 어긋나지 않음
-  const sample = f.gen(12345, { globalIndex: 0, locale: 'en' });
+  const sample = gen(12345, { globalIndex: 0, locale: 'en' });
   switch (typeof sample) {
     case 'number': return 'number';
     case 'boolean': return 'boolean';
@@ -45,6 +53,10 @@ function tsTypeOf(f: FieldSpec): string {
     case 'object': return sample === null ? 'null' : 'Record<string, unknown>';
     default: return 'unknown';
   }
+}
+
+function tsTypeOf(f: FieldSpec): string {
+  return tsTypeOfRaw(itemTypeRawOf(f), f.gen);
 }
 
 function buildTree(fields: FieldSpec[]): Tree {

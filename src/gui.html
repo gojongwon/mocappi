@@ -452,10 +452,13 @@
         <tr><td>범위 안의 숫자</td><td><code>int:20~60</code> · <code>float:0~100:2</code></td><td>34 · 87.52</td></tr>
         <tr><td>참/거짓 (확률 지정)</td><td><code>bool:0.8</code></td><td>80% 확률로 true</td></tr>
         <tr><td>몇 개 중 하나</td><td><code>enum:pending|paid|shipped</code></td><td>셋 중 하나</td></tr>
+        <tr><td>확률이 다른 택1</td><td><code>enum:paid*8|refund*2</code></td><td>paid 80% / refund 20%</td></tr>
         <tr><td>기간 안의 날짜</td><td><code>date:2024-01-01~2026-12-31</code></td><td>"2025-06-01T09:12:00.000Z"</td></tr>
         <tr><td>항상 같은 값</td><td><code>const:v1</code></td><td>"v1"</td></tr>
         <tr><td>고유 ID / 순번</td><td><code>uuid</code> · <code>index</code></td><td>"a1b2…" · 0, 1, 2…</td></tr>
         <tr><td>긴 글 / 이미지</td><td><code>text:50</code> · <code>image:200x200</code></td><td>50자 문장 · 이미지 URL</td></tr>
+        <tr><td>포맷 있는 코드</td><td><code>pattern:ORD-####-???</code></td><td>"ORD-4821-KQZ" — #숫자 ?대문자 *영숫자</td></tr>
+        <tr><td>가끔 null</td><td><code>internet.email?0.2</code></td><td>20% 확률 null — 모든 타입 뒤에 ?확률</td></tr>
       </table>
 
       <h4><span class="n">3</span>객체 안에 객체 — 이름에 점(.)</h4>

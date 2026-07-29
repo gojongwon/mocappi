@@ -38,7 +38,10 @@ export class DslError extends Error {
   }
 }
 
-const KNOWN_TYPES = 'int, float, bool, enum, const, text, image, date, uuid, index';
+const KNOWN_TYPES = 'int, float, bool, enum, const, text, image, date, uuid, index, pattern';
+
+/** nullable 수식자 — 아무 타입 뒤 '?확률'. 예: internet.email?0.2 */
+export const NULLABLE_RE = /^(.+)\?(0?\.\d+|1|0)$/;
 const RANGE_HINT = (t: string, ex: string) => `범위 구분자는 '~' 입니다. 예: ${t}:${ex}`;
 
 function fail(error: string, value: string, hint: string): never {
@@ -133,11 +136,55 @@ function compileBool(rest: string, raw: string): Generator {
 }
 
 function compileEnum(rest: string, raw: string): Generator {
-  const values = rest.split('|');
-  if (rest === '' || values.some((v) => v === '')) {
-    fail('Invalid enum values', raw, "'|' 로 구분한 값 목록이 필요합니다. 예: enum:admin|user|guest");
+  const members = rest.split('|');
+  if (rest === '' || members.some((v) => v === '')) {
+    fail('Invalid enum values', raw, "'|' 로 구분한 값 목록이 필요합니다. 예: enum:admin|user|guest (가중치: enum:paid*8|refund*2)");
   }
-  return (seed) => createRNG(seed).pick(values);
+  // 가중치 파싱 — 멤버 끝의 '*숫자'. 하나도 없으면 기존 균등 선택 경로(기존 URL 결정성 유지)
+  let weighted = false;
+  const values: string[] = [];
+  const weights: number[] = [];
+  for (const m of members) {
+    const wm = m.match(/^(.+)\*(\d+(?:\.\d+)?)$/);
+    if (wm) {
+      const w = parseFloat(wm[2]);
+      if (w <= 0) fail('Invalid enum weight', raw, `가중치는 0보다 커야 합니다: '${m}'. 예: enum:paid*8|refund*2`);
+      values.push(wm[1]);
+      weights.push(w);
+      weighted = true;
+    } else {
+      values.push(m);
+      weights.push(1);
+    }
+  }
+  if (!weighted) return (seed) => createRNG(seed).pick(values);
+  const total = weights.reduce((a, b) => a + b, 0);
+  return (seed) => {
+    let u = createRNG(seed).next() * total;
+    for (let i = 0; i < values.length; i++) {
+      u -= weights[i];
+      if (u < 0) return values[i];
+    }
+    return values[values.length - 1];
+  };
+}
+
+function compilePattern(rest: string, raw: string): Generator {
+  if (rest === '') fail('Invalid pattern', raw, '템플릿이 필요합니다. #=숫자, ?=대문자, *=영숫자, 나머지는 그대로. 예: pattern:ORD-####-???');
+  if (rest.length > 64) fail('Invalid pattern', raw, '템플릿은 최대 64자입니다.');
+  const UP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const AN = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  return (seed) => {
+    const rng = createRNG(seed);
+    let out = '';
+    for (const ch of rest) {
+      if (ch === '#') out += rng.int(0, 9);
+      else if (ch === '?') out += UP[rng.int(0, 25)];
+      else if (ch === '*') out += AN[rng.int(0, 35)];
+      else out += ch;
+    }
+    return out;
+  };
 }
 
 function compileText(rest: string, raw: string): Generator {
@@ -177,6 +224,15 @@ function compileDate(rest: string, raw: string): Generator {
 
 /** DSL 타입 문자열 → 생성 함수. 실패 시 DslError. */
 export function compileType(raw: string): Generator {
+  // nullable 수식자 — 모든 타입에 적용 가능. null 판정은 값 생성과 다른 시드
+  // 스트림을 사용한다 (같은 시드를 쓰면 bool:0.5?0.5 처럼 값과 상관이 생긴다).
+  const nm = raw.match(NULLABLE_RE);
+  if (nm) {
+    const p = parseFloat(nm[2]);
+    const inner = compileType(nm[1]);
+    return (seed, ctx) => (createRNG((seed ^ 0x6e756c6c) >>> 0).next() < p ? null : inner(seed, ctx));
+  }
+
   const ci = raw.indexOf(':');
   const head = ci === -1 ? raw : raw.slice(0, ci);
   const rest = ci === -1 ? '' : raw.slice(ci + 1);
@@ -206,6 +262,8 @@ export function compileType(raw: string): Generator {
       return compileImage(rest, raw);
     case 'date':
       return compileDate(rest, raw);
+    case 'pattern':
+      return compilePattern(rest, raw);
     default:
       if (raw.includes('.')) return compileFakerPath(raw);
       fail(
@@ -243,6 +301,9 @@ export const TYPE_DOCS = {
     { type: 'date', syntax: 'date:시작~끝', example: 'date:2020-01-01~2024-12-31', label: '날짜 (ISO)' },
     { type: 'uuid', syntax: 'uuid', example: 'uuid', label: 'UUID v4' },
     { type: 'index', syntax: 'index', example: 'index', label: '전역 인덱스 (0,1,2…)' },
+    { type: 'pattern', syntax: 'pattern:템플릿 (#=숫자 ?=대문자 *=영숫자)', example: 'pattern:ORD-####-???', label: '패턴 문자열' },
+    { type: 'enum', syntax: 'enum:a*가중치|b*가중치', example: 'enum:paid*8|refund*2', label: '가중치 enum' },
+    { type: 'nullable', syntax: '아무타입?확률', example: 'internet.email?0.2', label: 'null 섞기 (수식자)' },
   ],
   fakerPaths: [
     { value: 'person.fullName', label: '이름(전체)' },
