@@ -120,9 +120,24 @@ export async function saveSchema(
   const id = schemaId(res, canonical);
   const key = keyOf(ws, id);
 
+  const existingRaw = await kv.get(key);
+
+  // 해시 충돌 가드 — 같은 ID 인데 내용이 다르면 조용히 덮어쓰지 않고 거부.
+  // (content-addressed 라 같은 내용의 재저장은 정상 경로)
+  if (existingRaw !== null) {
+    try {
+      const prev = JSON.parse(existingRaw) as SavedSchema;
+      if (prev.query !== canonical || prev.res !== res) {
+        fail('ID collision', '해시 충돌이 감지되었습니다. 필드를 하나 추가하는 등 스키마를 조금 바꿔 다시 저장해 주세요.');
+      }
+    } catch (e) {
+      if (e instanceof DslError) throw e;
+      // 파싱 불가한 손상 레코드는 새 저장으로 복구
+    }
+  }
+
   // 남용 방어: 워크스페이스당 저장 개수 상한 (재저장/이름변경은 기존 키라 허용)
-  const exists = (await kv.get(key)) !== null;
-  if (!exists) {
+  if (existingRaw === null) {
     const { keys } = await kv.list({ prefix: prefixOf(ws), limit: MAX_PER_WORKSPACE });
     if (keys.length >= MAX_PER_WORKSPACE) {
       fail('Workspace full', `워크스페이스당 최대 ${MAX_PER_WORKSPACE}개까지 저장할 수 있습니다. 안 쓰는 항목을 삭제하세요.`);

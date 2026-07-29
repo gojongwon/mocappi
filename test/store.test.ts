@@ -76,6 +76,21 @@ describe('저장/조회/목록/삭제 라우트', () => {
     expect(got.query).toBe(canonicalQuery(QUERY));
   });
 
+  it('해시 충돌 감지 — 같은 ID 에 다른 내용이 있으면 400 (조용한 덮어쓰기 방지)', async () => {
+    const e = env();
+    // 새로 저장할 내용의 ID 자리에, 내용이 다른 레코드를 미리 심어 충돌 상황 재현
+    const canonical = canonicalQuery(QUERY);
+    const id = schemaId('users', canonical);
+    await e.SCHEMAS.put(
+      `w:${TESTWS}:${id}`,
+      JSON.stringify({ id, name: '선점', res: 'users', query: 'other=uuid', createdAt: '2026-01-01T00:00:00Z' }),
+      { metadata: { name: '선점', res: 'users', createdAt: '2026-01-01T00:00:00Z' } },
+    );
+    const r = await save(e);
+    expect(r.status).toBe(400);
+    expect((r.body as unknown as { error: string }).error).toBe('ID collision');
+  });
+
   it('공용 풀 저장은 차단 (조회 전용)', async () => {
     const e = env();
     const r = await save(e, '공용 시도', 'users', QUERY, null);
