@@ -743,6 +743,12 @@ npm run deploy</pre>
       $('#teamSel').style.display = '';
       const sel = $('#teamSel');
       sel.innerHTML = '<option value="">팀 프리셋…</option>';
+      if (body.items.length === 0) {
+        const o = document.createElement('option');
+        o.disabled = true;
+        o.textContent = '아직 없음 — "팀에 저장"으로 첫 항목을 만들어보세요';
+        sel.appendChild(o);
+      }
       for (const it of body.items) {
         const o = document.createElement('option');
         o.value = it.id;
