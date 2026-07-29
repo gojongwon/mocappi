@@ -76,7 +76,32 @@ const DENY_MODULES = new Set([
   'setDefaultRefDate', 'getMetadata', 'constructor',
 ]);
 
+// 연락처 안전 오버라이드 — "형식은 유효, 실존은 불가능"
+// email: @example.com 은 RFC 2606 예약 도메인이라 절대 배달되지 않음이 보장된다.
+//        (faker 기본값은 실제 gmail.com 등을 써서 우연히 실존할 수 있고, ko 유저명은 깨진다)
+// phone: ko 는 010 유효 형식, en 은 픽션용으로 예약된 555-01## 대역.
+const PATH_OVERRIDES: Record<string, Generator> = {
+  'internet.email': (seed) => {
+    const f = FAKERS.en; // 이메일 유저명은 ASCII — 로케일 무관
+    f.seed(seed);
+    const first = f.person.firstName().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const last = f.person.lastName().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const n = f.number.int({ min: 0, max: 99 });
+    const forms = [`${first}.${last}`, `${first}${last}${n}`, `${first}_${last}`, `${first}${n}`];
+    return `${forms[n % forms.length]}@example.com`;
+  },
+  'phone.number': (seed, ctx) => {
+    const rng = createRNG(seed);
+    if (ctx.locale === 'en') {
+      return `(${rng.int(200, 989)}) 555-01${String(rng.int(0, 99)).padStart(2, '0')}`;
+    }
+    return `010-${String(rng.int(0, 9999)).padStart(4, '0')}-${String(rng.int(0, 9999)).padStart(4, '0')}`;
+  },
+};
+
 function compileFakerPath(raw: string): Generator {
+  const override = PATH_OVERRIDES[raw];
+  if (override) return override;
   const segs = raw.split('.');
   if (segs.length !== 2 || !segs[0] || !segs[1]) {
     fail('Invalid faker path', raw, "faker 경로는 '모듈.메서드' 2단계입니다. 예: person.fullName");
@@ -310,10 +335,10 @@ export const TYPE_DOCS = {
     { value: 'person.firstName', label: '이름' },
     { value: 'person.lastName', label: '성' },
     { value: 'person.jobTitle', label: '직함' },
-    { value: 'internet.email', label: '이메일' },
+    { value: 'internet.email', label: '이메일 (@example.com — 실존 불가 보장)' },
     { value: 'internet.url', label: 'URL' },
     { value: 'internet.ip', label: 'IP 주소' },
-    { value: 'phone.number', label: '전화번호' },
+    { value: 'phone.number', label: '전화번호 (010-####-#### 형식)' },
     { value: 'location.city', label: '도시' },
     { value: 'location.streetAddress', label: '도로명 주소' },
     { value: 'location.zipCode', label: '우편번호' },

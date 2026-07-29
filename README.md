@@ -101,6 +101,13 @@ Full list at `GET /schema/types`. Invalid DSL returns a 400 that explains what's
 
 Note: upgrading the faker library may change generated values — pin the version while using snapshots.
 
+## Safe contact data
+
+Mock data should never reach a real person:
+
+- `internet.email` always generates `@example.com` addresses — an IANA-reserved domain (RFC 2606), guaranteed undeliverable, with readable ASCII usernames.
+- `phone.number` generates well-formed numbers: `010-####-####` (ko) and the fiction-reserved `(###) 555-01##` range (en) — so format validation and masking logic still work.
+
 ## Workspaces (multi-team / public use)
 
 Storage is isolated by **workspace** — a capability-URL model with no login:
