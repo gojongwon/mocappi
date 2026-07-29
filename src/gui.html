@@ -271,7 +271,6 @@
 
 <main>
   <section class="panel">
-    <h2>스키마</h2>
     <button id="pasteBtn" class="paste-primary">
       { } JSON 붙여넣기
       <span class="sub2">실제 API 응답을 붙여넣으면 스키마가 자동으로 만들어집니다</span>
@@ -282,18 +281,7 @@
       <input id="resource" value="users" spellcheck="false">
     </div>
 
-    <div class="keyhint">
-      필드명이 응답 JSON 의 <b>key</b> 가 됩니다 ·
-      점(.)으로 중첩: <code>customer.name</code> → <code>{"customer":{"name":…}}</code> ·
-      배열은 이름 뒤 <code>[]</code>: <code>tags[]</code>
-    </div>
-    <div id="fields"></div>
-    <div class="field-actions">
-      <button id="addField">+ 필드 추가</button>
-    </div>
-    <div id="inferNote"></div>
-
-    <h2 style="margin-top:20px">옵션</h2>
+    <h2>옵션</h2>
     <div class="opts">
       <div><label>전체 개수 (_total)</label><input id="oTotal" type="number" min="0" value="100"></div>
       <div><label>페이지당 (_limit)</label><input id="oLimit" type="number" min="1" max="100" value="10"></div>
@@ -304,6 +292,18 @@
       <div><label>지연 ms (_delay)</label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
       <div><label>상태코드 (_status)</label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
     </div>
+
+    <h2 style="margin-top:20px">스키마</h2>
+    <div class="keyhint">
+      필드명이 응답 JSON 의 <b>key</b> 가 됩니다 ·
+      점(.)으로 중첩: <code>customer.name</code> → <code>{"customer":{"name":…}}</code> ·
+      배열은 이름 뒤 <code>[]</code>: <code>tags[]</code>
+    </div>
+    <div id="fields"></div>
+    <div class="field-actions">
+      <button id="addField">+ 필드 추가</button>
+    </div>
+    <div id="inferNote"></div>
 
     <div class="hintbar">
       타입 칸에 입력하면 자동완성 목록이 뜹니다 ·
