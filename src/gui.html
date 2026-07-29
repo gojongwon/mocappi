@@ -178,6 +178,7 @@
   #saveBtn { background: var(--accent-soft); color: var(--accent); }
   #saveBtn:hover { background: #d8eafe; }
   #teamSel { max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; padding: 5px 10px; }
+  #teamSel.active { color: var(--text); font-weight: 700; border-color: var(--accent); background: var(--accent-soft); }
   /* ---- 사용법 모달 ---- */
   #helpModal .card { width: 720px; }
   .help-body { max-height: 68vh; overflow-y: auto; padding-right: 8px; }
@@ -687,8 +688,10 @@ npm run deploy</pre>
       $('#shortLine').dataset.url = short;
       $('#shortLine').querySelector('.stag').textContent = loadedPreset.name ? loadedPreset.name : '짧은 URL';
       $('#teamSel').value = loadedPreset.id;
+      $('#teamSel').classList.add('active'); // 선택됨 — 진한 표시
     } else {
       $('#teamSel').value = ''; // 저장본과 달라짐 → 선택 해제
+      $('#teamSel').classList.remove('active');
     }
     syncAddressBar(state);
     clearTimeout(timer);
