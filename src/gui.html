@@ -112,7 +112,8 @@
   .box-copy {
     position: absolute; top: 8px; right: 8px;
     border: 1px solid var(--border); background: var(--panel); color: var(--muted);
-    border-radius: 6px; padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    border-radius: 6px; padding: 5px 7px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
     transition: all .12s ease;
   }
   .box-copy:hover { color: var(--accent); border-color: var(--accent); }
@@ -130,10 +131,11 @@
   }
   #shortLine a { color: var(--accent); text-decoration: none; flex: 1; min-width: 0; }
   #shortLine button {
-    border: none; background: var(--accent); color: #fff; border-radius: 6px;
-    padding: 4px 12px; font-size: 12px; font-weight: 600; cursor: pointer; flex: none;
+    border: 1px solid #c9e0fc; background: #fff; color: var(--accent); border-radius: 6px;
+    padding: 5px 7px; cursor: pointer; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
   }
-  #shortLine button:hover { background: var(--accent-hover); }
+  #shortLine button:hover { border-color: var(--accent); }
   .url-actions { display: flex; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
   .url-actions button {
     border: none; border-radius: var(--radius-s); padding: 8px 18px; cursor: pointer;
@@ -160,11 +162,15 @@
   #respCopyBtn {
     position: absolute; top: 10px; right: 10px;
     border: 1px solid #2c3547; background: #1b2232; color: #9fb0c7;
-    border-radius: 7px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    border-radius: 7px; padding: 6px 7px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
     transition: all .12s ease;
   }
   #respCopyBtn:hover { color: #fff; background: #26304a; }
-  .status-line { font-size: 12.5px; color: var(--faint); margin: 10px 0 8px; font-family: var(--mono); }
+  .status-line {
+    font-size: 12.5px; color: var(--faint); margin: 10px 0 8px; font-family: var(--mono);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* 긴 URL 로 줄바꿈되며 튀는 것 방지 */
+  }
   .status-line .ok { color: #23a55a; font-weight: 700; }
   .status-line .err { color: var(--danger); font-weight: 700; }
   .hintbar { font-size: 12px; color: var(--faint); margin-top: 14px; line-height: 1.8; }
@@ -380,12 +386,12 @@
     <h2>생성된 URL</h2>
     <div class="urlwrap">
       <div class="urlbox" id="urlBox"></div>
-      <button class="box-copy" id="copyBtn" title="URL 복사">복사</button>
+      <button class="box-copy" id="copyBtn" title="URL 복사"></button>
     </div>
     <div id="shortLine" class="ghosted">
       <span class="stag">짧은 URL</span>
       <a id="shortA" target="_blank"></a>
-      <button id="shortLineCopy" title="짧은 URL 복사">복사</button>
+      <button id="shortLineCopy" title="짧은 URL 복사"></button>
     </div>
     <div class="url-actions">
       <button id="tsBtn" title="현재 스키마의 TypeScript 인터페이스 + 제네릭 fetch 헬퍼를 복사">TS 타입 복사</button>
@@ -396,7 +402,7 @@
     <div class="status-line" id="statusLine">&nbsp;</div>
     <div class="preview-wrap">
       <pre id="preview">불러오는 중…</pre>
-      <button id="respCopyBtn" title="응답 JSON 전체 복사">응답 복사</button>
+      <button id="respCopyBtn" title="응답 JSON 전체 복사"></button>
     </div>
   </section>
 </main>
@@ -509,7 +515,7 @@ npm run deploy</pre>
       <p style="margin:0 0 8px;color:#23a55a;font-weight:600">✓ 저장되었습니다 — 이 URL 로 어디서든 호출할 수 있어요</p>
       <div class="urlwrap">
         <div class="urlbox" id="shortUrlBox"></div>
-        <button class="box-copy" id="shortCopy" title="URL 복사">복사</button>
+        <button class="box-copy" id="shortCopy" title="URL 복사"></button>
       </div>
     </div>
     <div class="modal-actions">
@@ -1045,15 +1051,30 @@ npm run deploy</pre>
   }
 
   // ---- 클립보드 ----
-  async function copyText(t, btn, done) {
+  async function writeClipboard(t) {
     try { await navigator.clipboard.writeText(t); }
     catch {
       const ta = document.createElement('textarea');
       ta.value = t; document.body.appendChild(ta); ta.select();
       document.execCommand('copy'); ta.remove();
     }
+  }
+
+  async function copyText(t, btn, done) {
+    await writeClipboard(t);
     const orig = btn.textContent;
     btn.textContent = done; setTimeout(() => (btn.textContent = orig), 1200);
+  }
+
+  // 아이콘 복사 버튼 (lucide copy/check)
+  const ICON_COPY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+  const ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#23a55a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  async function copyIcon(t, btn) {
+    await writeClipboard(t);
+    btn.innerHTML = ICON_CHECK;
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => (btn.innerHTML = ICON_COPY), 1200);
   }
 
   // ---- 이벤트 ----
@@ -1098,35 +1119,47 @@ npm run deploy</pre>
     }
   });
   document.addEventListener('click', (e) => {
-    if (e.target.matches('.del')) { e.target.closest('.frow').remove(); update(); }
-    else if (e.target.id === 'addField') { addRow(); }
-    else if (e.target.closest && e.target.closest('#pasteBtn')) { openPaste(); } // 내부 span 클릭 포함
-    else if (e.target.id === 'welcomePaste') { openPaste(); }
-    else if (e.target.id === 'pasteCancel') { closePaste(); }
-    else if (e.target.id === 'pasteApply') { applyPaste(); }
-    else if (e.target.id === 'pasteModal') { closePaste(); }
-    else if (e.target.id === 'helpBtn' || e.target.id === 'helpLink' || e.target.id === 'welcomeHelp') { e.preventDefault(); $('#helpModal').style.display = 'flex'; }
-    else if (e.target.id === 'helpClose' || e.target.id === 'helpModal') { $('#helpModal').style.display = 'none'; }
-    else if (e.target.id === 'welcomeClose') { $('#welcome').style.display = 'none'; }
-    else if (e.target.id === 'copyBtn') { copyText(apiUrl(readState()), e.target, '✓'); }
-    else if (e.target.id === 'tsBtn') { copyTsTypes(e.target); }
-    else if (e.target.id === 'respCopyBtn') { copyText(lastPreviewText, e.target, '복사됨 ✓'); }
-    else if (e.target.id === 'saveBtn') { openSave(); }
-    else if (e.target.closest && e.target.closest('#wsBtn')) { syncWsUi(); $('#wsModal').style.display = 'flex'; } // 칩 내부 span 클릭 포함
-    else if (e.target.id === 'wsClose' || e.target.id === 'wsModal') { $('#wsModal').style.display = 'none'; }
-    else if (e.target.id === 'wsNew') { switchWs(randWs()); }
-    else if (e.target.id === 'wsPublic') { switchWs(null); }
-    else if (e.target.id === 'wsShare') { copyText(location.href, e.target, '복사됨 ✓'); }
-    else if (e.target.id === 'wsJoinBtn') { joinWs(); }
-    else if (e.target.id === 'saveWsCreate') { switchWs(randWs()); openSave(); } // 새 워크스페이스 → 저장 이어서
-    else if (e.target.id === 'saveWsJoin') { $('#saveModal').style.display = 'none'; syncWsUi(); $('#wsModal').style.display = 'flex'; }
-    else if (e.target.id === 'saveCancel' || e.target.id === 'saveModal') { $('#saveModal').style.display = 'none'; }
-    else if (e.target.id === 'saveApply') { applySave(); }
-    else if (e.target.id === 'shortCopy') { copyText($('#shortUrlBox').dataset.url || '', e.target, '✓'); }
-    else if (e.target.id === 'shortLineCopy') { copyText($('#shortLine').dataset.url || '', e.target, '✓'); }
-    else if (e.target.id === 'openBtn') { window.open(apiUrl(readState()), '_blank'); }
-    else if (e.target.id === 'shareBtn') { copyText(location.href, e.target, '복사됨 ✓'); }
-    else if (e.target.dataset.preset) { applyPreset(e.target.dataset.preset); }
+    // 버튼 안 SVG/span 클릭도 인식하도록 closest 기반으로 판별
+    const btn = e.target.closest ? e.target.closest('button, a') : null;
+    if (!btn) {
+      // 모달 오버레이(배경) 클릭 → 닫기
+      const oid = e.target.id;
+      if (oid === 'pasteModal') closePaste();
+      else if (oid === 'helpModal') $('#helpModal').style.display = 'none';
+      else if (oid === 'wsModal') $('#wsModal').style.display = 'none';
+      else if (oid === 'saveModal') $('#saveModal').style.display = 'none';
+      return;
+    }
+    if (btn.classList.contains('del')) { btn.closest('.frow').remove(); update(); return; }
+    if (btn.dataset && btn.dataset.preset) { applyPreset(btn.dataset.preset); return; }
+    switch (btn.id) {
+      case 'addField': addRow(); break;
+      case 'pasteBtn': case 'welcomePaste': openPaste(); break;
+      case 'pasteCancel': closePaste(); break;
+      case 'pasteApply': applyPaste(); break;
+      case 'helpBtn': case 'helpLink': case 'welcomeHelp':
+        e.preventDefault(); $('#helpModal').style.display = 'flex'; break;
+      case 'helpClose': $('#helpModal').style.display = 'none'; break;
+      case 'welcomeClose': $('#welcome').style.display = 'none'; break;
+      case 'copyBtn': copyIcon(apiUrl(readState()), btn); break;
+      case 'tsBtn': copyTsTypes(btn); break;
+      case 'respCopyBtn': copyIcon(lastPreviewText, btn); break;
+      case 'saveBtn': openSave(); break;
+      case 'wsBtn': syncWsUi(); $('#wsModal').style.display = 'flex'; break;
+      case 'wsClose': $('#wsModal').style.display = 'none'; break;
+      case 'wsNew': switchWs(randWs()); break;
+      case 'wsPublic': switchWs(null); break;
+      case 'wsShare': copyText(location.href, btn, '복사됨 ✓'); break;
+      case 'wsJoinBtn': joinWs(); break;
+      case 'saveWsCreate': switchWs(randWs()); openSave(); break; // 새 워크스페이스 → 저장 이어서
+      case 'saveWsJoin': $('#saveModal').style.display = 'none'; syncWsUi(); $('#wsModal').style.display = 'flex'; break;
+      case 'saveCancel': $('#saveModal').style.display = 'none'; break;
+      case 'saveApply': applySave(); break;
+      case 'shortCopy': copyIcon($('#shortUrlBox').dataset.url || '', btn); break;
+      case 'shortLineCopy': copyIcon($('#shortLine').dataset.url || '', btn); break;
+      case 'openBtn': window.open(apiUrl(readState()), '_blank'); break;
+      case 'shareBtn': copyText(location.href, btn, '복사됨 ✓'); break;
+    }
   });
 
   // ---- 초기화 ----
@@ -1139,6 +1172,11 @@ npm run deploy</pre>
     } catch { typeOptions = { fakerPaths: [], dslTypes: [] }; }
     buildAcItems();
     refreshTeam();
+    // 복사 버튼들을 아이콘으로 초기화
+    for (const id of ['copyBtn', 'shortCopy', 'shortLineCopy', 'respCopyBtn']) {
+      const b = $('#' + id);
+      if (b) b.innerHTML = ICON_COPY;
+    }
     if (!loadFromAddressBar()) {
       // 첫 방문(맨 주소): 사용자 프리셋으로 온보딩 + 웰컴 배너.
       // 공유 링크로 들어오면 URL 에 스키마가 있으므로 배너를 띄우지 않는다.
