@@ -648,6 +648,7 @@ npm run deploy</pre>
   }
 
   function applyPreset(name) {
+    loadedPreset = null; // 내장 프리셋은 저장본과 무관
     const p = PRESETS[name];
     $('#resource').value = p.res;
     fieldsEl.innerHTML = '';
@@ -677,13 +678,17 @@ npm run deploy</pre>
     $('#urlBox').innerHTML = '';
     const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
     $('#urlBox').appendChild(a);
-    // 저장된 프리셋 기반이면 짧은 URL 도 함께 표시
+    // 저장된 프리셋 기반이면 짧은 URL + 프리셋 이름 표시, 드롭다운 선택 상태도 동기화
     const short = shortApiUrl(state);
     $('#shortLine').style.display = short ? 'flex' : 'none';
     if (short) {
       const sa = $('#shortA');
       sa.href = short; sa.textContent = short;
       $('#shortLine').dataset.url = short;
+      $('#shortLine').querySelector('.stag').textContent = loadedPreset.name ? loadedPreset.name : '짧은 URL';
+      $('#teamSel').value = loadedPreset.id;
+    } else {
+      $('#teamSel').value = ''; // 저장본과 달라짐 → 선택 해제
     }
     syncAddressBar(state);
     clearTimeout(timer);
@@ -741,6 +746,7 @@ npm run deploy</pre>
       result = await res.json();
       if (!res.ok) { $('#pasteError').textContent = (result.error || '추론 실패') + (result.hint ? ' — ' + result.hint : ''); return; }
     } catch (e) { $('#pasteError').textContent = '요청 실패: ' + e; return; }
+    loadedPreset = null; // 붙여넣기로 새 스키마 시작 — 저장본과 무관
     fieldsEl.innerHTML = '';
     for (const f of result.fields) addRow(f.name, f.type);
     const note = $('#inferNote');
@@ -785,6 +791,7 @@ npm run deploy</pre>
         o.textContent = it.name + ' (/api/' + it.res + ')';
         sel.appendChild(o);
       }
+      if (loadedPreset) sel.value = loadedPreset.id; // 목록 갱신 후에도 현재 프리셋 유지
     } catch {}
   }
 
@@ -809,7 +816,7 @@ npm run deploy</pre>
       const res = await fetch('/schema/saved/' + id);
       if (!res.ok) return;
       const rec = await res.json();
-      loadedPreset = { id: rec.id, res: rec.res, query: rec.query };
+      loadedPreset = { id: rec.id, res: rec.res, query: rec.query, name: rec.name };
       applyQueryString(rec.res, rec.query);
     } catch {}
   }
@@ -865,7 +872,7 @@ npm run deploy</pre>
       $('#shortUrlBox').textContent = shortUrl;
       $('#shortUrlBox').dataset.url = shortUrl;
       $('#saveResult').style.display = 'block';
-      loadedPreset = { id: body.id, res: body.res, query: body.query }; // 이후 URL 박스에도 짧은 URL 상시 표시
+      loadedPreset = { id: body.id, res: body.res, query: body.query, name: body.name }; // 이후 URL 박스에도 짧은 URL 상시 표시
       refreshTeam();
       update();
     } catch (e) {
@@ -935,8 +942,7 @@ npm run deploy</pre>
   });
   document.addEventListener('change', (e) => {
     if (e.target.id === 'teamSel' && e.target.value) {
-      loadTeamPreset(e.target.value);
-      e.target.selectedIndex = 0;
+      loadTeamPreset(e.target.value); // 선택 상태 유지 — 어떤 프리셋인지 계속 표시
     }
   });
   document.addEventListener('click', (e) => {
