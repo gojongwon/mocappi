@@ -879,11 +879,9 @@ npm run deploy</pre>
       $('#wsBtn').style.display = '';
       syncWsUi();
       const sel = $('#teamSel');
-      // 프리셋 목록은 워크스페이스 전용. 공용 모드에서는 레거시 항목이 있을 때만
-      // 조회 전용으로 노출 (기존 저장분을 워크스페이스로 옮기는 이주 경로)
-      const showSel = !!WS || body.items.length > 0;
-      sel.style.display = showSel ? '' : 'none';
-      sel.innerHTML = '<option value="">' + (WS ? '팀 프리셋…' : '공용 프리셋 (조회 전용)…') + '</option>';
+      // 프리셋 목록·저장은 워크스페이스 전용 — 공용 모드에서는 숨김
+      sel.style.display = WS ? '' : 'none';
+      sel.innerHTML = '<option value="">팀 프리셋…</option>';
       if (WS && body.items.length === 0) {
         const o = document.createElement('option');
         o.disabled = true;
