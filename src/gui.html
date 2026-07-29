@@ -435,6 +435,11 @@ customer.address.city  =  location.city</pre>
       <button id="wsShare" style="background:var(--accent-soft);color:var(--accent)">워크스페이스 링크 복사</button>
       <button id="wsPublic" style="background:var(--bg);color:var(--muted)">공용으로 전환</button>
     </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <input id="wsJoin" placeholder="전달받은 워크스페이스 ID 또는 링크 붙여넣기" style="flex:1;font-family:var(--mono);font-size:12.5px" spellcheck="false">
+      <button id="wsJoinBtn" style="border:none;border-radius:var(--radius-s);padding:8px 18px;cursor:pointer;font-size:13px;font-weight:600;background:var(--accent);color:#fff;flex:none">전환</button>
+    </div>
+    <div id="wsJoinError" style="color:var(--danger);font-size:12.5px;min-height:1.2em;margin-top:4px"></div>
     <p style="margin-top:12px;font-size:12px;color:var(--faint)">
       링크(주소의 <code style="font-family:var(--mono)">_ws</code>)를 잃어버리면 그 워크스페이스를 다시 찾을 수 없으니, 팀 문서에 링크를 저장해두세요.
       워크스페이스 저장물은 180일간 사용이 없으면 만료됩니다 (다시 저장하면 갱신).</p>
@@ -824,6 +829,36 @@ npm run deploy</pre>
     update();
   }
 
+  /** 붙여넣은 값에서 워크스페이스 ID 추출 — 순수 ID / 링크(_ws=) / sid(ws.id) 모두 허용 */
+  function parseWsInput(raw) {
+    raw = (raw || '').trim();
+    if (!raw) return null;
+    try {
+      if (raw.includes('://') || raw.includes('?')) {
+        const u = new URL(raw, location.origin);
+        const fromWs = u.searchParams.get('_ws');
+        if (fromWs && /^[a-z0-9]{6,24}$/.test(fromWs)) return fromWs;
+        const fromSid = u.searchParams.get('_s');
+        if (fromSid && fromSid.includes('.')) raw = fromSid;
+        else return null;
+      }
+    } catch { return null; }
+    const dot = raw.indexOf('.');
+    if (dot > 0) raw = raw.slice(0, dot); // sid(ws.id) → ws 부분
+    return /^[a-z0-9]{6,24}$/.test(raw) ? raw : null;
+  }
+
+  function joinWs() {
+    const ws = parseWsInput($('#wsJoin').value);
+    if (!ws) {
+      $('#wsJoinError').textContent = '워크스페이스 ID 를 인식할 수 없습니다. 소문자 영숫자 6~24자, 또는 _ws= 가 포함된 링크를 붙여넣으세요.';
+      return;
+    }
+    $('#wsJoinError').textContent = '';
+    $('#wsJoin').value = '';
+    switchWs(ws);
+  }
+
   // ---- 팀 스키마 저장/불러오기 ----
   // KV 미설정이면: 저장 버튼은 보이되 클릭 시 활성화 안내, 팀 프리셋 목록만 숨김
   let teamAvailable = false;
@@ -991,6 +1026,7 @@ npm run deploy</pre>
     }
   });
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target && e.target.id === 'wsJoin') { joinWs(); return; }
     if (acInput && ac.style.display === 'block') {
       if (e.key === 'ArrowDown') { e.preventDefault(); acSel = Math.min(acSel + 1, acList.length - 1); acHighlight(); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); acSel = Math.max(acSel - 1, 0); acHighlight(); return; }
@@ -1024,6 +1060,7 @@ npm run deploy</pre>
     else if (e.target.id === 'wsNew') { switchWs(randWs()); }
     else if (e.target.id === 'wsPublic') { switchWs(null); }
     else if (e.target.id === 'wsShare') { copyText(location.href, e.target, '복사됨 ✓'); }
+    else if (e.target.id === 'wsJoinBtn') { joinWs(); }
     else if (e.target.id === 'saveCancel' || e.target.id === 'saveModal') { $('#saveModal').style.display = 'none'; }
     else if (e.target.id === 'saveApply') { applySave(); }
     else if (e.target.id === 'shortCopy') { copyText($('#shortUrlBox').dataset.url || '', e.target, '복사됨 ✓'); }
