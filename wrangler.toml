@@ -3,6 +3,17 @@ name = "mock-api"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
+# ---- 팀 스키마 저장 (선택) ----
+# 활성화 방법:
+#   1) npx wrangler kv namespace create SCHEMAS
+#   2) 출력된 id 를 아래에 붙여넣고 주석 해제
+#   3) npm run deploy
+# 바인딩이 없어도 나머지 기능은 전부 정상 동작한다 (저장 UI 만 자동 숨김).
+#
+# [[kv_namespaces]]
+# binding = "SCHEMAS"
+# id = "여기에_네임스페이스_ID"
+
 # gui.html 을 문자열로 임포트
 [[rules]]
 type = "Text"

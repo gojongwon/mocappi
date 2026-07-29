@@ -100,6 +100,27 @@ tags[]=lorem.word:3           # 배열 — 값의 마지막 :정수 가 길이 (
   "hint": "범위 구분자는 '~' 입니다. 예: int:20~60" }
 ```
 
+## 팀 스키마 저장 (선택 기능)
+
+GUI 의 **팀에 저장** 버튼으로 현재 스키마를 팀 전체가 쓸 수 있게 저장한다.
+저장하면 짧은 URL 이 생기고(`/api/users?_s=aB3xK9`), 상단 "팀 프리셋" 목록에서 누구나 불러올 수 있다.
+
+- **불변(content-addressed)**: 저장 내용의 해시가 ID. 같은 스키마 = 같은 ID, 고쳐서 다시 저장하면 새 ID.
+  한 번 공유된 `_s=` URL 은 영원히 같은 데이터를 반환한다.
+- **오버라이드**: `?_s=aB3xK9&_page=2&_limit=50` 처럼 저장본 위에 파라미터를 덮어쓸 수 있다.
+- API: `POST /schema/save` {name, res, query} · `GET /schema/saved` · `GET|DELETE /schema/saved/:id`
+
+### 팀 저장 활성화 (1회)
+
+```bash
+npx wrangler kv namespace create SCHEMAS
+# 출력된 id 를 wrangler.toml 의 [[kv_namespaces]] 블록에 붙여넣고 주석 해제
+npm run deploy
+```
+
+KV 를 연결하지 않아도 나머지 기능은 전부 정상 동작한다 (저장 UI 만 자동으로 숨겨짐).
+무료 티어: 읽기 10만/일, 쓰기 1천/일 — 팀 사용에 충분.
+
 ## TypeScript 타입
 
 GUI 의 **TS 타입 복사** 버튼(또는 `GET /schema/ts?<스키마>&_res=리소스명`)이 현재 스키마의 interface,

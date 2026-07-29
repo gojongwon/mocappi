@@ -1,5 +1,5 @@
 /**
- * 라우터: GET / (GUI), GET /api/:resource, GET /schema/types, POST /schema/infer
+ * 라우터: GET / (GUI), GET /api/:resource, /schema/* (types·infer·ts·save·saved)
  * 의존성 없이 URL.pathname 분기.
  */
 import guiHtml from './gui.html';
@@ -7,13 +7,24 @@ import { parseQuery } from './dsl';
 import { generateResponse } from './generate';
 import { inferSchema } from './infer';
 import { generateTsTypes } from './tstype';
+import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, type KVNamespaceLike } from './store';
 import { DslError, TYPE_DOCS } from './registry';
+
+export interface Env {
+  /** wrangler.toml 의 kv_namespaces 바인딩 — 없으면 팀 저장 기능만 비활성 */
+  SCHEMAS?: KVNamespaceLike;
+}
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, HEAD, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, HEAD, OPTIONS',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Max-Age': '86400',
+};
+
+const NO_KV = {
+  error: 'Storage not configured',
+  hint: 'KV 네임스페이스가 연결되지 않아 팀 저장을 쓸 수 없습니다. README 의 "팀 저장 활성화" 절차를 따라주세요.',
 };
 
 function json(body: unknown, status = 200): Response {
@@ -30,7 +41,7 @@ function json(body: unknown, status = 200): Response {
 const RESOURCE_RE = /^\/api\/([A-Za-z0-9_-]+)\/?$/;
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: Env = {}): Promise<Response> {
     const url = new URL(request.url);
 
     // CORS 프리플라이트 — 목 API 에서 CORS 가 막히면 존재 의미가 없다
@@ -64,6 +75,46 @@ export default {
       }
     }
 
+    // 팀 스키마 저장 (content-addressed — 같은 내용은 같은 ID)
+    if (url.pathname === '/schema/save') {
+      if (request.method !== 'POST') {
+        return json({ error: 'Method not allowed', hint: '{name, res, query} 를 POST 로 보내세요.' }, 405);
+      }
+      if (!env.SCHEMAS) return json(NO_KV, 501);
+      let body: { name?: unknown; res?: unknown; query?: unknown };
+      try {
+        body = (await request.json()) as typeof body;
+      } catch {
+        return json({ error: 'Invalid JSON', hint: '{name, res, query} 형식의 JSON 이어야 합니다.' }, 400);
+      }
+      try {
+        const rec = await saveSchema(env.SCHEMAS, body.name, body.res, body.query);
+        return json({ ...rec, apiUrl: `/api/${rec.res}?_s=${rec.id}` });
+      } catch (e) {
+        if (e instanceof DslError) return json(e.info, 400);
+        return json({ error: 'Internal error', hint: String(e) }, 500);
+      }
+    }
+
+    // 저장 목록 / 개별 조회 / 삭제
+    if (url.pathname === '/schema/saved') {
+      if (!env.SCHEMAS) return json(NO_KV, 501);
+      return json({ items: await listSchemas(env.SCHEMAS) });
+    }
+    const sm = url.pathname.match(/^\/schema\/saved\/([a-z0-9]{4,16})$/);
+    if (sm) {
+      if (!env.SCHEMAS) return json(NO_KV, 501);
+      if (request.method === 'DELETE') {
+        const ok = await deleteSchema(env.SCHEMAS, sm[1]);
+        return ok
+          ? json({ ok: true, hint: '삭제됨 — 이 ID 를 쓰는 _s= URL 은 더 이상 동작하지 않습니다.' })
+          : json({ error: 'Unknown schema id', value: sm[1], hint: 'GET /schema/saved 로 목록을 확인하세요.' }, 404);
+      }
+      const rec = await getSchema(env.SCHEMAS, sm[1]);
+      if (!rec) return json({ error: 'Unknown schema id', value: sm[1], hint: 'GET /schema/saved 로 목록을 확인하세요.' }, 404);
+      return json(rec);
+    }
+
     // JSON 예시 붙여넣기 → 스키마 추론
     if (url.pathname === '/schema/infer') {
       if (request.method !== 'POST') {
@@ -89,7 +140,18 @@ export default {
         return json({ error: 'Method not allowed', hint: 'v1 은 GET 만 지원합니다. 쓰기 API 는 v2 후보.' }, 405);
       }
       try {
-        const q = parseQuery(url.searchParams);
+        // _s=<id> 면 저장된 스키마를 불러와 요청 파라미터와 병합 (요청이 우선)
+        let params = url.searchParams;
+        const sid = params.get('_s');
+        if (sid !== null) {
+          if (!env.SCHEMAS) return json(NO_KV, 501);
+          const rec = await getSchema(env.SCHEMAS, sid);
+          if (!rec) {
+            return json({ error: 'Unknown schema id', field: '_s', value: sid, hint: '저장된 스키마가 없습니다. GET /schema/saved 로 목록을 확인하세요.' }, 404);
+          }
+          params = mergeQuery(rec.query, params);
+        }
+        const q = parseQuery(params);
         const body = generateResponse(q); // 생성 먼저 — _delay/_status 가 달라도 데이터는 동일
         if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
         return json(body, q.status);

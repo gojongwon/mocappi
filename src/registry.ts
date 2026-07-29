@@ -230,6 +230,7 @@ export const TYPE_DOCS = {
     { name: '_delay', default: '0', desc: '응답 지연 ms (최대 5000)' },
     { name: '_status', default: '200', desc: '강제 HTTP 상태코드' },
     { name: '_wrap', default: 'envelope', desc: 'envelope | none(배열만)' },
+    { name: '_s', default: '—', desc: '저장된 팀 스키마 ID. 다른 파라미터로 오버라이드 가능 (예: ?_s=aB3xK9&_page=2)' },
   ],
   dslTypes: [
     { type: 'int', syntax: 'int:min~max', example: 'int:20~60', label: '정수 범위' },
