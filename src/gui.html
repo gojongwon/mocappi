@@ -328,6 +328,7 @@
     background: var(--code-bg); border-radius: 4px; padding: 1px 6px; font-size: 11.5px; font-family: var(--mono);
   }
   .hintbar a {
+    white-space: nowrap; /* 링크가 단어 중간에서 두 줄로 쪼개지지 않게 (EN "All types" 등) */
     color: var(--ink); font-weight: 700; text-decoration: underline;
     text-decoration-color: var(--accent); text-decoration-thickness: 2.5px; text-underline-offset: 3px;
   }
@@ -438,6 +439,8 @@
     .presets .plabel, .presets button[data-preset] { display: none; }
     #teamSel { flex: 1 1 auto; width: 100%; min-width: 0; max-width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .hdiv { display: none; }
+    /* 고급 요약은 한 줄 유지 — 넘치면 말줄임 (EN 나열이 길어 두 줄로 접히는 것 방지) */
+    .opts-adv summary { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     main { padding: 12px 12px 24px; gap: 14px; }
     .panel { padding: 16px 14px; }
@@ -848,7 +851,7 @@ npm run deploy</pre>
     phQ: 'substring match on values',
     phQin: 'limit to (e.g. name,city)',
     phSeed: 'e.g. 123 (a detail API id)',
-    advSummary: 'Advanced — delay · status code · shape · seed · format',
+    advSummary: 'Advanced — delay · status · shape · seed · format',
     pasteJson: '{ } Paste JSON',
     pasteJsonSub: 'Paste a real API response and the schema builds itself',
     // URL 패널
