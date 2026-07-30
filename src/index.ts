@@ -130,6 +130,12 @@ export default {
     }
 
     // SEO/공유 정적 리소스
+    if (url.pathname === '/google8079946a1d05313a.html') {
+      // Google Search Console 소유권 확인 파일 — 삭제하면 소유권이 풀리므로 유지
+      return new Response('google-site-verification: google8079946a1d05313a.html', {
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+      });
+    }
     if (url.pathname === '/robots.txt') {
       return new Response('User-agent: *\nAllow: /\n', {
         headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=86400' },

@@ -30,3 +30,11 @@ describe('SEO', () => {
     expect(html).toContain('twitter:card');
   });
 });
+
+describe('Search Console 소유권 확인', () => {
+  it('인증 파일이 정확한 내용으로 서빙된다', async () => {
+    const res = await worker.fetch(new Request('https://x/google8079946a1d05313a.html'));
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('google-site-verification: google8079946a1d05313a.html');
+  });
+});
