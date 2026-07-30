@@ -114,7 +114,9 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
           seedParam = value;
           break;
         case '_locale':
-          if (value !== 'ko' && value !== 'en') fail('Invalid reserved parameter', key, value, "_locale 은 'ko' 또는 'en' 입니다.");
+          if (value !== 'ko' && value !== 'en' && value !== 'ja' && value !== 'zh') {
+            fail('Invalid reserved parameter', key, value, "_locale 은 ko | en | ja | zh 입니다.");
+          }
           locale = value;
           break;
         case '_delay':

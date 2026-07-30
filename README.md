@@ -67,7 +67,7 @@ Loading and error-state testing:
 | `_limit` | 10 | Items per page (max 1000) |
 | `_total` | 100 | Virtual total count |
 | `_seed` | URL hash | Explicit seed |
-| `_locale` | ko | `ko` \| `en` |
+| `_locale` | ko | `ko` \| `en` \| `ja` \| `zh` |
 | `_delay` | 0 | Response delay in ms (max 5000) |
 | `_status` | 200 | Forced HTTP status code |
 | `_wrap` | envelope | `envelope` \| `none` (bare array) |
@@ -133,7 +133,7 @@ Note: upgrading the faker library may change generated values — pin the versio
 Mock data should never reach a real person:
 
 - `internet.email` always generates `@example.com` addresses — an IANA-reserved domain (RFC 2606), guaranteed undeliverable, with readable ASCII usernames.
-- `phone.number` generates well-formed numbers: `010-####-####` (ko) and the fiction-reserved `(###) 555-01##` range (en) — so format validation and masking logic still work.
+- `phone.number` generates well-formed numbers: `010-####-####` (ko), `090-####-####` (ja), `1[3-9]#########` (zh), and the fiction-reserved `(###) 555-01##` range (en) — so format validation and masking logic still work.
 
 ## Workspaces (multi-team / public use)
 

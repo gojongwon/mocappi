@@ -2,10 +2,10 @@
  * 타입 레지스트리 — DSL 타입 문자열 → 생성 함수 컴파일.
  * 각 생성 함수는 (seed, ctx) => value 시그니처의 순수 함수다.
  */
-import { Faker, ko, en, base, type Randomizer } from '@faker-js/faker';
+import { Faker, ko, en, ja, zh_CN, base, type Randomizer } from '@faker-js/faker';
 import { createRNG } from './rng';
 
-export type Locale = 'ko' | 'en';
+export type Locale = 'ko' | 'en' | 'ja' | 'zh';
 
 /**
  * mulberry32 기반 커스텀 randomizer.
@@ -29,15 +29,16 @@ function mulberryRandomizer(): Randomizer {
   };
 }
 
-const fakerKO = new Faker({ locale: [ko, en, base], randomizer: mulberryRandomizer() });
-const fakerEN = new Faker({ locale: [en, base], randomizer: mulberryRandomizer() });
-
-const FAKERS: Record<Locale, Faker> = { ko: fakerKO, en: fakerEN };
+const FAKERS: Record<Locale, Faker> = {
+  ko: new Faker({ locale: [ko, en, base], randomizer: mulberryRandomizer() }),
+  en: new Faker({ locale: [en, base], randomizer: mulberryRandomizer() }),
+  ja: new Faker({ locale: [ja, en, base], randomizer: mulberryRandomizer() }),
+  zh: new Faker({ locale: [zh_CN, en, base], randomizer: mulberryRandomizer() }),
+};
 
 // faker의 date.* 계열은 기본 refDate가 "지금"이라 결정론이 깨진다. 고정한다.
 const REF_DATE = new Date('2026-01-01T00:00:00.000Z');
-fakerKO.setDefaultRefDate(REF_DATE);
-fakerEN.setDefaultRefDate(REF_DATE);
+for (const f of Object.values(FAKERS)) f.setDefaultRefDate(REF_DATE);
 
 export interface GenContext {
   globalIndex: number;
@@ -102,7 +103,7 @@ const DENY_MODULES = new Set([
 // 연락처 안전 오버라이드 — "형식은 유효, 실존은 불가능"
 // email: @example.com 은 RFC 2606 예약 도메인이라 절대 배달되지 않음이 보장된다.
 //        (faker 기본값은 실제 gmail.com 등을 써서 우연히 실존할 수 있고, ko 유저명은 깨진다)
-// phone: ko 는 010 유효 형식, en 은 픽션용으로 예약된 555-01## 대역.
+// phone: ko 010-, ja 090-, zh 1[3-9]+9자리 유효 형식. en 은 픽션 예약 대역 555-01##.
 const PATH_OVERRIDES: Record<string, Generator> = {
   'internet.email': (seed) => {
     const f = FAKERS.en; // 이메일 유저명은 ASCII — 로케일 무관
@@ -115,10 +116,17 @@ const PATH_OVERRIDES: Record<string, Generator> = {
   },
   'phone.number': (seed, ctx) => {
     const rng = createRNG(seed);
-    if (ctx.locale === 'en') {
-      return `(${rng.int(200, 989)}) 555-01${String(rng.int(0, 99)).padStart(2, '0')}`;
+    const d4 = () => String(rng.int(0, 9999)).padStart(4, '0');
+    switch (ctx.locale) {
+      case 'en':
+        return `(${rng.int(200, 989)}) 555-01${String(rng.int(0, 99)).padStart(2, '0')}`;
+      case 'ja':
+        return `090-${d4()}-${d4()}`;
+      case 'zh':
+        return `1${rng.int(3, 9)}${String(rng.int(0, 999999999)).padStart(9, '0')}`;
+      default:
+        return `010-${d4()}-${d4()}`;
     }
-    return `010-${String(rng.int(0, 9999)).padStart(4, '0')}-${String(rng.int(0, 9999)).padStart(4, '0')}`;
   },
 };
 
@@ -133,7 +141,7 @@ function compileFakerPath(raw: string): Generator {
   const notFound = () =>
     fail('Unknown faker path', raw, `'${raw}' 를 찾을 수 없습니다. GET /schema/types 에서 지원 목록을 확인하세요.`);
   if (mod.startsWith('_') || method.startsWith('_') || DENY_MODULES.has(mod)) notFound();
-  const m = (fakerEN as unknown as Record<string, unknown>)[mod];
+  const m = (FAKERS.en as unknown as Record<string, unknown>)[mod];
   if (!m || typeof m !== 'object' || typeof (m as Record<string, unknown>)[method] !== 'function') notFound();
   return (seed, ctx) => {
     const f = FAKERS[ctx.locale];
@@ -332,7 +340,7 @@ export const TYPE_DOCS = {
     { name: '_limit', default: '10', desc: '페이지당 항목 수 (최대 1000)' },
     { name: '_total', default: '100', desc: '전체 항목 수 (가상)' },
     { name: '_seed', default: 'URL 해시', desc: '명시하면 고정 시드 사용' },
-    { name: '_locale', default: 'ko', desc: 'ko | en' },
+    { name: '_locale', default: 'ko', desc: 'ko | en | ja | zh' },
     { name: '_delay', default: '0', desc: '응답 지연 ms (최대 5000)' },
     { name: '_status', default: '200', desc: '강제 HTTP 상태코드' },
     { name: '_wrap', default: 'envelope', desc: 'envelope | none(배열만)' },
