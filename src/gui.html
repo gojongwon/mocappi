@@ -445,7 +445,7 @@
     </div>
 
     <details class="opts-adv" id="optsAdv">
-      <summary>고급 — 지연 · 상태코드 · 응답 모양 · 고정 시드</summary>
+      <summary>고급 — 지연 · 상태코드 · 응답 모양 · 고정 시드 · 형식</summary>
       <div class="opts">
         <div><label>지연 ms <input class="okey" data-for="_delay" value="_delay" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
         <div><label>상태코드 <input class="okey" data-for="_status" value="_status" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
@@ -453,6 +453,9 @@
         <select id="oWrap"><option value="envelope">envelope</option><option value="none">배열만</option><option value="one">단일 객체</option></select>
       </div>
         <div><label>고정 시드 <input class="okey" data-for="_seed" value="_seed" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label><input id="oSeed" placeholder="예: 123 (상세 API 의 id)" spellcheck="false"></div>
+        <div><label>형식 <input class="okey" data-for="_format" value="_format" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
+          <select id="oFormat"><option value="json">JSON</option><option value="ndjson">NDJSON (줄 단위)</option><option value="csv">CSV</option></select>
+        </div>
       </div>
     </details>
 
@@ -676,8 +679,8 @@ npm run deploy</pre>
   'use strict';
   const $ = (s) => document.querySelector(s);
   const fieldsEl = $('#fields');
-  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '' };
-  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed' };
+  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
+  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat' };
 
   // ---- 옵션 키 별칭 (인라인 편집 → _alias 자동 조립) ----
   const ALIAS_OK_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -919,6 +922,7 @@ npm run deploy</pre>
       addRow(k, v);
     }
     if (!fieldsEl.children.length) addRow();
+    $('#optsAdv').open = advActive();
     return true;
   }
 
@@ -930,6 +934,7 @@ npm run deploy</pre>
     for (const [n, v] of p.fields) addRow(n, v);
     setOptKeys(null); // 내장 프리셋은 기본 키 사용
     for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
+    $('#optsAdv').open = advActive();
     update();
   }
 
@@ -948,16 +953,18 @@ npm run deploy</pre>
 
   // ---- 미리보기 (디바운스 300ms) ----
   let timer = null; let reqSeq = 0; let lastPreviewText = '';
-  let prevAdvOn = false;
+  /** 고급 옵션 중 하나라도 기본값이 아닌가 */
+  function advActive() {
+    return $('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
+      $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '' ||
+      $('#oFormat').value !== 'json';
+  }
+
   function update() {
     const state = readState();
-    // 고급 옵션 자동 열림/닫힘 — 비기본 값이면 펼치고, 기본값으로 "돌아오는 순간"만 접는다
-    // (사용자가 값을 넣으려고 방금 손으로 연 패널은 닫지 않는다)
-    const advOn = $('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
-      $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '';
-    if (advOn) $('#optsAdv').open = true;
-    else if (prevAdvOn) $('#optsAdv').open = false;
-    prevAdvOn = advOn;
+    // 입력 중에는 절대 닫지 않는다 — 자동으로는 열기만.
+    // (닫힘은 프리셋 전환·URL 로드 같은 문맥 전환 시점에만 advActive 기준으로)
+    if (advActive()) $('#optsAdv').open = true;
     const url = apiUrl(state);
     $('#urlBox').innerHTML = '';
     const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
@@ -1185,6 +1192,7 @@ npm run deploy</pre>
       addRow(k, v);
     }
     if (!fieldsEl.children.length) addRow();
+    $('#optsAdv').open = advActive();
     update();
   }
 
@@ -1443,6 +1451,7 @@ npm run deploy</pre>
       for (const [n, v] of p.fields) addRow(n, v);
       setOptKeys(null);
       for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
+      $('#optsAdv').open = advActive();
       $('#welcome').style.display = 'block';
     }
     update();
