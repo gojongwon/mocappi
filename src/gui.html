@@ -260,6 +260,19 @@
 
   /* ===== 미리보기 ===== */
   .preview-wrap { position: relative; }
+  #preview .nd-row { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dashed rgba(255,255,255,.09); }
+  #preview .nd-row:last-of-type { border-bottom: none; }
+  #preview .nd-no { color: rgba(255,255,255,.32); min-width: 2.4em; text-align: right; flex: none; user-select: none; }
+  #preview .nd-json { white-space: pre-wrap; word-break: break-all; }
+  #preview .csv-t { border-collapse: collapse; white-space: normal; width: max-content; min-width: 100%; }
+  #preview .csv-t th {
+    position: sticky; top: -16px; background: #2a2a30; color: var(--accent);
+    text-align: left; padding: 6px 12px; border-bottom: 1.5px solid rgba(255,212,0,.5);
+    font-weight: 700; white-space: nowrap;
+  }
+  #preview .csv-t td { padding: 4px 12px; border-bottom: 1px solid rgba(255,255,255,.07); color: #d9d9df; white-space: nowrap; max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
+  #preview .csv-t tbody tr:nth-child(even) { background: rgba(255,255,255,.035); }
+  #preview .pv-more { color: rgba(255,255,255,.4); padding: 10px 0 2px; }
   pre#preview {
     font-family: var(--mono); font-size: 12.5px; background: var(--ink); color: #8f8f9a;
     border: 1.5px solid var(--ink); border-radius: var(--radius-s); padding: 16px; overflow: auto;
@@ -939,6 +952,7 @@ npm run deploy</pre>
   }
 
   // ---- JSON 구문 하이라이팅 ----
+  // 이 아래는 JS — CSS 는 스타일 블록에 있음
   function highlightJson(text) {
     const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return esc.replace(
@@ -949,6 +963,49 @@ npm run deploy</pre>
         return '<span class="j-num">' + m + '</span>';
       },
     );
+  }
+
+  // NDJSON — 줄 번호 + 줄별 구문 하이라이팅
+  function renderNdjson(text) {
+    const MAX = 200;
+    const lines = text.trimEnd().split('\n').filter((l) => l !== '');
+    let html = '';
+    lines.slice(0, MAX).forEach((l, i) => {
+      html += '<div class="nd-row"><span class="nd-no">' + (i + 1) + '</span><span class="nd-json">' + highlightJson(l) + '</span></div>';
+    });
+    if (lines.length > MAX) html += '<div class="pv-more">… 외 ' + (lines.length - MAX) + '줄 — 미리보기는 ' + MAX + '줄까지 (복사는 전체)</div>';
+    $('#preview').innerHTML = html || '(빈 응답)';
+  }
+
+  // CSV — RFC 4180 파싱 후 표로
+  function parseCsv(text) {
+    const rows = []; let row = []; let cur = ''; let q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+        else cur += c;
+      } else if (c === '"') q = true;
+      else if (c === ',') { row.push(cur); cur = ''; }
+      else if (c === '\n') { row.push(cur.replace(/\r$/, '')); rows.push(row); row = []; cur = ''; }
+      else cur += c;
+    }
+    if (cur !== '' || row.length) { row.push(cur.replace(/\r$/, '')); rows.push(row); }
+    return rows.filter((r) => r.length > 1 || r[0] !== '');
+  }
+
+  function renderCsv(text) {
+    const rows = parseCsv(text);
+    if (rows.length < 1) { $('#preview').textContent = text; return; }
+    const MAX = 100;
+    const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    let html = '<table class="csv-t"><thead><tr>' + rows[0].map((c) => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>';
+    for (const r of rows.slice(1, MAX + 1)) {
+      html += '<tr>' + r.map((c) => '<td title="' + esc(c).replace(/"/g, '&quot;') + '">' + esc(c) + '</td>').join('') + '</tr>';
+    }
+    html += '</tbody></table>';
+    if (rows.length - 1 > MAX) html += '<div class="pv-more">… 외 ' + (rows.length - 1 - MAX) + '행 — 미리보기는 ' + MAX + '행까지 (복사는 전체)</div>';
+    $('#preview').innerHTML = html;
   }
 
   // ---- 미리보기 (디바운스 300ms) ----
@@ -1011,12 +1068,21 @@ npm run deploy</pre>
       const ms = Math.round(performance.now() - t0);
       const cls = res.ok ? 'ok' : 'err';
       $('#statusLine').innerHTML = 'HTTP <span class="' + cls + '">' + res.status + '</span> · ' + ms + 'ms';
-      let body = text;
-      let isJson = false;
-      try { body = JSON.stringify(JSON.parse(text), null, 2); isJson = true; } catch {}
-      lastPreviewText = body;
-      if (isJson) $('#preview').innerHTML = highlightJson(body);
-      else $('#preview').textContent = body;
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('x-ndjson')) {
+        lastPreviewText = text;
+        renderNdjson(text);
+      } else if (ct.includes('text/csv')) {
+        lastPreviewText = text;
+        renderCsv(text);
+      } else {
+        let body = text;
+        let isJson = false;
+        try { body = JSON.stringify(JSON.parse(text), null, 2); isJson = true; } catch {}
+        lastPreviewText = body;
+        if (isJson) $('#preview').innerHTML = highlightJson(body);
+        else $('#preview').textContent = body;
+      }
     } catch (e) {
       if (seq !== reqSeq) return;
       clearTimeout(loadingTimer);
