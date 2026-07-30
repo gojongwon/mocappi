@@ -430,6 +430,9 @@
     #pasteModal .card, #helpModal .card, #saveModal .card, #wsModal .card, #newsModal .card, #fbModal .card {
       width: calc(100vw - 24px) !important; padding: 16px; max-height: 88vh; overflow-y: auto;
     }
+    /* 모달 버튼: 좁은 폭에서 구겨지는 대신 세로 스택 (터치 친화) */
+    .modal-actions { flex-direction: column; align-items: stretch; gap: 8px; }
+    .modal-actions button { width: 100%; justify-content: center; text-align: center; }
     .help-body { max-height: none; padding-right: 0; }
     .help-body table { font-size: 12px; }
     .help-body th, .help-body td { padding: 6px 8px; }
