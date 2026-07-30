@@ -60,6 +60,16 @@
     background-repeat: no-repeat; background-position: right 11px center; background-size: 10px;
   }
   #teamSel.active { color: var(--ink); font-weight: 800; background-color: var(--accent-soft); }
+  .opts-adv { margin: 12px 0 0; border: 1.5px dashed var(--ink); border-radius: 8px; background: var(--bg); }
+  .opts-adv summary {
+    cursor: pointer; padding: 9px 13px; font-size: 12.5px; font-weight: 700;
+    color: var(--muted); list-style: none; user-select: none;
+  }
+  .opts-adv[open] summary { color: var(--ink); }
+  .opts-adv summary::-webkit-details-marker { display: none; }
+  .opts-adv summary::before { content: '▸  '; }
+  .opts-adv[open] summary::before { content: '▾  '; }
+  .opts-adv .opts { padding: 0 13px 13px; }
   .opts .okey {
     font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600;
     border: none; border-bottom: 1.5px dashed rgba(23,23,26,.35); background: transparent;
@@ -408,15 +418,21 @@
       <div><label>로케일 <input class="okey" data-for="_locale" value="_locale" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: locale)"></label>
         <select id="oLocale"><option value="ko">한국어</option><option value="en">English</option><option value="ja">日本語</option><option value="zh">中文</option></select>
       </div>
-      <div><label>지연 ms <input class="okey" data-for="_delay" value="_delay" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
       <div><label>검색 <input class="okey" data-for="_q" value="_q" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: keyword)"></label><input id="oQ" placeholder="값 부분일치 (예: 김)" spellcheck="false"></div>
       <div><label>검색 필드 <input class="okey" data-for="_qin" value="_qin" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: qin)"></label><input id="oQin" placeholder="한정 (예: name,city)" spellcheck="false"></div>
-      <div><label>상태코드 <input class="okey" data-for="_status" value="_status" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
-      <div><label>모양 <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
+    </div>
+
+    <details class="opts-adv" id="optsAdv">
+      <summary>고급 — 지연 · 상태코드 · 응답 모양 · 고정 시드</summary>
+      <div class="opts">
+        <div><label>지연 ms <input class="okey" data-for="_delay" value="_delay" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
+        <div><label>상태코드 <input class="okey" data-for="_status" value="_status" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
+        <div><label>모양 <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
         <select id="oWrap"><option value="envelope">envelope</option><option value="none">배열만</option><option value="one">단일 객체</option></select>
       </div>
-      <div><label>고정 시드 <input class="okey" data-for="_seed" value="_seed" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label><input id="oSeed" placeholder="예: 123 (상세 API 의 id)" spellcheck="false"></div>
-    </div>
+        <div><label>고정 시드 <input class="okey" data-for="_seed" value="_seed" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label><input id="oSeed" placeholder="예: 123 (상세 API 의 id)" spellcheck="false"></div>
+      </div>
+    </details>
 
     <button id="pasteBtn" class="paste-primary">
       { } JSON 붙여넣기
@@ -876,6 +892,11 @@ npm run deploy</pre>
   let timer = null; let reqSeq = 0; let lastPreviewText = '';
   function update() {
     const state = readState();
+    // 고급 옵션이 기본값이 아니면 접힌 채 숨겨지지 않게 자동으로 펼친다
+    if ($('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
+        $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '') {
+      $('#optsAdv').open = true;
+    }
     const url = apiUrl(state);
     $('#urlBox').innerHTML = '';
     const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
