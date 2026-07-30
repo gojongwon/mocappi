@@ -458,6 +458,8 @@
 
     /* iOS 포커스 줌 방지 — 16px 미만 입력은 포커스 시 화면이 강제 확대됨 */
     .frow input, #resource, .opts input, .opts select, #pasteInput, #fbText, #wsJoin, #saveName { font-size: 16px; }
+    /* 16px 로 커진 만큼 패딩을 줄여 전체 덩치는 이전과 비슷하게 */
+    .frow input, #resource, .opts input, .opts select { padding: 5px 9px; }
 
     /* 코너 버튼: 모바일에선 플로팅 대신 페이지 맨 아래 정적 배치 — 입력을 가리지 않게 */
     .corner { position: static; justify-content: center; margin: 4px 0 24px; }
@@ -1506,6 +1508,11 @@ npm run deploy</pre>
       if (e.target.matches('.fval')) acRender(e.target);
       update();
     }
+  });
+  // 모바일: 키보드만 내린 상태(포커스 유지)에서 재탭하면 focus 이벤트가 없어
+  // 드롭다운이 안 열리던 문제 — 탭(click)에도 자동완성을 연다
+  document.addEventListener('click', (e) => {
+    if (e.target.matches && e.target.matches('.fval')) acRender(e.target);
   });
   document.addEventListener('focusin', (e) => {
     if (e.target.matches && e.target.matches('.fval')) acRender(e.target);
