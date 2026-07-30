@@ -361,7 +361,7 @@
     <span class="plabel">프리셋</span>
     <button data-preset="users">사용자</button>
     <button data-preset="products">상품</button>
-    <button data-preset="orders">주문</button>
+    <button data-preset="orders">주문 상세</button>
     <select id="teamSel" style="display:none" title="이 워크스페이스에 저장된 스키마">
       <option value="">저장된 프리셋…</option>
     </select>
@@ -412,6 +412,10 @@
       <div><label>검색 <input class="okey" data-for="_q" value="_q" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: keyword)"></label><input id="oQ" placeholder="값 부분일치 (예: 김)" spellcheck="false"></div>
       <div><label>검색 필드 <input class="okey" data-for="_qin" value="_qin" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: qin)"></label><input id="oQin" placeholder="한정 (예: name,city)" spellcheck="false"></div>
       <div><label>상태코드 <input class="okey" data-for="_status" value="_status" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
+      <div><label>모양 <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
+        <select id="oWrap"><option value="envelope">envelope</option><option value="none">배열만</option><option value="one">단일 객체</option></select>
+      </div>
+      <div><label>고정 시드 <input class="okey" data-for="_seed" value="_seed" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label><input id="oSeed" placeholder="예: 123 (상세 API 의 id)" spellcheck="false"></div>
     </div>
 
     <button id="pasteBtn" class="paste-primary">
@@ -598,8 +602,8 @@ npm run deploy</pre>
   'use strict';
   const $ = (s) => document.querySelector(s);
   const fieldsEl = $('#fields');
-  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '' };
-  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin' };
+  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '' };
+  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed' };
 
   // ---- 옵션 키 별칭 (인라인 편집 → _alias 자동 조립) ----
   const ALIAS_OK_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -641,33 +645,44 @@ npm run deploy</pre>
     return { rev, byDef };
   }
 
+  // 프리셋 3종 — 기능 쇼케이스를 겸한다:
+  //  users:    목록 + nullable(?p) + 가중치 enum + 중첩 객체
+  //  products: pattern 코드 + 배열 + float + nullable 긴 글
+  //  orders:   상세 엔드포인트 — 다단계 경로 + _wrap=one + _seed
   const PRESETS = {
     users: {
       res: 'users',
       fields: [
-        ['id', 'uuid'], ['name', 'person.fullName'], ['email', 'internet.email'],
-        ['age', 'int:20~60'], ['address.city', 'location.city'],
-        ['avatar', 'image:200x200'], ['createdAt', 'date:2023-01-01~2026-07-01'],
+        ['id', 'uuid'], ['name', 'person.fullName'], ['email', 'internet.email?0.1'],
+        ['tel', 'phone.number'], ['role', 'enum:admin*1|member*8|guest*3'],
+        ['active', 'bool:0.85'], ['avatar', 'image:80x80'],
+        ['address.city', 'location.city'], ['address.street', 'location.streetAddress'],
+        ['joinedAt', 'date:2023-01-01~2026-07-01'],
       ],
       opts: { _total: '500', _limit: '20' },
     },
     products: {
       res: 'products',
       fields: [
-        ['id', 'uuid'], ['name', 'commerce.productName'], ['price', 'int:1000~99000'],
-        ['category', 'commerce.department'], ['inStock', 'bool:0.8'],
-        ['tags[]', 'lorem.word:3'], ['image', 'image:300x300'],
-      ],
-      opts: { _total: '200', _limit: '20' },
-    },
-    orders: {
-      res: 'orders',
-      fields: [
-        ['id', 'uuid'], ['orderNo', 'index'], ['status', 'enum:pending|paid|shipped|delivered'],
-        ['amount', 'int:10000~500000'], ['customer.name', 'person.fullName'],
-        ['customer.phone', 'phone.number'], ['orderedAt', 'date:2025-01-01~2026-07-28'],
+        ['id', 'index'], ['sku', 'pattern:PRD-####-??'], ['name', 'commerce.productName'],
+        ['price', 'int:1000~99000'], ['discountRate', 'float:0~0.5:2'],
+        ['stock', 'int:0~500'], ['status', 'enum:sale*7|soldout*2|hidden*1'],
+        ['tags[]', 'commerce.department:2'], ['images[]', 'image:300x300:3'],
+        ['description', 'text:80?0.2'],
       ],
       opts: { _total: '300', _limit: '20' },
+    },
+    orders: {
+      res: 'orders/1024',
+      fields: [
+        ['orderNo', 'pattern:ORD-2026-######'], ['status', 'enum:paid*5|shipped*3|delivered*4|cancelled*1'],
+        ['amount', 'int:9000~450000'], ['paidAt', 'date:2026-01-01~2026-07-29'],
+        ['customer.name', 'person.fullName'], ['customer.tel', 'phone.number'],
+        ['customer.email', 'internet.email'],
+        ['shipping.city', 'location.city'], ['shipping.street', 'location.streetAddress'],
+        ['items[]', 'commerce.productName:3'], ['memo', 'text:40?0.3'],
+      ],
+      opts: { _wrap: 'one', _seed: '1024' },
     },
   };
 
