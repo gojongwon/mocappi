@@ -42,9 +42,11 @@
     position: sticky; top: 0; z-index: 5;
   }
   .logo { display: inline-flex; flex: none; }
-  .logo svg { width: 26px; height: 26px; display: block; }
+  /* 실측 보정: Pretendard 잉크 중심이 박스 중앙보다 0.44px 위 → 아이콘을 0.5px 올려 시각 중심 일치 */
+  .logo svg { width: 26px; height: 26px; display: block; transform: translateY(-0.5px); }
   header h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -.02em; line-height: 26px; }
-  header .sub { color: var(--faint); font-size: 12.5px; margin-left: 2px; line-height: 26px; }
+  /* 실측 보정: 부제(12.5px) 베이스라인이 제목(16px)보다 1.2px 위 → 1px 내려 베이스라인 정렬 */
+  header .sub { color: var(--faint); font-size: 12.5px; margin-left: 2px; line-height: 26px; position: relative; top: 1px; }
   .presets { margin-left: auto; display: flex; gap: 6px; align-items: center; }
   .presets .plabel { color: var(--faint); font-size: 12px; margin-right: 2px; }
   .presets button {
