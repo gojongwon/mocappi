@@ -414,10 +414,11 @@
     .ws-chip #wsBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .helpbtn { order: 4; }
     .presets { order: 5; }
-    /* 프리셋 줄: 가로 스크롤 없이 줄바꿈 — 전부 보이게 */
-    .presets { flex: 1 1 100%; margin-left: 0; flex-wrap: wrap; row-gap: 6px; }
-    .presets button, #teamSel { flex: none; }
-    #teamSel { max-width: calc(100vw - 56px); }
+    /* 프리셋 한 줄: 버튼은 고정폭, 저장된 프리셋이 남는 폭을 채우고 말줄임 */
+    .presets { flex: 1 1 100%; margin-left: 0; flex-wrap: nowrap; }
+    .presets .plabel { display: none; }
+    .presets button { flex: none; padding: 0 11px; }
+    #teamSel { flex: 1 1 auto; min-width: 80px; max-width: none; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .hdiv { display: none; }
 
     main { padding: 12px 12px 24px; gap: 14px; }
@@ -434,8 +435,16 @@
     .modal-actions { flex-direction: column; align-items: stretch; gap: 8px; }
     .modal-actions button { width: 100%; justify-content: center; text-align: center; }
     .help-body { max-height: none; padding-right: 0; }
-    .help-body table { font-size: 12px; }
-    .help-body th, .help-body td { padding: 6px 8px; }
+    /* 표 → 카드형 세로 배치 (가로 스크롤 제거) */
+    .help-body table, .help-body tbody { display: block; width: 100%; }
+    .help-body tr { display: block; padding: 9px 0; border-bottom: 1px dashed rgba(23,23,26,.15); background: none !important; }
+    .help-body tr:first-child { display: none; } /* th 헤더 행 숨김 */
+    .help-body tr:last-child { border-bottom: none; }
+    .help-body td { display: block; padding: 2px 0; border: none; width: auto !important; }
+    .help-body td:first-child { font-weight: 700; font-size: 13px; }
+    .help-body td:last-child { color: var(--muted); font-size: 12px; }
+    .help-body code { word-break: break-all; white-space: normal; }
+    .help-body pre { white-space: pre-wrap; word-break: break-all; }
 
     /* 코너 버튼: 모바일에선 플로팅 대신 페이지 맨 아래 정적 배치 — 입력을 가리지 않게 */
     .corner { position: static; justify-content: center; margin: 4px 0 24px; }
@@ -1485,6 +1494,34 @@ npm run deploy</pre>
     }
     if (e.key === 'Escape') { closePaste(); $('#helpModal').style.display = 'none'; $('#saveModal').style.display = 'none'; $('#wsModal').style.display = 'none'; }
   });
+  // ---- 모달 배경 스크롤 잠금 (iOS 는 overflow:hidden 만으론 안 됨 → body fixed) ----
+  const MODAL_IDS = ['pasteModal', 'helpModal', 'saveModal', 'wsModal', 'newsModal', 'fbModal'];
+  let scrollLockY = 0;
+  function syncScrollLock() {
+    const anyOpen = MODAL_IDS.some((id) => { const el = $('#' + id); return el && el.style.display === 'flex'; });
+    const locked = document.body.style.position === 'fixed';
+    if (anyOpen && !locked) {
+      scrollLockY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = -scrollLockY + 'px';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+    } else if (!anyOpen && locked) {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollLockY);
+    }
+  }
+  const modalObserver = new MutationObserver(syncScrollLock);
+  for (const id of MODAL_IDS) {
+    const el = $('#' + id);
+    if (el) modalObserver.observe(el, { attributes: true, attributeFilter: ['style'] });
+  }
+
   document.addEventListener('change', (e) => {
     if (e.target.id === 'teamSel') {
       if (e.target.value) loadTeamPreset(e.target.value); // 선택 상태 유지
