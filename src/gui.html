@@ -3,23 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mock API Builder</title>
+<title>mocappi — Mock API Builder</title>
 <meta name="description" content="URL 하나로 만드는 목업 REST API — 쿼리스트링으로 스키마를 정의하면 같은 URL 은 항상 같은 가짜 데이터를 돌려줍니다. JSON 붙여넣기 자동 추론, 페이지네이션·검색, NDJSON/CSV, TypeScript 타입 생성. 설치·로그인 없음.">
-<link rel="canonical" href="https://mock-api.gojongwon.workers.dev/">
+<link rel="canonical" href="https://mocappi.gojongwon.workers.dev/">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Mock API Builder">
-<meta property="og:title" content="Mock API Builder — URL 만으로 쓰는 커스텀 목 데이터">
+<meta property="og:site_name" content="mocappi">
+<meta property="og:title" content="mocappi — URL 만으로 쓰는 커스텀 목 데이터">
 <meta property="og:description" content="쿼리스트링이 곧 스키마. 같은 URL 은 항상 같은 데이터. JSON 붙여넣기 자동 추론, 팀 프리셋 공유, TS 타입 생성 — 설치·로그인 없음.">
-<meta property="og:url" content="https://mock-api.gojongwon.workers.dev/">
-<meta property="og:image" content="https://mock-api.gojongwon.workers.dev/og.png">
+<meta property="og:url" content="https://mocappi.gojongwon.workers.dev/">
+<meta property="og:image" content="https://mocappi.gojongwon.workers.dev/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Mock API Builder — URL 만으로 쓰는 커스텀 목 데이터">
+<meta name="twitter:title" content="mocappi — URL 만으로 쓰는 커스텀 목 데이터">
 <meta name="twitter:description" content="쿼리스트링이 곧 스키마. 같은 URL 은 항상 같은 데이터. 설치·로그인 없음.">
-<meta name="twitter:image" content="https://mock-api.gojongwon.workers.dev/og.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Mock API Builder","url":"https://mock-api.gojongwon.workers.dev/","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Build deterministic mock REST APIs with just a URL. Define the schema in the query string; the same URL always returns the same fake data."}</script>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20%20viewBox%3D%220%200%20128%20128%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20x%3D%227%22%20y%3D%227%22%20width%3D%22114%22%20height%3D%22114%22%20rx%3D%2226%22%20fill%3D%22%23faf9f5%22%20stroke%3D%22%2317171a%22%20stroke-width%3D%229%22%2F%3E%3Crect%20x%3D%2216%22%20y%3D%2245%22%20width%3D%2296%22%20height%3D%2238%22%20rx%3D%2213%22%20fill%3D%22%23ffd400%22%20transform%3D%22rotate%28-7%2064%2064%29%22%2F%3E%3Cpath%20d%3D%22M44%2033%20C33%2033%2033%2041%2033%2047%20L33%2055%20C33%2061%2027%2064%2024%2064%20C27%2064%2033%2067%2033%2073%20L33%2081%20C33%2087%2033%2095%2044%2095%22%20fill%3D%22none%22%20stroke%3D%22%2317171a%22%20stroke-width%3D%2210%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M84%2033%20C95%2033%2095%2041%2095%2047%20L95%2055%20C95%2061%20101%2064%20104%2064%20C101%2064%2095%2067%2095%2073%20L95%2081%20C95%2087%2095%2095%2084%2095%22%20fill%3D%22none%22%20stroke%3D%22%2317171a%22%20stroke-width%3D%2210%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%2253%22%20cy%3D%2264%22%20r%3D%225.5%22%20fill%3D%22%2317171a%22%2F%3E%3Ccircle%20cx%3D%2264%22%20cy%3D%2264%22%20r%3D%225.5%22%20fill%3D%22%2317171a%22%2F%3E%3Ccircle%20cx%3D%2275%22%20cy%3D%2264%22%20r%3D%225.5%22%20fill%3D%22%2317171a%22%2F%3E%3C%2Fsvg%3E">
+<meta name="twitter:image" content="https://mocappi.gojongwon.workers.dev/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"mocappi","alternateName":"Mock API Builder","url":"https://mocappi.gojongwon.workers.dev/","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Build deterministic mock REST APIs with just a URL. Define the schema in the query string; the same URL always returns the same fake data."}</script>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20%20viewBox%3D%220%200%20128%20128%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20x%3D%227%22%20y%3D%227%22%20width%3D%22114%22%20height%3D%22114%22%20rx%3D%2226%22%20fill%3D%22%23faf9f5%22%20stroke%3D%22%2317171a%22%20stroke-width%3D%229%22%2F%3E%3Crect%20x%3D%2216%22%20y%3D%2245%22%20width%3D%2296%22%20height%3D%2238%22%20rx%3D%2213%22%20fill%3D%22%23ffd400%22%20transform%3D%22rotate%28-7%2064%2064%29%22%2F%3E%3Cpath%20d%3D%22M44%2033%20C33%2033%2033%2041%2033%2047%20L33%2055%20C33%2061%2027%2064%2024%2064%20C27%2064%2033%2067%2033%2073%20L33%2081%20C33%2087%2033%2095%2044%2095%22%20fill%3D%22none%22%20stroke%3D%22%2317171a%22%20stroke-width%3D%2210%22%20stroke-linecap%3D%22round%22%2F%3E%3Cpath%20d%3D%22M84%2033%20C95%2033%2095%2041%2095%2047%20L95%2055%20C95%2061%20101%2064%20104%2064%20C101%2064%2095%2067%2095%2073%20L95%2081%20C95%2087%2095%2095%2084%2095%22%20fill%3D%22none%22%20stroke%3D%22%2317171a%22%20stroke-width%3D%2210%22%20stroke-linecap%3D%22round%22%2F%3E%3Ccircle%20cx%3D%2253%22%20cy%3D%2264%22%20r%3D%225.5%22%20fill%3D%22%2317171a%22%2F%3E%3Ccircle%20cx%3D%2264%22%20cy%3D%2264%22%20r%3D%225.5%22%20fill%3D%22%2317171a%22%2F%3E%3Ccircle%20cx%3D%2275%22%20cy%3D%2264%22%20r%3D%225.5%22%20fill%3D%22%2317171a%22%2F%3E%3Cpath%20d%3D%22M108%206%20L92%2031%20h9%20l-5%2023%20L116%2029%20h-10%20l4-23%20Z%22%20fill%3D%22none%22%20stroke%3D%22%23faf9f5%22%20stroke-width%3D%2211%22%20stroke-linejoin%3D%22round%22%2F%3E%3Cpath%20d%3D%22M108%206%20L92%2031%20h9%20l-5%2023%20L116%2029%20h-10%20l4-23%20Z%22%20fill%3D%22%23ffd400%22%20stroke%3D%22%2317171a%22%20stroke-width%3D%224.5%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
   /* ===== 디자인 토큰 — 소프트 브루탈 × 하이라이터 옐로우 ===== */
@@ -482,8 +482,8 @@
 </head>
 <body>
 <header>
-  <span class="logo"><svg  viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="7" width="114" height="114" rx="26" fill="#faf9f5" stroke="#17171a" stroke-width="9"/><rect x="16" y="45" width="96" height="38" rx="13" fill="#ffd400" transform="rotate(-7 64 64)"/><path d="M44 33 C33 33 33 41 33 47 L33 55 C33 61 27 64 24 64 C27 64 33 67 33 73 L33 81 C33 87 33 95 44 95" fill="none" stroke="#17171a" stroke-width="10" stroke-linecap="round"/><path d="M84 33 C95 33 95 41 95 47 L95 55 C95 61 101 64 104 64 C101 64 95 67 95 73 L95 81 C95 87 95 95 84 95" fill="none" stroke="#17171a" stroke-width="10" stroke-linecap="round"/><circle cx="53" cy="64" r="5.5" fill="#17171a"/><circle cx="64" cy="64" r="5.5" fill="#17171a"/><circle cx="75" cy="64" r="5.5" fill="#17171a"/></svg></span>
-  <h1>Mock API Builder</h1>
+  <span class="logo"><svg  viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="7" width="114" height="114" rx="26" fill="#faf9f5" stroke="#17171a" stroke-width="9"/><rect x="16" y="45" width="96" height="38" rx="13" fill="#ffd400" transform="rotate(-7 64 64)"/><path d="M44 33 C33 33 33 41 33 47 L33 55 C33 61 27 64 24 64 C27 64 33 67 33 73 L33 81 C33 87 33 95 44 95" fill="none" stroke="#17171a" stroke-width="10" stroke-linecap="round"/><path d="M84 33 C95 33 95 41 95 47 L95 55 C95 61 101 64 104 64 C101 64 95 67 95 73 L95 81 C95 87 95 95 84 95" fill="none" stroke="#17171a" stroke-width="10" stroke-linecap="round"/><circle cx="53" cy="64" r="5.5" fill="#17171a"/><circle cx="64" cy="64" r="5.5" fill="#17171a"/><circle cx="75" cy="64" r="5.5" fill="#17171a"/><path d="M108 6 L92 31 h9 l-5 23 L116 29 h-10 l4-23 Z" fill="none" stroke="#faf9f5" stroke-width="11" stroke-linejoin="round"/><path d="M108 6 L92 31 h9 l-5 23 L116 29 h-10 l4-23 Z" fill="#ffd400" stroke="#17171a" stroke-width="4.5" stroke-linejoin="round"/></svg></span>
+  <h1>mocappi</h1>
   <span class="sub">URL 만으로 쓰는 커스텀 목 데이터</span>
   <div class="presets">
     <span class="plabel">프리셋</span>

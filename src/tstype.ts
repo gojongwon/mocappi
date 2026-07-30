@@ -98,7 +98,7 @@ export function generateTsTypes(fields: FieldSpec[], resource: string, wrap: 'en
   const name = interfaceName(resource);
   const body = emitNode(buildTree(fields), 1);
 
-  const head = `// ${resource} — Mock API Builder 에서 자동 생성된 타입
+  const head = `// ${resource} — mocappi 에서 자동 생성된 타입
 export interface ${name} ${body}
 `;
 

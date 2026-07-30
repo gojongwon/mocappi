@@ -1,10 +1,10 @@
-# <img src="./assets/logo.svg" height="30" alt="Mock API logo"> Mock API
+# <img src="./assets/logo.svg" height="30" alt="mocappi logo"> mocappi
 
 A mock REST API you define entirely in the URL. No app to install, no config to commit, no redeploy — edit the query string and you're done. **The same URL always returns the same data.**
 
 [한국어 문서 (Korean)](./README.ko.md)
 
-**Live demo:** https://mock-api.gojongwon.workers.dev
+**Live demo:** https://mocappi.gojongwon.workers.dev
 
 - GUI (URL builder + live preview): `GET /`
 - Data: `GET /api/<resource>?field=type&...`
@@ -19,7 +19,7 @@ A mock REST API you define entirely in the URL. No app to install, no config to 
 **Deploy your own:**
 
 ```bash
-git clone https://github.com/gojongwon/mock-api.git && cd mock-api
+git clone https://github.com/gojongwon/mocappi.git && cd mocappi
 npm install
 npx wrangler login
 npm run deploy

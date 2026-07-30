@@ -1,4 +1,4 @@
-# <img src="./assets/logo.svg" height="30" alt="Mock API logo"> Mock API
+# <img src="./assets/logo.svg" height="30" alt="mocappi logo"> mocappi
 
 [English](./README.md)
 
@@ -10,7 +10,7 @@ URL 만으로 스키마를 정의하는 팀 내부용 목(mock) REST API. 앱 �
 - JSON 예시 → 스키마 추론: `POST /schema/infer`
 - 스키마 → TypeScript 타입: `GET /schema/ts` (GUI 의 "TS 타입 복사" 버튼)
 
-**팀 배포 주소: <https://mock-api.gojongwon.workers.dev>** — 브라우저로 열면 GUI가 뜬다.
+**팀 배포 주소: <https://mocappi.gojongwon.workers.dev>** — 브라우저로 열면 GUI가 뜬다.
 
 ## 5분 시작
 

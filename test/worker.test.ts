@@ -12,7 +12,7 @@ describe('라우팅', () => {
     const res = await get('/');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/html');
-    expect(await res.text()).toContain('Mock API Builder');
+    expect(await res.text()).toContain('mocappi');
   });
 
   it('GET /schema/types → 타입 목록 JSON', async () => {
