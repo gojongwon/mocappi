@@ -591,7 +591,7 @@
 </main>
 
 <div class="corner">
-  <button id="newsBtn" title="최근 업데이트 보기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>v0.24 · 새 소식</button>
+  <button id="newsBtn" title="최근 업데이트 보기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>v0.25 · 새 소식</button>
   <button id="fbBtn" title="개발자에게 의견 보내기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>피드백</button>
 </div>
 
@@ -599,6 +599,7 @@
   <div class="card" style="width:560px">
     <h3>새 소식</h3>
     <ul class="news-list">
+      <li><span class="v">v0.25</span>이름이 바뀌었어요 — Mock API Builder → <b>모카삐 (mocappi)</b>. 로고에 번개 배지도 달았습니다 ⚡ 주소는 <code>mocappi.gojongwon.workers.dev</code>, 기능과 저장물은 그대로예요</li>
       <li><span class="v">v0.24</span>링크 공유 시 미리보기 카드(OG) + 검색엔진 대응 (robots·메타·구조화 데이터)</li>
       <li><span class="v">v0.23</span>모바일 전면 개편 — 프리셋 통합 드롭다운, 모달·사용법·헤더 재설계, 배경 스크롤 잠금, 자동완성 개선</li>
       <li><span class="v">v0.22</span>저장소를 D1 로 업그레이드 — 하루 저장 한도가 1,000 → <b>100,000</b> 으로. NDJSON/CSV 미리보기도 표·줄 단위로 예뻐졌어요</li>
@@ -686,12 +687,15 @@ customer.address.city = location.city</pre>
         <tr><td><code>_delay=3000</code></td><td>3초 늦게 응답 — 로딩 스피너 테스트</td></tr>
         <tr><td><code>_status=500</code></td><td>상태코드 강제 — 에러 화면 테스트</td></tr>
         <tr><td><code>_locale=en</code></td><td>영어 데이터 (<code>ja</code> 일본어, <code>zh</code> 중국어)</td></tr>
+        <tr><td><code>_seed=v2</code></td><td>다른 데이터셋 — 시드가 같으면 데이터도 항상 같습니다</td></tr>
         <tr><td><code>_wrap=none</code></td><td>envelope 없이 배열만 (<code>one</code> 은 단일 객체 — 상세 API)</td></tr>
         <tr><td><code>_format=ndjson</code></td><td>아이템만 줄 단위 스트리밍 — 대용량 (<code>csv</code> 도 가능)</td></tr>
         <tr><td><code>_q=김</code></td><td>생성 데이터 검색 — 값 부분일치, <code>total</code> 은 매치 수</td></tr>
         <tr><td><code>_qin=name,city</code></td><td>검색 대상 필드 한정 — <code>_q</code> 와 함께 (중첩은 <code>a.b</code>)</td></tr>
         <tr><td><code>_alias=page:_page</code></td><td>예약 키를 실제 API 이름으로 — 옵션의 <u>키 이름을 직접 클릭</u>해 바꾸면 자동 생성됩니다</td></tr>
       </table>
+      <p style="font-size:12.5px;color:var(--muted)">상한: <code>_limit</code> 최대 1000 · <code>_q</code> 100자 · <code>_delay</code> 5초.
+         더 많은 데이터는 <code>_page</code> 로 이어 받으세요 — 예: 5,000개는 <code>_total=5000&amp;_limit=1000</code> 으로 5페이지.</p>
 
       <h4><span class="n">✓</span>알아두면 좋은 것</h4>
       <p>같은 URL 은 <b>항상 같은 데이터</b>를 돌려줍니다 — 새로고침해도, 내일 다시 열어도 동일합니다. 스냅샷 테스트에 안전합니다.<br>
