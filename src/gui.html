@@ -427,9 +427,10 @@
     .logo svg { width: 22px; height: 22px; }
     header h1 { order: 2; font-size: 13.5px; line-height: 22px; letter-spacing: -.01em;
       flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .ws-chip { order: 3; margin-left: auto; max-width: 26vw; }
+    .ws-chip { order: 3; margin-left: auto; max-width: 22vw; }
     .ws-chip #wsBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .helpbtn { order: 4; }
+    /* 1행에 로고·제목·칩·언어·사용법 5개가 들어가야 함 — 패딩 압축 (EN 라벨도 Help 로 짧게) */
+    .helpbtn { order: 4; padding: 0 12px; font-size: 12.5px; }
     .presets { order: 5; }
     /* 프리셋: 버튼 대신 드롭다운 하나로 통합 (기본 프리셋은 optgroup 으로 포함) */
     /* min-width:0 이 핵심 — 없으면 셀렉트의 '가장 긴 옵션 폭'이 최소폭이 되어 화면을 밀어냄 */
@@ -499,7 +500,7 @@
     <span class="dot"></span><span id="wsBtnLabel" data-i18n="workspace">워크스페이스</span>
   </button>
   <button id="langBtn" class="helpbtn" title="한국어 / English"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1.5px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span id="langLabel">EN</span></button>
-  <button id="helpBtn" class="helpbtn" data-i18n="howToUse">사용법</button>
+  <button id="helpBtn" class="helpbtn" data-i18n="helpShort">사용법</button>
 </header>
 
 <div id="welcome">
@@ -812,6 +813,7 @@ npm run deploy</pre>
     wsBtnTitle: 'Create or switch a preset workspace',
     workspace: 'Workspace',
     howToUse: 'How to use',
+    helpShort: 'Help', // 헤더 버튼 — 모바일 1행 폭 때문에 짧게 (모달 제목은 howToUse)
     // 스키마 패널
     schema: 'Schema',
     resource: 'Resource',
