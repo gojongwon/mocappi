@@ -486,23 +486,24 @@
   <h1>mocappi</h1>
   <span class="sub">URL 만으로 쓰는 커스텀 목 데이터</span>
   <div class="presets">
-    <span class="plabel">프리셋</span>
-    <button data-preset="users">사용자</button>
-    <button data-preset="products">상품</button>
-    <button data-preset="orders">주문 상세</button>
-    <select id="teamSel" style="display:none" title="이 워크스페이스에 저장된 스키마">
+    <span class="plabel" data-i18n="presets">프리셋</span>
+    <button data-preset="users" data-i18n="presetUsers">사용자</button>
+    <button data-preset="products" data-i18n="presetProducts">상품</button>
+    <button data-preset="orders" data-i18n="presetOrders">주문 상세</button>
+    <select id="teamSel" style="display:none" data-i18n-title="teamSelTitle" title="이 워크스페이스에 저장된 스키마">
       <option value="">저장된 프리셋…</option>
     </select>
   </div>
   <span class="hdiv"></span>
-  <button id="wsBtn" class="ws-chip" style="display:none" title="프리셋 저장·공유 공간 만들기/전환">
-    <span class="dot"></span><span id="wsBtnLabel">워크스페이스</span>
+  <button id="wsBtn" class="ws-chip" style="display:none" data-i18n-title="wsBtnTitle" title="프리셋 저장·공유 공간 만들기/전환">
+    <span class="dot"></span><span id="wsBtnLabel" data-i18n="workspace">워크스페이스</span>
   </button>
-  <button id="helpBtn" class="helpbtn">사용법</button>
+  <button id="langBtn" class="helpbtn" title="한국어 / English">EN</button>
+  <button id="helpBtn" class="helpbtn" data-i18n="howToUse">사용법</button>
 </header>
 
 <div id="welcome">
-  <div class="strip">
+  <div class="strip" data-en-block="welcome">
     <span><b>처음이신가요?</b> 실제 API 응답을 붙여넣으면 목 API 가 바로 만들어집니다.</span>
     <button class="go" id="welcomePaste">JSON 붙여넣기</button>
     <button class="go ghost" id="welcomeHelp">사용법 보기</button>
@@ -512,55 +513,55 @@
 
 <main>
   <section class="panel">
-    <h2>스키마</h2>
+    <h2 data-i18n="schema">스키마</h2>
     <div class="resource-row">
-      <label for="resource">리소스명</label>
+      <label for="resource" data-i18n="resource">리소스명</label>
       <span class="prefix">/api/</span>
       <input id="resource" value="users" spellcheck="false">
     </div>
 
-    <div class="keyhint">
+    <div class="keyhint" data-en-block="keyhint">
       필드명 = 응답 JSON 의 <b>key</b> · 중첩 <code>customer.name</code> · 배열 <code>tags[]</code>
     </div>
     <div id="fields"></div>
     <div class="field-actions">
-      <button id="addField">+ 필드 추가</button>
+      <button id="addField" data-i18n="addField">+ 필드 추가</button>
     </div>
     <div id="inferNote"></div>
 
-    <h2 style="margin-top:20px">옵션</h2>
+    <h2 style="margin-top:20px" data-i18n="options">옵션</h2>
     <div class="opts">
-      <div><label>전체 개수 <input class="okey" data-for="_total" value="_total" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: total)"></label><input id="oTotal" type="number" min="0" value="100"></div>
-      <div><label>페이지당 <input class="okey" data-for="_limit" value="_limit" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: limit)"></label><input id="oLimit" type="number" min="1" max="1000" value="10"></div>
-      <div><label>페이지 <input class="okey" data-for="_page" value="_page" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: page)"></label><input id="oPage" type="number" min="1" value="1"></div>
-      <div><label>로케일 <input class="okey" data-for="_locale" value="_locale" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: locale)"></label>
-        <select id="oLocale"><option value="ko">한국어</option><option value="en">English</option><option value="ja">日本語</option><option value="zh">中文</option></select>
+      <div><label><span data-i18n="optTotal">전체 개수</span> <input class="okey" data-for="_total" value="_total" spellcheck="false" data-i18n-title="okeyTotal" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: total)"></label><input id="oTotal" type="number" min="0" value="100"></div>
+      <div><label><span data-i18n="optLimit">페이지당</span> <input class="okey" data-for="_limit" value="_limit" spellcheck="false" data-i18n-title="okeyLimit" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: limit)"></label><input id="oLimit" type="number" min="1" max="1000" value="10"></div>
+      <div><label><span data-i18n="optPage">페이지</span> <input class="okey" data-for="_page" value="_page" spellcheck="false" data-i18n-title="okeyPage" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: page)"></label><input id="oPage" type="number" min="1" value="1"></div>
+      <div><label><span data-i18n="optLocale">로케일</span> <input class="okey" data-for="_locale" value="_locale" spellcheck="false" data-i18n-title="okeyLocale" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: locale)"></label>
+        <select id="oLocale"><option value="ko" data-i18n="localeKo">한국어</option><option value="en">English</option><option value="ja" data-i18n="localeJa">日本語</option><option value="zh" data-i18n="localeZh">中文</option></select>
       </div>
-      <div><label>검색 <input class="okey" data-for="_q" value="_q" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: keyword)"></label><input id="oQ" placeholder="값 부분일치 (예: 김)" spellcheck="false"></div>
-      <div><label>검색 필드 <input class="okey" data-for="_qin" value="_qin" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: qin)"></label><input id="oQin" placeholder="한정 (예: name,city)" spellcheck="false"></div>
+      <div><label><span data-i18n="optQ">검색</span> <input class="okey" data-for="_q" value="_q" spellcheck="false" data-i18n-title="okeyQ" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: keyword)"></label><input id="oQ" data-i18n-ph="phQ" placeholder="값 부분일치 (예: 김)" spellcheck="false"></div>
+      <div><label><span data-i18n="optQin">검색 필드</span> <input class="okey" data-for="_qin" value="_qin" spellcheck="false" data-i18n-title="okeyQin" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: qin)"></label><input id="oQin" data-i18n-ph="phQin" placeholder="한정 (예: name,city)" spellcheck="false"></div>
     </div>
 
     <details class="opts-adv" id="optsAdv">
-      <summary>고급 — 지연 · 상태코드 · 응답 모양 · 고정 시드 · 형식</summary>
+      <summary data-i18n="advSummary">고급 — 지연 · 상태코드 · 응답 모양 · 고정 시드 · 형식</summary>
       <div class="opts">
-        <div><label>지연 ms <input class="okey" data-for="_delay" value="_delay" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
-        <div><label>상태코드 <input class="okey" data-for="_status" value="_status" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
-        <div><label>모양 <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
-        <select id="oWrap"><option value="envelope">envelope</option><option value="none">배열만</option><option value="one">단일 객체</option></select>
+        <div><label><span data-i18n="optDelay">지연 ms</span> <input class="okey" data-for="_delay" value="_delay" spellcheck="false" data-i18n-title="okeyDelay" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
+        <div><label><span data-i18n="optStatus">상태코드</span> <input class="okey" data-for="_status" value="_status" spellcheck="false" data-i18n-title="okeyStatus" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
+        <div><label><span data-i18n="optWrap">모양</span> <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
+        <select id="oWrap"><option value="envelope">envelope</option><option value="none" data-i18n="wrapNone">배열만</option><option value="one" data-i18n="wrapOne">단일 객체</option></select>
       </div>
-        <div><label>고정 시드 <input class="okey" data-for="_seed" value="_seed" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label><input id="oSeed" placeholder="예: 123 (상세 API 의 id)" spellcheck="false"></div>
-        <div><label>형식 <input class="okey" data-for="_format" value="_format" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
-          <select id="oFormat"><option value="json">JSON</option><option value="ndjson">NDJSON (줄 단위)</option><option value="csv">CSV</option></select>
+        <div><label><span data-i18n="optSeed">고정 시드</span> <input class="okey" data-for="_seed" value="_seed" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label><input id="oSeed" data-i18n-ph="phSeed" placeholder="예: 123 (상세 API 의 id)" spellcheck="false"></div>
+        <div><label><span data-i18n="optFormat">형식</span> <input class="okey" data-for="_format" value="_format" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
+          <select id="oFormat"><option value="json">JSON</option><option value="ndjson" data-i18n="formatNdjson">NDJSON (줄 단위)</option><option value="csv">CSV</option></select>
         </div>
       </div>
     </details>
 
     <button id="pasteBtn" class="paste-primary">
-      { } JSON 붙여넣기
-      <span class="sub2">실제 API 응답을 붙여넣으면 스키마가 자동으로 만들어집니다</span>
+      <span data-i18n="pasteJson">{ } JSON 붙여넣기</span>
+      <span class="sub2" data-i18n="pasteJsonSub">실제 API 응답을 붙여넣으면 스키마가 자동으로 만들어집니다</span>
     </button>
 
-    <div class="hintbar">
+    <div class="hintbar" data-en-block="hintbar">
       타입 칸에 입력하면 자동완성이 뜹니다 ·
       <a href="#" id="helpLink">사용법</a> ·
       <a href="/schema/types" target="_blank">전체 타입</a>
@@ -568,37 +569,37 @@
   </section>
 
   <section class="panel right">
-    <h2>생성된 URL</h2>
+    <h2 data-i18n="generatedUrl">생성된 URL</h2>
     <div class="urlwrap">
       <div class="urlbox" id="urlBox"></div>
-      <button class="box-copy" id="copyBtn" title="URL 복사"></button>
+      <button class="box-copy" id="copyBtn" data-i18n-title="copyUrl" title="URL 복사"></button>
     </div>
     <div id="shortLine" class="ghosted">
-      <span class="stag">짧은 URL</span>
+      <span class="stag" data-i18n="shortUrl">짧은 URL</span>
       <a id="shortA" target="_blank"></a>
-      <button id="shortLineCopy" title="짧은 URL 복사"></button>
+      <button id="shortLineCopy" data-i18n-title="copyShortUrl" title="짧은 URL 복사"></button>
     </div>
     <div class="url-actions">
-      <button id="tsBtn" title="현재 스키마의 TypeScript 인터페이스 + 제네릭 fetch 헬퍼를 복사">TS 타입 복사</button>
-      <button id="saveBtn" title="현재 스키마를 워크스페이스 프리셋으로 저장 — 짧은 URL(_s=ID)이 생깁니다">프리셋으로 저장</button>
+      <button id="tsBtn" data-i18n="copyTs" data-i18n-title="tsBtnTitle" title="현재 스키마의 TypeScript 인터페이스 + 제네릭 fetch 헬퍼를 복사">TS 타입 복사</button>
+      <button id="saveBtn" data-i18n="saveAsPreset" data-i18n-title="saveBtnTitle" title="현재 스키마를 워크스페이스 프리셋으로 저장 — 짧은 URL(_s=ID)이 생깁니다">프리셋으로 저장</button>
     </div>
     <div class="status-line" id="statusLine">&nbsp;</div>
     <div class="preview-wrap">
-      <pre id="preview">불러오는 중…</pre>
-      <button id="respCopyBtn" title="응답 JSON 전체 복사"></button>
+      <pre id="preview" data-i18n="loading">불러오는 중…</pre>
+      <button id="respCopyBtn" data-i18n-title="copyResp" title="응답 JSON 전체 복사"></button>
     </div>
   </section>
 </main>
 
 <div class="corner">
-  <button id="newsBtn" title="최근 업데이트 보기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>v0.26 · 새 소식</button>
-  <button id="fbBtn" title="개발자에게 의견 보내기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>피드백</button>
+  <button id="newsBtn" data-i18n-title="newsBtnTitle" title="최근 업데이트 보기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span data-i18n="newsLabel">v0.26 · 새 소식</span></button>
+  <button id="fbBtn" data-i18n-title="fbBtnTitle" title="개발자에게 의견 보내기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span data-i18n="feedback">피드백</span></button>
 </div>
 
 <div id="newsModal">
   <div class="card" style="width:560px">
-    <h3>새 소식</h3>
-    <ul class="news-list">
+    <h3 data-i18n="whatsNew">새 소식</h3>
+    <ul class="news-list" data-en-block="newsList">
       <li><span class="v">v0.26</span>마스킹 타입 <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — 실서비스처럼 가려진 개인정보 ("김*준", "010-****-5678")</li>
       <li><span class="v">v0.25</span>이름이 바뀌었어요 — Mock API Builder → <b>모카삐 (mocappi)</b>. 로고에 번개 배지도 달았습니다 ⚡ 주소는 <code>mocappi.gojongwon.workers.dev</code>, 기능과 저장물은 그대로예요</li>
       <li><span class="v">v0.24</span>링크 공유 시 미리보기 카드(OG) + 검색엔진 대응 (robots·메타·구조화 데이터)</li>
@@ -613,28 +614,28 @@
       <li><span class="v">v0.11~13</span>고급 타입(nullable·가중치 enum·pattern), JSON 붙여넣기가 이를 자동 감지, 실존 불가가 보장되는 이메일·전화</li>
     </ul>
     <div class="modal-actions">
-      <button id="newsClose" style="background:var(--accent);color:var(--accent-text)">닫기</button>
+      <button id="newsClose" data-i18n="close" style="background:var(--accent);color:var(--accent-text)">닫기</button>
     </div>
   </div>
 </div>
 
 <div id="fbModal">
   <div class="card" style="width:520px">
-    <h3>피드백</h3>
-    <p>불편한 점, 갖고 싶은 기능 — 무엇이든 좋아요. 익명으로 개발자에게 전달됩니다.</p>
-    <textarea id="fbText" placeholder="예: CSV 에 BOM 이 있으면 좋겠어요 (엑셀 한글 깨짐)" maxlength="1000" spellcheck="false"></textarea>
+    <h3 data-i18n="feedback">피드백</h3>
+    <p data-en-block="fbIntro">불편한 점, 갖고 싶은 기능 — 무엇이든 좋아요. 익명으로 개발자에게 전달됩니다.</p>
+    <textarea id="fbText" data-i18n-ph="phFeedback" placeholder="예: CSV 에 BOM 이 있으면 좋겠어요 (엑셀 한글 깨짐)" maxlength="1000" spellcheck="false"></textarea>
     <div id="fbStatus"></div>
     <div class="modal-actions">
-      <button id="fbSend" style="background:var(--accent);color:var(--accent-text)">보내기</button>
-      <button id="fbClose" style="background:var(--bg);color:var(--muted)">닫기</button>
+      <button id="fbSend" data-i18n="send" style="background:var(--accent);color:var(--accent-text)">보내기</button>
+      <button id="fbClose" data-i18n="close" style="background:var(--bg);color:var(--muted)">닫기</button>
     </div>
   </div>
 </div>
 
 <div id="helpModal">
   <div class="card">
-    <h3>사용법</h3>
-    <div class="help-body">
+    <h3 data-i18n="howToUse">사용법</h3>
+    <div class="help-body" data-en-block="helpBody">
       <h4><span class="n">1</span>시작은 둘 중 하나</h4>
       <p><b>JSON 붙여넣기</b> — 실제 API 응답을 그대로 붙여넣으면 필드와 타입이 자동으로 채워집니다. 가장 빠른 방법.<br>
          <b>프리셋</b> — 사용자/상품/주문 프리셋으로 시작해서 고치기 (데스크톱은 상단 버튼, 모바일은 드롭다운).</p>
@@ -708,40 +709,40 @@ customer.address.city = location.city</pre>
          상세 응답은 <code>_wrap=one&_seed=123</code> 조합으로 만듭니다.</p>
     </div>
     <div class="modal-actions">
-      <button id="helpClose" style="background:var(--accent);color:var(--accent-text)">닫기</button>
+      <button id="helpClose" data-i18n="close" style="background:var(--accent);color:var(--accent-text)">닫기</button>
     </div>
   </div>
 </div>
 
 <div id="wsModal">
   <div class="card" style="width:520px">
-    <h3>워크스페이스</h3>
-    <p>프리셋 저장·공유는 <b>워크스페이스 단위</b>로 이뤄지고, <b>링크를 아는 사람만</b> 접근할 수 있습니다.</p>
+    <h3 data-i18n="workspace">워크스페이스</h3>
+    <p data-en-block="wsIntro">프리셋 저장·공유는 <b>워크스페이스 단위</b>로 이뤄지고, <b>링크를 아는 사람만</b> 접근할 수 있습니다.</p>
     <div class="wsid" id="wsCurrent"></div>
     <div class="modal-actions" style="justify-content:flex-start">
-      <button id="wsNew" style="background:var(--accent);color:var(--accent-text)">새 워크스페이스 만들기</button>
-      <button id="wsShare" style="background:var(--accent);color:var(--accent-text)">워크스페이스 링크 복사</button>
-      <button id="wsPublic" style="background:var(--bg);color:var(--muted)">워크스페이스 나가기</button>
+      <button id="wsNew" data-i18n="wsNew" style="background:var(--accent);color:var(--accent-text)">새 워크스페이스 만들기</button>
+      <button id="wsShare" data-i18n="wsShare" style="background:var(--accent);color:var(--accent-text)">워크스페이스 링크 복사</button>
+      <button id="wsPublic" data-i18n="wsLeave" style="background:var(--bg);color:var(--muted)">워크스페이스 나가기</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:14px">
-      <input id="wsJoin" placeholder="워크스페이스 ID 또는 링크 붙여넣기" style="flex:1;font-family:var(--mono);font-size:12.5px" spellcheck="false">
-      <button id="wsJoinBtn" style="border:1.5px solid var(--ink);border-radius:var(--radius-s);padding:8px 18px;cursor:pointer;font-size:13px;font-weight:700;background:var(--accent);color:var(--accent-text);flex:none;box-shadow:var(--btn-shadow)">전환</button>
+      <input id="wsJoin" data-i18n-ph="phWsJoin" placeholder="워크스페이스 ID 또는 링크 붙여넣기" style="flex:1;font-family:var(--mono);font-size:12.5px" spellcheck="false">
+      <button id="wsJoinBtn" data-i18n="wsSwitch" style="border:1.5px solid var(--ink);border-radius:var(--radius-s);padding:8px 18px;cursor:pointer;font-size:13px;font-weight:700;background:var(--accent);color:var(--accent-text);flex:none;box-shadow:var(--btn-shadow)">전환</button>
     </div>
     <div id="wsJoinError" style="color:var(--danger);font-size:12.5px;min-height:1.2em;margin-top:4px"></div>
-    <p style="margin-top:12px;font-size:12px;color:var(--faint)">
+    <p data-en-block="wsNote" style="margin-top:12px;font-size:12px;color:var(--faint)">
       링크를 잃어버리면 워크스페이스를 다시 찾을 수 없어요 — 팀 문서에 보관하세요. 저장물은 180일 미사용 시 만료됩니다.</p>
     <div class="modal-actions">
-      <button id="wsClose" style="background:var(--bg);color:var(--muted)">닫기</button>
+      <button id="wsClose" data-i18n="close" style="background:var(--bg);color:var(--muted)">닫기</button>
     </div>
   </div>
 </div>
 
 <div id="saveModal">
   <div class="card">
-    <h3>프리셋으로 저장</h3>
-    <p>워크스페이스의 프리셋 목록에 추가되고 짧은 URL 이 생깁니다.<br>
+    <h3 data-i18n="saveAsPreset">프리셋으로 저장</h3>
+    <p data-en-block="saveIntro">워크스페이스의 프리셋 목록에 추가되고 짧은 URL 이 생깁니다.<br>
        내용을 고쳐 다시 저장하면 새 URL — 기존 URL 은 그대로 유지돼요.</p>
-    <div id="saveSetup" style="display:none">
+    <div id="saveSetup" data-en-block="saveSetup" style="display:none">
       <p style="margin-top:0"><b>팀 저장이 아직 활성화되지 않았습니다.</b><br>
       저장소(Cloudflare KV)를 한 번만 연결하면 됩니다 — 배포 담당자가 터미널에서:</p>
       <pre style="font-family:var(--mono);font-size:12.5px;background:var(--bg);border-radius:8px;padding:12px 14px;line-height:1.8;overflow-x:auto">npx wrangler kv namespace create SCHEMAS
@@ -749,7 +750,7 @@ customer.address.city = location.city</pre>
 npm run deploy</pre>
       <p>연결 전에도 다른 기능은 전부 정상 동작합니다.</p>
     </div>
-    <div id="saveWsRequired" style="display:none">
+    <div id="saveWsRequired" data-en-block="saveWsRequired" style="display:none">
       <p style="margin-top:0"><b>프리셋 저장에는 워크스페이스가 필요합니다.</b><br>
       링크를 아는 사람끼리만 공유돼요.</p>
       <div class="modal-actions" style="justify-content:flex-start">
@@ -757,32 +758,32 @@ npm run deploy</pre>
         <button id="saveWsJoin" style="background:var(--accent-soft);color:var(--ink)">기존 워크스페이스로 전환</button>
       </div>
     </div>
-    <input id="saveName" placeholder="이름 (예: 기술자 목록 — 강남 현장)" style="width:100%" maxlength="60">
+    <input id="saveName" data-i18n-ph="phSaveName" placeholder="이름 (예: 기술자 목록 — 강남 현장)" style="width:100%" maxlength="60">
     <div id="saveError"></div>
     <div id="saveResult" style="display:none">
-      <p style="margin:0 0 8px;color:#23a55a;font-weight:600">✓ 저장되었습니다 — 이 URL 로 어디서든 호출할 수 있어요</p>
+      <p data-i18n="savedOk" style="margin:0 0 8px;color:#23a55a;font-weight:600">✓ 저장되었습니다 — 이 URL 로 어디서든 호출할 수 있어요</p>
       <div class="urlwrap">
         <div class="urlbox" id="shortUrlBox"></div>
-        <button class="box-copy" id="shortCopy" title="URL 복사"></button>
+        <button class="box-copy" id="shortCopy" data-i18n-title="copyUrl" title="URL 복사"></button>
       </div>
     </div>
     <div class="modal-actions">
-      <button id="saveCancel" style="background:var(--bg);color:var(--muted)">닫기</button>
-      <button id="saveApply" style="background:var(--accent);color:var(--accent-text)">저장</button>
+      <button id="saveCancel" data-i18n="close" style="background:var(--bg);color:var(--muted)">닫기</button>
+      <button id="saveApply" data-i18n="save" style="background:var(--accent);color:var(--accent-text)">저장</button>
     </div>
   </div>
 </div>
 
 <div id="pasteModal">
   <div class="card">
-    <h3>JSON 붙여넣기</h3>
-    <p>실제 API 응답이나 예시 객체를 붙여넣으면 필드와 타입을 자동으로 추론합니다.
+    <h3 data-i18n="pasteTitle">JSON 붙여넣기</h3>
+    <p data-en-block="pasteIntro">실제 API 응답이나 예시 객체를 붙여넣으면 필드와 타입을 자동으로 추론합니다.
        <code style="font-family:var(--mono);font-size:12px">{"data": [...]}</code> 같은 envelope 도 알아서 벗겨냅니다.</p>
-    <textarea id="pasteInput" spellcheck="false" placeholder='{"id": "a1b2...", "name": "김민준", "age": 34, "tags": ["a", "b"]}'></textarea>
+    <textarea id="pasteInput" data-i18n-ph="phPaste" spellcheck="false" placeholder='{"id": "a1b2...", "name": "김민준", "age": 34, "tags": ["a", "b"]}'></textarea>
     <div id="pasteError"></div>
     <div class="modal-actions">
-      <button id="pasteCancel">취소</button>
-      <button id="pasteApply">추론해서 채우기</button>
+      <button id="pasteCancel" data-i18n="cancel">취소</button>
+      <button id="pasteApply" data-i18n="pasteApply">추론해서 채우기</button>
     </div>
   </div>
 </div>
@@ -792,6 +793,247 @@ npm run deploy</pre>
   'use strict';
   const $ = (s) => document.querySelector(s);
   const fieldsEl = $('#fields');
+
+  // ---- i18n — 한국어가 원본, 영어는 사전으로 덮어쓴다 ----
+  // 언어 상태는 URL 해시(#en/#ko)에만 둔다. 쿼리 파라미터는 금지:
+  // location.search 전체가 스키마 정의로 파싱되므로 ?lang= 은 필드가 돼버린다.
+  const LANG = location.hash === '#en' ? 'en' : location.hash === '#ko' ? 'ko' : (navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en';
+  const t = (ko, en) => LANG === 'en' ? en : ko;
+
+  // 짧은 정적 텍스트 — data-i18n / data-i18n-ph / data-i18n-title 키 → 영어
+  const EN = {
+    // 헤더
+    presets: 'Presets',
+    presetUsers: 'Users',
+    presetProducts: 'Products',
+    presetOrders: 'Order detail',
+    teamSelTitle: 'Schemas saved in this workspace',
+    wsBtnTitle: 'Create or switch a preset workspace',
+    workspace: 'Workspace',
+    howToUse: 'How to use',
+    // 스키마 패널
+    schema: 'Schema',
+    resource: 'Resource',
+    addField: '+ Add field',
+    options: 'Options',
+    optTotal: 'Total',
+    optLimit: 'Per page',
+    optPage: 'Page',
+    optLocale: 'Locale',
+    optQ: 'Search',
+    optQin: 'Search in',
+    optDelay: 'Delay ms',
+    optStatus: 'Status code',
+    optWrap: 'Shape',
+    optSeed: 'Seed',
+    optFormat: 'Format',
+    okeyTotal: 'Key name — rename to match your real API (e.g. total)',
+    okeyLimit: 'Key name — rename to match your real API (e.g. limit)',
+    okeyPage: 'Key name — rename to match your real API (e.g. page)',
+    okeyLocale: 'Key name — rename to match your real API (e.g. locale)',
+    okeyQ: 'Key name — rename to match your real API (e.g. keyword)',
+    okeyQin: 'Key name — rename to match your real API (e.g. qin)',
+    okeyDelay: 'Key name — rename to match your real API (e.g. delay)',
+    okeyStatus: 'Key name — rename to match your real API (e.g. status)',
+    okeyGeneric: 'Key name — rename to match your real API',
+    localeKo: 'Korean',
+    localeJa: 'Japanese',
+    localeZh: 'Chinese',
+    wrapNone: 'array only',
+    wrapOne: 'single object',
+    formatNdjson: 'NDJSON (line-delimited)',
+    phQ: 'substring match on values',
+    phQin: 'limit to (e.g. name,city)',
+    phSeed: 'e.g. 123 (a detail API id)',
+    advSummary: 'Advanced — delay · status code · shape · seed · format',
+    pasteJson: '{ } Paste JSON',
+    pasteJsonSub: 'Paste a real API response and the schema builds itself',
+    // URL 패널
+    generatedUrl: 'Generated URL',
+    copyUrl: 'Copy URL',
+    shortUrl: 'Short URL',
+    copyShortUrl: 'Copy short URL',
+    tsBtnTitle: 'Copy a TypeScript interface + generic fetch helper for this schema',
+    copyTs: 'Copy TS types',
+    saveBtnTitle: 'Save this schema as a workspace preset — creates a short URL (_s=ID)',
+    saveAsPreset: 'Save as preset',
+    loading: 'Loading…',
+    copyResp: 'Copy full response',
+    // 코너 버튼
+    newsBtnTitle: 'See recent updates',
+    newsLabel: "v0.26 · What's new",
+    fbBtnTitle: 'Send feedback to the developer',
+    feedback: 'Feedback',
+    // 모달
+    whatsNew: "What's new",
+    close: 'Close',
+    send: 'Send',
+    phFeedback: 'e.g. Add a BOM to CSV so Excel opens it correctly',
+    wsNew: 'Create new workspace',
+    wsShare: 'Copy workspace link',
+    wsLeave: 'Leave workspace',
+    phWsJoin: 'Paste a workspace ID or link',
+    wsSwitch: 'Switch',
+    phSaveName: 'Name (e.g. Technicians — Gangnam site)',
+    savedOk: '✓ Saved — call this URL from anywhere',
+    save: 'Save',
+    pasteTitle: 'Paste JSON',
+    phPaste: '{"id": "a1b2...", "name": "Kim Minjun", "age": 34, "tags": ["a", "b"]}',
+    cancel: 'Cancel',
+    pasteApply: 'Infer & fill',
+  };
+
+  // 큰 블록 — data-en-block 키 → innerHTML 통째 교체 (구조·클래스·id 는 원본과 동일하게 유지)
+  const EN_BLOCKS = {
+    welcome: `
+    <span><b>First time here?</b> Paste a real API response and your mock API is ready.</span>
+    <button class="go" id="welcomePaste">Paste JSON</button>
+    <button class="go ghost" id="welcomeHelp">How to use</button>
+    <button class="x" id="welcomeClose" title="Close">✕</button>
+  `,
+    keyhint: `
+      Field name = the <b>key</b> in the response JSON · nested <code>customer.name</code> · arrays <code>tags[]</code>
+    `,
+    hintbar: `
+      Type in the type box to get autocomplete ·
+      <a href="#" id="helpLink">How to use</a> ·
+      <a href="/schema/types" target="_blank">All types</a>
+    `,
+    newsList: `
+      <li><span class="v">v0.26</span>Masking types <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — redacted PII like real services show ("김*준", "010-****-5678")</li>
+      <li><span class="v">v0.25</span>New name — Mock API Builder → <b>mocappi</b>, with a lightning badge on the logo ⚡ Now at <code>mocappi.gojongwon.workers.dev</code>; features and saved data unchanged</li>
+      <li><span class="v">v0.24</span>Link preview cards (OG) when sharing + search engine support (robots, meta, structured data)</li>
+      <li><span class="v">v0.23</span>Mobile overhaul — unified preset dropdown, redesigned modals/help/header, background scroll lock, better autocomplete</li>
+      <li><span class="v">v0.22</span>Storage upgraded to D1 — daily save limit up from 1,000 to <b>100,000</b>. NDJSON/CSV previews now render as tables and numbered lines</li>
+      <li><span class="v">v0.21</span>What's new and feedback channels added. Advanced options stay collapsed until you need them</li>
+      <li><span class="v">v0.20</span>Multi-segment paths (<code>/api/v2/shops/57/reviews</code>) and <code>_wrap=one</code> single-object responses — mimic detail APIs. Presets renewed as feature showcases</li>
+      <li><span class="v">v0.19</span>Rename parameter keys to match your real API — click a key in the options to change it to <code>page</code>, <code>size</code>, …</li>
+      <li><span class="v">v0.18</span>Japanese (<code>ja</code>) and Chinese (<code>zh</code>) locales</li>
+      <li><span class="v">v0.16</span>Search generated data with <code>_q</code> · limit fields with <code>_qin</code></li>
+      <li><span class="v">v0.14</span><code>_limit</code> up to 1000 + NDJSON/CSV streaming (10x faster generation)</li>
+      <li><span class="v">v0.11~13</span>Advanced types (nullable, weighted enum, pattern), auto-detected when pasting JSON, emails and phone numbers guaranteed not to exist</li>
+    `,
+    fbIntro: `Rough edges, missing features — anything goes. Sent anonymously to the developer.`,
+    helpBody: `
+      <h4><span class="n">1</span>Two ways to start</h4>
+      <p><b>Paste JSON</b> — paste a real API response and the fields and types are filled in automatically. The fastest way.<br>
+         <b>Presets</b> — start from the Users / Products / Orders preset and tweak it (header buttons on desktop, the dropdown on mobile).</p>
+
+      <h4><span class="n">2</span>A field = name + type</h4>
+      <p>The left box is the JSON key, the right box is how its value is generated (the type).
+         Start typing in the type box and an autocomplete list appears — typing just <code>per</code> already shows the person types.</p>
+      <table>
+        <tr><th>What you want</th><th>Type</th><th>Example output</th></tr>
+        <tr><td>Name / email / phone</td><td><code>person.fullName</code> <code>internet.email</code> <code>phone.number</code></td><td>"김민준" / "mia.kim@example.com" / "010-…"</td></tr>
+        <tr><td>City / address / company</td><td><code>location.city</code> <code>location.streetAddress</code> <code>company.name</code></td><td>"서울" / "…로 12" / "주식회사 …"</td></tr>
+        <tr><td>Number in a range</td><td><code>int:20~60</code> · <code>float:0~100:2</code></td><td>34 · 87.52</td></tr>
+        <tr><td>True/false (with probability)</td><td><code>bool:0.8</code></td><td>true 80% of the time</td></tr>
+        <tr><td>One of several</td><td><code>enum:pending|paid|shipped</code></td><td>one of the three</td></tr>
+        <tr><td>Date in a range</td><td><code>date:2024-01-01~2026-12-31</code></td><td>"2025-06-01T09:12:00.000Z"</td></tr>
+        <tr><td>Always the same value</td><td><code>const:v1</code></td><td>"v1"</td></tr>
+        <tr><td>Unique ID / sequence</td><td><code>uuid</code> · <code>index</code></td><td>"a1b2…" · 0, 1, 2…</td></tr>
+        <tr><td>Long text / image</td><td><code>text:50</code> · <code>image:200x200</code></td><td>50-char sentence · image URL</td></tr>
+      </table>
+      <details class="adv">
+        <summary>Advanced types — when you need more realistic data</summary>
+        <table>
+          <tr><th>What you want</th><th>Type</th><th>Example output</th></tr>
+          <tr><td>Formatted code</td><td><code>pattern:ORD-####-???</code></td><td>"ORD-4821-KQZ" — # digit ? uppercase * alphanumeric</td></tr>
+          <tr><td>Weighted choice</td><td><code>enum:paid*8|refund*2</code></td><td>paid 80% / refund 20%</td></tr>
+          <tr><td>Sometimes null</td><td><code>internet.email?0.2</code></td><td>null 20% of the time — append ?probability to any type</td></tr>
+          <tr><td>Masked PII</td><td><code>mask.name</code> <code>mask.email</code> <code>mask.phone</code> <code>mask.card</code></td><td>"김*준" / "mi***@example.com" / "010-****-5678"</td></tr>
+        </table>
+      </details>
+
+      <h4><span class="n">3</span>Objects inside objects — dots in the name</h4>
+      <p>Put a dot in the field name to get a nested object. The type works as usual.</p>
+      <pre>customer.name = person.fullName
+customer.address.city = location.city</pre>
+      <div class="arrow">↓ responds like this</div>
+      <pre>{
+  "customer": {
+    "name": "김민준",
+    "address": { "city": "서울" }
+  }
+}</pre>
+
+      <h4><span class="n">4</span>Arrays — [] after the name, count with :N at the end of the value</h4>
+      <pre>tags[] = lorem.word:3
+
+→ "tags": ["보장하기", "재외국민을", "영장을"]</pre>
+
+      <h4><span class="n">5</span>Pagination and testing options</h4>
+      <table>
+        <tr><th>Option</th><th>What it does</th></tr>
+        <tr><td><code>_total</code> / <code>_limit</code> / <code>_page</code></td><td>virtual total count / items per page / page number</td></tr>
+        <tr><td><code>_delay=3000</code></td><td>respond 3s late — test loading spinners</td></tr>
+        <tr><td><code>_status=500</code></td><td>force a status code — test error screens</td></tr>
+        <tr><td><code>_locale=en</code></td><td>English data (<code>ja</code> Japanese, <code>zh</code> Chinese)</td></tr>
+        <tr><td><code>_seed=v2</code></td><td>a different dataset — same seed always means same data</td></tr>
+        <tr><td><code>_wrap=none</code></td><td>bare array, no envelope (<code>one</code> = a single object — detail APIs)</td></tr>
+        <tr><td><code>_format=ndjson</code></td><td>stream items line by line — for large data (<code>csv</code> works too)</td></tr>
+        <tr><td><code>_q=김</code></td><td>search the generated data — substring match on values, <code>total</code> becomes the match count</td></tr>
+        <tr><td><code>_qin=name,city</code></td><td>limit which fields are searched — use with <code>_q</code> (nested: <code>a.b</code>)</td></tr>
+        <tr><td><code>_alias=page:_page</code></td><td>map reserved keys to your real API's names — generated automatically when you <u>click a key name</u> in the options</td></tr>
+      </table>
+      <p style="font-size:12.5px;color:var(--muted)">Limits: <code>_limit</code> max 1000 · <code>_q</code> 100 chars · <code>_delay</code> 5s.
+         For more data, keep paging with <code>_page</code> — e.g. 5,000 items = <code>_total=5000&amp;_limit=1000</code> over 5 pages.</p>
+
+      <h4><span class="n">✓</span>Good to know</h4>
+      <p>The same URL <b>always returns the same data</b> — after a refresh, or tomorrow. Safe for snapshot tests.<br>
+         Need a different dataset? Append <code>_seed=anything</code>.<br>
+         Share a finished schema with your team via <b>Save</b> — you get a short <code>?_s=ID</code> URL that other parameters can override (e.g. <code>?_s=aB3xK9&amp;_page=2</code>). The <b>Copy TS types</b> button generates a TypeScript interface for the current schema on the spot.<br>
+         If a URL is wrong, the 400 response explains what is wrong and why.<br>
+         Resource paths can have multiple segments like <code>/api/v2/users/123/orders</code> — the path is decoration, the query defines the data,
+         and detail responses come from the <code>_wrap=one&amp;_seed=123</code> combo.</p>
+    `,
+    wsIntro: `Presets are saved and shared <b>per workspace</b>, and only people <b>with the link</b> can access it.`,
+    wsNote: `
+      If you lose the link, the workspace cannot be recovered — keep it in your team docs. Saved items expire after 180 days without use.`,
+    saveIntro: `Adds it to this workspace's preset list and creates a short URL.<br>
+       Edit and save again to get a new URL — existing URLs keep working.`,
+    saveSetup: `
+      <p style="margin-top:0"><b>Team saving is not enabled yet.</b><br>
+      Connect the storage (Cloudflare KV) once — whoever deploys runs this in a terminal:</p>
+      <pre style="font-family:var(--mono);font-size:12.5px;background:var(--bg);border-radius:8px;padding:12px 14px;line-height:1.8;overflow-x:auto">npx wrangler kv namespace create SCHEMAS
+# paste the printed id into the [[kv_namespaces]] block in wrangler.toml and uncomment it
+npm run deploy</pre>
+      <p>Everything else works fine before it is connected.</p>
+    `,
+    saveWsRequired: `
+      <p style="margin-top:0"><b>Saving presets requires a workspace.</b><br>
+      Shared only among people who have the link.</p>
+      <div class="modal-actions" style="justify-content:flex-start">
+        <button id="saveWsCreate" style="background:var(--accent);color:var(--accent-text)">Create a workspace and continue</button>
+        <button id="saveWsJoin" style="background:var(--accent-soft);color:var(--ink)">Switch to an existing workspace</button>
+      </div>
+    `,
+    pasteIntro: `Paste a real API response or a sample object and the fields and types are inferred automatically.
+       <code style="font-family:var(--mono);font-size:12px">{"data": [...]}</code> envelopes are unwrapped for you.`,
+  };
+
+  function applyEn() {
+    document.documentElement.lang = 'en';
+    for (const el of document.querySelectorAll('[data-i18n]')) {
+      const v = EN[el.dataset.i18n];
+      if (v != null) el.textContent = v;
+    }
+    for (const el of document.querySelectorAll('[data-i18n-ph]')) {
+      const v = EN[el.dataset.i18nPh];
+      if (v != null) el.placeholder = v;
+    }
+    for (const el of document.querySelectorAll('[data-i18n-title]')) {
+      const v = EN[el.dataset.i18nTitle];
+      if (v != null) el.title = v;
+    }
+    for (const el of document.querySelectorAll('[data-en-block]')) {
+      const html = EN_BLOCKS[el.dataset.enBlock];
+      if (html != null) el.innerHTML = html;
+    }
+  }
+  if (LANG === 'en') applyEn();
+  // 토글은 리로드 방식 — 해시만 바꾸므로 스키마 상태(location.search)는 건드리지 않는다
+  $('#langBtn').textContent = LANG === 'en' ? 'KO' : 'EN';
   const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
   const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat' };
 
@@ -891,7 +1133,7 @@ npm run deploy</pre>
     fv.readOnly = locked;
     fv.classList.toggle('locked', locked);
     fv.title = locked
-      ? fv.value + ' — 인자가 없는 타입이라 수정할 게 없어요. 직접 고치려면 더블클릭.'
+      ? fv.value + t(' — 인자가 없는 타입이라 수정할 게 없어요. 직접 고치려면 더블클릭.', ' — this type takes no arguments, so there is nothing to edit. Double-click to edit anyway.')
       : fv.value;
     const fn = row.querySelector('.fname');
     fn.title = fn.value;
@@ -918,9 +1160,9 @@ npm run deploy</pre>
     const row = document.createElement('div');
     row.className = 'frow';
     row.innerHTML =
-      '<input class="fname" placeholder="필드명 (중첩은 a.b)" spellcheck="false">' +
-      '<input class="fval" placeholder="타입 — 클릭하면 목록" spellcheck="false" autocomplete="off">' +
-      '<button class="del" title="필드 삭제">✕</button>';
+      '<input class="fname" placeholder="' + t('필드명 (중첩은 a.b)', 'field name (a.b for nested)') + '" spellcheck="false">' +
+      '<input class="fval" placeholder="' + t('타입 — 클릭하면 목록', 'type — click for the list') + '" spellcheck="false" autocomplete="off">' +
+      '<button class="del" title="' + t('필드 삭제', 'Remove field') + '">✕</button>';
     row.querySelector('.fname').value = name;
     row.querySelector('.fval').value = value;
     applyLock(row);
@@ -1035,7 +1277,7 @@ npm run deploy</pre>
   function syncAddressBar(state) {
     const q = (WS ? '_ws=' + WS + '&' : '') +
       '_res=' + enc(state.res) + (state.fields.length || Object.keys(state.opts).length ? '&' + buildQuery(state) : '');
-    history.replaceState(null, '', '/?' + q);
+    history.replaceState(null, '', '/?' + q + location.hash); // 해시(#en/#ko 언어 상태)는 보존
   }
 
   function loadFromAddressBar() {
@@ -1091,8 +1333,8 @@ npm run deploy</pre>
     lines.slice(0, MAX).forEach((l, i) => {
       html += '<div class="nd-row"><span class="nd-no">' + (i + 1) + '</span><span class="nd-json">' + highlightJson(l) + '</span></div>';
     });
-    if (lines.length > MAX) html += '<div class="pv-more">… 외 ' + (lines.length - MAX) + '줄 — 미리보기는 ' + MAX + '줄까지 (복사는 전체)</div>';
-    $('#preview').innerHTML = html || '(빈 응답)';
+    if (lines.length > MAX) html += '<div class="pv-more">' + t('… 외 ' + (lines.length - MAX) + '줄 — 미리보기는 ' + MAX + '줄까지 (복사는 전체)', '… ' + (lines.length - MAX) + ' more lines — preview shows up to ' + MAX + ' (copy gets everything)') + '</div>';
+    $('#preview').innerHTML = html || t('(빈 응답)', '(empty response)');
   }
 
   // CSV — RFC 4180 파싱 후 표로
@@ -1122,7 +1364,7 @@ npm run deploy</pre>
       html += '<tr>' + r.map((c) => '<td title="' + esc(c).replace(/"/g, '&quot;') + '">' + esc(c) + '</td>').join('') + '</tr>';
     }
     html += '</tbody></table>';
-    if (rows.length - 1 > MAX) html += '<div class="pv-more">… 외 ' + (rows.length - 1 - MAX) + '행 — 미리보기는 ' + MAX + '행까지 (복사는 전체)</div>';
+    if (rows.length - 1 > MAX) html += '<div class="pv-more">' + t('… 외 ' + (rows.length - 1 - MAX) + '행 — 미리보기는 ' + MAX + '행까지 (복사는 전체)', '… ' + (rows.length - 1 - MAX) + ' more rows — preview shows up to ' + MAX + ' (copy gets everything)') + '</div>';
     $('#preview').innerHTML = html;
   }
 
@@ -1152,7 +1394,7 @@ npm run deploy</pre>
       const sa = $('#shortA');
       sa.href = short; sa.textContent = short;
       $('#shortLine').dataset.url = short;
-      $('#shortLine').querySelector('.stag').textContent = loadedPreset.name ? loadedPreset.name : '짧은 URL';
+      $('#shortLine').querySelector('.stag').textContent = loadedPreset.name ? loadedPreset.name : t('짧은 URL', 'Short URL');
       $('#teamSel').value = loadedPreset.sid;
       $('#teamSel').classList.add('active'); // 선택됨 — 진한 표시
     } else {
@@ -1205,7 +1447,7 @@ npm run deploy</pre>
       if (seq !== reqSeq) return;
       clearTimeout(loadingTimer);
       setLoading(false);
-      $('#statusLine').innerHTML = '<span class="err">요청 실패</span>';
+      $('#statusLine').innerHTML = '<span class="err">' + t('요청 실패', 'Request failed') + '</span>';
       lastPreviewText = String(e);
       $('#preview').textContent = String(e);
     }
@@ -1221,7 +1463,7 @@ npm run deploy</pre>
 
   async function applyPaste() {
     const raw = $('#pasteInput').value.trim();
-    if (!raw) { $('#pasteError').textContent = 'JSON 을 입력하세요.'; return; }
+    if (!raw) { $('#pasteError').textContent = t('JSON 을 입력하세요.', 'Enter some JSON.'); return; }
     // "data": {...} 처럼 바깥 중괄호 없는 조각도 감싸서 재시도
     let body = null;
     for (const candidate of [raw, '{' + raw + '}', '{' + raw.replace(/,\s*$/, '') + '}']) {
@@ -1229,14 +1471,14 @@ npm run deploy</pre>
     }
     if (body === null) {
       try { JSON.parse(raw); }
-      catch (e) { $('#pasteError').textContent = 'JSON 파싱 실패: ' + e.message; return; }
+      catch (e) { $('#pasteError').textContent = t('JSON 파싱 실패: ', 'JSON parse error: ') + e.message; return; }
     }
     let result;
     try {
       const res = await fetch('/schema/infer', { method: 'POST', body, headers: { 'content-type': 'application/json' } });
       result = await res.json();
-      if (!res.ok) { $('#pasteError').textContent = (result.error || '추론 실패') + (result.hint ? ' — ' + result.hint : ''); return; }
-    } catch (e) { $('#pasteError').textContent = '요청 실패: ' + e; return; }
+      if (!res.ok) { $('#pasteError').textContent = (result.error || t('추론 실패', 'Inference failed')) + (result.hint ? ' — ' + result.hint : ''); return; }
+    } catch (e) { $('#pasteError').textContent = t('요청 실패: ', 'Request failed: ') + e; return; }
     loadedPreset = null; preloadSnapshot = null; // 붙여넣기로 새 스키마 시작 — 저장본과 무관
     fieldsEl.innerHTML = '';
     for (const f of result.fields) addRow(f.name, f.type);
@@ -1244,7 +1486,7 @@ npm run deploy</pre>
     const lines = [];
     if (result.note) lines.push('ℹ ' + result.note);
     if (result.skipped && result.skipped.length) {
-      lines.push('추론에서 제외됨:');
+      lines.push(t('추론에서 제외됨:', 'Excluded from inference:'));
       for (const s of result.skipped) lines.push('· ' + s.path + ' — ' + s.reason);
     }
     if (lines.length) {
@@ -1273,10 +1515,10 @@ npm run deploy</pre>
   function syncWsUi() {
     const btn = $('#wsBtn');
     const inWs = !!WS;
-    $('#wsBtnLabel').textContent = inWs ? WS.slice(0, 8) + '…' : '워크스페이스';
+    $('#wsBtnLabel').textContent = inWs ? WS.slice(0, 8) + '…' : t('워크스페이스', 'Workspace');
     btn.classList.toggle('ws-on', inWs);
-    btn.title = inWs ? '현재 워크스페이스: ' + WS : '프리셋 저장·공유 공간 만들기/전환';
-    $('#wsCurrent').textContent = inWs ? '현재 워크스페이스: ' + WS : '아직 워크스페이스를 사용하고 있지 않습니다.';
+    btn.title = inWs ? t('현재 워크스페이스: ', 'Current workspace: ') + WS : t('프리셋 저장·공유 공간 만들기/전환', 'Create or switch a preset workspace');
+    $('#wsCurrent').textContent = inWs ? t('현재 워크스페이스: ', 'Current workspace: ') + WS : t('아직 워크스페이스를 사용하고 있지 않습니다.', 'You are not in a workspace yet.');
     // 상태에 맞는 동작만 노출: 링크 복사/나가기는 워크스페이스 안에서만 의미가 있음
     $('#wsShare').style.display = inWs ? '' : 'none';
     $('#wsPublic').style.display = inWs ? '' : 'none';
@@ -1315,7 +1557,7 @@ npm run deploy</pre>
   function joinWs() {
     const ws = parseWsInput($('#wsJoin').value);
     if (!ws) {
-      $('#wsJoinError').textContent = '워크스페이스 ID 를 인식할 수 없습니다. 소문자 영숫자 6~24자, 또는 _ws= 가 포함된 링크를 붙여넣으세요.';
+      $('#wsJoinError').textContent = t('워크스페이스 ID 를 인식할 수 없습니다. 소문자 영숫자 6~24자, 또는 _ws= 가 포함된 링크를 붙여넣으세요.', 'Could not recognize a workspace ID. Paste 6-24 lowercase letters/digits, or a link containing _ws=.');
       return;
     }
     $('#wsJoinError').textContent = '';
@@ -1334,11 +1576,11 @@ npm run deploy</pre>
   function renderTeamOptions() {
     const sel = $('#teamSel');
     const mobile = presetMql.matches;
-    sel.innerHTML = '<option value="">' + (mobile ? '프리셋 선택…' : '저장된 프리셋…') + '</option>';
+    sel.innerHTML = '<option value="">' + (mobile ? t('프리셋 선택…', 'Choose a preset…') : t('저장된 프리셋…', 'Saved presets…')) + '</option>';
     if (mobile) {
       const g = document.createElement('optgroup');
-      g.label = '기본 프리셋';
-      for (const [k, label] of [['users', '사용자'], ['products', '상품'], ['orders', '주문 상세']]) {
+      g.label = t('기본 프리셋', 'Built-in presets');
+      for (const [k, label] of [['users', t('사용자', 'Users')], ['products', t('상품', 'Products')], ['orders', t('주문 상세', 'Order detail')]]) {
         const o = document.createElement('option');
         o.value = 'preset:' + k;
         o.textContent = label;
@@ -1346,11 +1588,11 @@ npm run deploy</pre>
       }
       sel.appendChild(g);
     }
-    const parent = mobile && WS ? (() => { const g = document.createElement('optgroup'); g.label = '내 프리셋'; sel.appendChild(g); return g; })() : sel;
+    const parent = mobile && WS ? (() => { const g = document.createElement('optgroup'); g.label = t('내 프리셋', 'My presets'); sel.appendChild(g); return g; })() : sel;
     if (WS && teamItems.length === 0) {
       const o = document.createElement('option');
       o.disabled = true;
-      o.textContent = '아직 없음 — "프리셋으로 저장"으로 첫 항목을 만들어보세요';
+      o.textContent = t('아직 없음 — "프리셋으로 저장"으로 첫 항목을 만들어보세요', 'Nothing yet — use "Save as preset" to create the first one');
       parent.appendChild(o);
     }
     for (const it of teamItems) {
@@ -1469,7 +1711,7 @@ npm run deploy</pre>
 
   async function applySave() {
     const name = $('#saveName').value.trim();
-    if (!name) { $('#saveError').textContent = '이름을 입력하세요.'; return; }
+    if (!name) { $('#saveError').textContent = t('이름을 입력하세요.', 'Enter a name.'); return; }
     const state = readState();
     try {
       const res = await fetch('/schema/save', {
@@ -1480,8 +1722,8 @@ npm run deploy</pre>
       const body = await res.json();
       if (!res.ok) {
         $('#saveError').textContent = (res.status === 429 || res.status === 503)
-          ? (body.hint || '지금은 저장할 수 없습니다. 잠시 후 다시 시도하세요.')
-          : (body.error || '저장 실패') + (body.hint ? ' — ' + body.hint : '');
+          ? (body.hint || t('지금은 저장할 수 없습니다. 잠시 후 다시 시도하세요.', 'Cannot save right now. Try again shortly.'))
+          : (body.error || t('저장 실패', 'Save failed')) + (body.hint ? ' — ' + body.hint : '');
         return;
       }
       $('#saveError').textContent = '';
@@ -1496,7 +1738,7 @@ npm run deploy</pre>
       refreshTeam();
       update();
     } catch (e) {
-      $('#saveError').textContent = '요청 실패: ' + e;
+      $('#saveError').textContent = t('요청 실패: ', 'Request failed: ') + e;
     }
   }
 
@@ -1506,10 +1748,10 @@ npm run deploy</pre>
     try {
       const res = await fetch('/schema/ts?' + buildQuery(state) + '&_res=' + enc(state.res));
       const text = await res.text();
-      if (!res.ok) { btn.textContent = 'URL 오류'; setTimeout(() => (btn.textContent = 'TS 타입 복사'), 1500); return; }
-      copyText(text, btn, '복사됨 ✓');
+      if (!res.ok) { btn.textContent = t('URL 오류', 'Bad URL'); setTimeout(() => (btn.textContent = t('TS 타입 복사', 'Copy TS types')), 1500); return; }
+      copyText(text, btn, t('복사됨 ✓', 'Copied ✓'));
     } catch {
-      btn.textContent = '요청 실패'; setTimeout(() => (btn.textContent = 'TS 타입 복사'), 1500);
+      btn.textContent = t('요청 실패', 'Request failed'); setTimeout(() => (btn.textContent = t('TS 타입 복사', 'Copy TS types')), 1500);
     }
   }
 
@@ -1636,6 +1878,8 @@ npm run deploy</pre>
     if (btn.classList.contains('del')) { btn.closest('.frow').remove(); update(); return; }
     if (btn.dataset && btn.dataset.preset) { applyPreset(btn.dataset.preset); return; }
     switch (btn.id) {
+      // 언어 토글 — 해시만 바꾸고 리로드 (스키마 상태는 location.search 에 있어 안전)
+      case 'langBtn': location.hash = LANG === 'en' ? '#ko' : '#en'; location.reload(); break;
       case 'addField': addRow(); break;
       case 'pasteBtn': case 'welcomePaste': openPaste(); break;
       case 'pasteCancel': closePaste(); break;
@@ -1654,20 +1898,20 @@ npm run deploy</pre>
       case 'fbSend': {
         const msg = $('#fbText').value.trim();
         const st = $('#fbStatus');
-        if (msg.length < 5) { st.style.color = 'var(--danger)'; st.textContent = '5자 이상 적어주세요.'; break; }
-        st.style.color = 'var(--muted)'; st.textContent = '보내는 중…';
+        if (msg.length < 5) { st.style.color = 'var(--danger)'; st.textContent = t('5자 이상 적어주세요.', 'Please write at least 5 characters.'); break; }
+        st.style.color = 'var(--muted)'; st.textContent = t('보내는 중…', 'Sending…');
         fetch('/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ msg }) })
           .then(async (r) => {
             const b = await r.json();
             if (r.ok) {
-              st.style.color = 'var(--ok)'; st.textContent = b.hint || '전달됐어요 — 고맙습니다!';
+              st.style.color = 'var(--ok)'; st.textContent = b.hint || t('전달됐어요 — 고맙습니다!', 'Delivered — thank you!');
               $('#fbText').value = '';
               setTimeout(() => { $('#fbModal').style.display = 'none'; }, 1200);
             } else {
-              st.style.color = 'var(--danger)'; st.textContent = b.hint || '전송에 실패했어요.';
+              st.style.color = 'var(--danger)'; st.textContent = b.hint || t('전송에 실패했어요.', 'Failed to send.');
             }
           })
-          .catch(() => { st.style.color = 'var(--danger)'; st.textContent = '네트워크 오류 — 잠시 후 다시 시도해주세요.'; });
+          .catch(() => { st.style.color = 'var(--danger)'; st.textContent = t('네트워크 오류 — 잠시 후 다시 시도해주세요.', 'Network error — please try again shortly.'); });
         break;
       }
       case 'welcomeClose': $('#welcome').style.display = 'none'; break;
@@ -1679,7 +1923,7 @@ npm run deploy</pre>
       case 'wsClose': $('#wsModal').style.display = 'none'; break;
       case 'wsNew': switchWs(randWs()); break;
       case 'wsPublic': switchWs(null); break;
-      case 'wsShare': copyText(location.href, btn, '복사됨 ✓'); break;
+      case 'wsShare': copyText(location.href, btn, t('복사됨 ✓', 'Copied ✓')); break;
       case 'wsJoinBtn': joinWs(); break;
       case 'saveWsCreate': switchWs(randWs()); openSave(); break; // 새 워크스페이스 → 저장 이어서
       case 'saveWsJoin': $('#saveModal').style.display = 'none'; syncWsUi(); $('#wsModal').style.display = 'flex'; break;
