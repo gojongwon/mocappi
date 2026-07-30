@@ -111,6 +111,8 @@ sku=pattern:ORD-####-???      # pattern — # digit, ? uppercase, * alphanumeric
                               #   (in raw URLs encode # as %23 — the GUI does this for you)
 status=enum:paid*8|refund*2   # weighted choice
 email=internet.email?0.2      # 20% null — append ?p to any type
+name=mask.name                # masked PII — "J*** Smith"
+tel=mask.phone                #   "(212) ***-0187" (mask.email / mask.card too)
 address.city=location.city    # dot notation → nested object
 tags[]=lorem.word:3           # array — trailing :N is length (default 3)
 ```

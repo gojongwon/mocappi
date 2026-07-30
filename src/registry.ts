@@ -104,33 +104,97 @@ const DENY_MODULES = new Set([
 // email: @example.com 은 RFC 2606 예약 도메인이라 절대 배달되지 않음이 보장된다.
 //        (faker 기본값은 실제 gmail.com 등을 써서 우연히 실존할 수 있고, ko 유저명은 깨진다)
 // phone: ko 010-, ja 090-, zh 1[3-9]+9자리 유효 형식. en 은 픽션 예약 대역 555-01##.
+const emailGen: Generator = (seed) => {
+  const f = FAKERS.en; // 이메일 유저명은 ASCII — 로케일 무관
+  f.seed(seed);
+  const first = f.person.firstName().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const last = f.person.lastName().toLowerCase().replace(/[^a-z0-9]/g, '');
+  const n = f.number.int({ min: 0, max: 99 });
+  const forms = [`${first}.${last}`, `${first}${last}${n}`, `${first}_${last}`, `${first}${n}`];
+  return `${forms[n % forms.length]}@example.com`;
+};
+
+const phoneGen: Generator = (seed, ctx) => {
+  const rng = createRNG(seed);
+  const d4 = () => String(rng.int(0, 9999)).padStart(4, '0');
+  switch (ctx.locale) {
+    case 'en':
+      return `(${rng.int(200, 989)}) 555-01${String(rng.int(0, 99)).padStart(2, '0')}`;
+    case 'ja':
+      return `090-${d4()}-${d4()}`;
+    case 'zh':
+      return `1${rng.int(3, 9)}${String(rng.int(0, 999999999)).padStart(9, '0')}`;
+    default:
+      return `010-${d4()}-${d4()}`;
+  }
+};
+
 const PATH_OVERRIDES: Record<string, Generator> = {
-  'internet.email': (seed) => {
-    const f = FAKERS.en; // 이메일 유저명은 ASCII — 로케일 무관
-    f.seed(seed);
-    const first = f.person.firstName().toLowerCase().replace(/[^a-z0-9]/g, '');
-    const last = f.person.lastName().toLowerCase().replace(/[^a-z0-9]/g, '');
-    const n = f.number.int({ min: 0, max: 99 });
-    const forms = [`${first}.${last}`, `${first}${last}${n}`, `${first}_${last}`, `${first}${n}`];
-    return `${forms[n % forms.length]}@example.com`;
-  },
-  'phone.number': (seed, ctx) => {
-    const rng = createRNG(seed);
-    const d4 = () => String(rng.int(0, 9999)).padStart(4, '0');
-    switch (ctx.locale) {
-      case 'en':
-        return `(${rng.int(200, 989)}) 555-01${String(rng.int(0, 99)).padStart(2, '0')}`;
-      case 'ja':
-        return `090-${d4()}-${d4()}`;
-      case 'zh':
-        return `1${rng.int(3, 9)}${String(rng.int(0, 999999999)).padStart(9, '0')}`;
-      default:
-        return `010-${d4()}-${d4()}`;
+  'internet.email': emailGen,
+  'phone.number': phoneGen,
+};
+
+// ---------------------------------------------------------------------------
+// mask.* — 마스킹된 개인정보. 실서비스가 가려서 내려주는 응답을 흉내낸다.
+// 원본 생성기와 같은 시드를 쓰므로 같은 URL 이면 마스킹 값도 항상 같다.
+// ---------------------------------------------------------------------------
+
+const maskName: Generator = (seed, ctx) => {
+  const f = FAKERS[ctx.locale];
+  f.seed(seed);
+  const name = String(f.person.fullName());
+  if (name.includes(' ')) {
+    // 라틴계: 이름(첫 토큰)만 가린다 — "J*** Smith"
+    const [first, ...rest] = name.split(' ');
+    return [first[0] + '***', ...rest].join(' ');
+  }
+  // CJK: 첫·끝 글자만 남기고 가운데를 가린다 — "김*준" (2글자는 "김*")
+  const ch = [...name];
+  if (ch.length <= 1) return name;
+  if (ch.length === 2) return ch[0] + '*';
+  return ch[0] + '*'.repeat(ch.length - 2) + ch[ch.length - 1];
+};
+
+const maskEmail: Generator = (seed, ctx) => {
+  const email = String(emailGen(seed, ctx));
+  const at = email.indexOf('@');
+  const local = email.slice(0, at);
+  return local.slice(0, local.length >= 3 ? 2 : 1) + '***' + email.slice(at);
+};
+
+const maskPhone: Generator = (seed, ctx) => {
+  const phone = String(phoneGen(seed, ctx));
+  const runs = [...phone.matchAll(/\d+/g)];
+  if (runs.length >= 3) {
+    // 구분자 있는 형식: 첫·끝 그룹만 남긴다 — "010-****-5678", "(212) ***-0187"
+    let out = phone;
+    for (let i = runs.length - 2; i >= 1; i--) {
+      const r = runs[i];
+      out = out.slice(0, r.index) + '*'.repeat(r[0].length) + out.slice(r.index! + r[0].length);
     }
-  },
+    return out;
+  }
+  // 구분자 없는 형식(zh 등): 앞 3 + 가운데 * + 뒤 4 — "139****5678"
+  return phone.slice(0, 3) + '*'.repeat(Math.max(0, phone.length - 7)) + phone.slice(phone.length - 4);
+};
+
+const maskCard: Generator = (seed) => {
+  return `****-****-****-${String(createRNG(seed).int(0, 9999)).padStart(4, '0')}`;
+};
+
+const MASK_TYPES: Record<string, Generator> = {
+  'mask.name': maskName,
+  'mask.email': maskEmail,
+  'mask.phone': maskPhone,
+  'mask.card': maskCard,
 };
 
 function compileFakerPath(raw: string): Generator {
+  const masked = MASK_TYPES[raw];
+  if (masked) return masked;
+  if (raw.startsWith('mask.')) {
+    fail('Unknown mask type', raw, `지원하는 마스킹 타입: ${Object.keys(MASK_TYPES).join(', ')}`);
+  }
   const override = PATH_OVERRIDES[raw];
   if (override) return override;
   const segs = raw.split('.');
@@ -374,6 +438,10 @@ export const TYPE_DOCS = {
     { value: 'internet.url', label: 'URL' },
     { value: 'internet.ip', label: 'IP 주소' },
     { value: 'phone.number', label: '전화번호 (010-####-#### 형식)' },
+    { value: 'mask.name', label: '마스킹된 이름 (김*준)' },
+    { value: 'mask.email', label: '마스킹된 이메일 (mi***@example.com)' },
+    { value: 'mask.phone', label: '마스킹된 전화 (010-****-5678)' },
+    { value: 'mask.card', label: '마스킹된 카드번호 (****-****-****-4821)' },
     { value: 'location.city', label: '도시' },
     { value: 'location.streetAddress', label: '도로명 주소' },
     { value: 'location.zipCode', label: '우편번호' },

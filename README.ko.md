@@ -101,6 +101,8 @@ sku=pattern:ORD-####-???      # 패턴 — #숫자 ?대문자 *영숫자
                               #   (URL 을 직접 쓸 땐 # 를 %23 으로 — GUI 는 자동 인코딩)
 status=enum:paid*8|refund*2   # 가중치 택1
 email=internet.email?0.2      # 20% 확률 null — 모든 타입 뒤에 ?확률
+name=mask.name                # 마스킹된 개인정보 — "김*준"
+tel=mask.phone                #   "010-****-5678" (email·card 도 지원)
 ```
 
 전체 목록과 faker 경로는 `GET /schema/types`. 잘못 쓰면 400 응답이 무엇이 왜 틀렸는지 알려준다:
