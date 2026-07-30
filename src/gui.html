@@ -635,7 +635,7 @@
     <div class="help-body">
       <h4><span class="n">1</span>시작은 둘 중 하나</h4>
       <p><b>JSON 붙여넣기</b> — 실제 API 응답을 그대로 붙여넣으면 필드와 타입이 자동으로 채워집니다. 가장 빠른 방법.<br>
-         <b>프리셋</b> — 상단 사용자/상품/주문 버튼으로 시작해서 고치기.</p>
+         <b>프리셋</b> — 사용자/상품/주문 프리셋으로 시작해서 고치기 (데스크톱은 상단 버튼, 모바일은 드롭다운).</p>
 
       <h4><span class="n">2</span>필드 = 이름 + 타입</h4>
       <p>왼쪽 칸이 JSON 의 key, 오른쪽 칸이 그 값을 만드는 방법(타입)입니다.
@@ -677,7 +677,7 @@ customer.address.city = location.city</pre>
       <h4><span class="n">4</span>배열 — 이름 뒤에 [], 개수는 값 끝에 :N</h4>
       <pre>tags[] = lorem.word:3
 
-→ "tags": ["가방", "나무", "다리"]</pre>
+→ "tags": ["보장하기", "재외국민을", "영장을"]</pre>
 
       <h4><span class="n">5</span>페이지네이션과 테스트 옵션</h4>
       <table>
@@ -696,6 +696,7 @@ customer.address.city = location.city</pre>
       <h4><span class="n">✓</span>알아두면 좋은 것</h4>
       <p>같은 URL 은 <b>항상 같은 데이터</b>를 돌려줍니다 — 새로고침해도, 내일 다시 열어도 동일합니다. 스냅샷 테스트에 안전합니다.<br>
          다른 데이터셋이 필요하면 <code>_seed=아무값</code> 을 붙이세요.<br>
+         완성된 스키마는 <b>저장</b> 버튼으로 팀과 공유하세요 — <code>?_s=ID</code> 짧은 URL 이 생기고, 다른 파라미터로 덮어쓸 수 있습니다 (예: <code>?_s=aB3xK9&amp;_page=2</code>). <b>TS 타입 복사</b> 버튼은 지금 스키마의 TypeScript 인터페이스를 바로 만들어 줍니다.<br>
          URL 을 잘못 쓰면 400 응답이 무엇이 왜 틀렸는지 알려줍니다.<br>
          리소스 경로는 <code>/api/v2/users/123/orders</code> 처럼 여러 단계도 됩니다 — 경로는 장식이고 데이터는 쿼리로 결정되며,
          상세 응답은 <code>_wrap=one&_seed=123</code> 조합으로 만듭니다.</p>
