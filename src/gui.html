@@ -499,7 +499,7 @@ customer.address.city  =  location.city</pre>
         <tr><td><code>_delay=3000</code></td><td>3초 늦게 응답 — 로딩 스피너 테스트</td></tr>
         <tr><td><code>_status=500</code></td><td>상태코드 강제 — 에러 화면 테스트</td></tr>
         <tr><td><code>_locale=en</code></td><td>영어 데이터 (<code>ja</code> 일본어, <code>zh</code> 중국어)</td></tr>
-        <tr><td><code>_wrap=none</code></td><td>envelope 없이 배열만</td></tr>
+        <tr><td><code>_wrap=none</code></td><td>envelope 없이 배열만 (<code>one</code> 은 단일 객체 — 상세 API)</td></tr>
         <tr><td><code>_format=ndjson</code></td><td>아이템만 줄 단위 스트리밍 — 대용량 (<code>csv</code> 도 가능)</td></tr>
         <tr><td><code>_q=김</code></td><td>생성 데이터 검색 — 값 부분일치, <code>total</code> 은 매치 수</td></tr>
         <tr><td><code>_qin=name,city</code></td><td>검색 대상 필드 한정 — <code>_q</code> 와 함께 (중첩은 <code>a.b</code>)</td></tr>
@@ -509,7 +509,9 @@ customer.address.city  =  location.city</pre>
       <h4><span class="n">✓</span>알아두면 좋은 것</h4>
       <p>같은 URL 은 <b>항상 같은 데이터</b>를 돌려줍니다 — 새로고침해도, 내일 다시 열어도 동일합니다. 스냅샷 테스트에 안전합니다.<br>
          다른 데이터셋이 필요하면 <code>_seed=아무값</code> 을 붙이세요.<br>
-         URL 을 잘못 쓰면 400 응답이 무엇이 왜 틀렸는지 알려줍니다.</p>
+         URL 을 잘못 쓰면 400 응답이 무엇이 왜 틀렸는지 알려줍니다.<br>
+         리소스 경로는 <code>/api/v2/users/123/orders</code> 처럼 여러 단계도 됩니다 — 경로는 장식이고 데이터는 쿼리로 결정되며,
+         상세 응답은 <code>_wrap=one&_seed=123</code> 조합으로 만듭니다.</p>
     </div>
     <div class="modal-actions">
       <button id="helpClose" style="background:var(--accent);color:var(--accent-text)">닫기</button>
@@ -798,8 +800,12 @@ npm run deploy</pre>
     return parts.join('&');
   }
 
+  function encPath(res) {
+    return res.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  }
+
   function apiUrl(state) {
-    return location.origin + '/api/' + encodeURIComponent(state.res) + '?' + buildQuery(state);
+    return location.origin + '/api/' + encPath(state.res) + '?' + buildQuery(state);
   }
 
   // ---- GUI 상태 ↔ 주소창 (현재 URL 이 곧 GUI 상태) ----
@@ -1117,7 +1123,7 @@ npm run deploy</pre>
     for (const k of Object.keys(OPT_DEFAULTS)) {
       if (saved.has(k) && !cur.has(k)) overrides.push(k + '=' + OPT_DEFAULTS[k]); // 기본값으로 되돌림도 명시
     }
-    return location.origin + '/api/' + encodeURIComponent(state.res) +
+    return location.origin + '/api/' + encPath(state.res) +
       '?_s=' + loadedPreset.sid + (overrides.length ? '&' + overrides.join('&') : '');
   }
 

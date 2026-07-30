@@ -343,7 +343,7 @@ export const TYPE_DOCS = {
     { name: '_locale', default: 'ko', desc: 'ko | en | ja | zh' },
     { name: '_delay', default: '0', desc: '응답 지연 ms (최대 5000)' },
     { name: '_status', default: '200', desc: '강제 HTTP 상태코드' },
-    { name: '_wrap', default: 'envelope', desc: 'envelope | none(배열만)' },
+    { name: '_wrap', default: 'envelope', desc: 'envelope | none(배열만) | one(단일 객체 — 상세 API 용)' },
     { name: '_format', default: 'json', desc: 'json | ndjson | csv — ndjson/csv 는 아이템만 스트리밍 (대용량용)' },
     { name: '_q', default: '—', desc: '검색어 — 모든 값에 부분일치(대소문자 무시). total 은 매치 수. 앞 1,000개 창 안에서 검색' },
     { name: '_qin', default: '—', desc: '검색 대상 필드 한정 (쉼표 구분, 중첩은 a.b). _q 와 함께 사용. 예: _q=김&_qin=name,city' },

@@ -86,7 +86,12 @@ export function searchMatches(q: ParsedQuery): Record<string, unknown>[] {
   return out;
 }
 
-export function generateResponse(q: ParsedQuery): Envelope | unknown[] {
+export function generateResponse(q: ParsedQuery): Envelope | unknown[] | Record<string, unknown> {
+  // _wrap=one — 상세 엔드포인트용 단일 객체. 리스트 URL 의 첫 아이템과 동일한 값
+  // (개체별로 다른 데이터는 _seed=<id> 로: /api/users/123?_wrap=one&_seed=123)
+  if (q.wrap === 'one') {
+    return generateItem(baseSeedOf(q), 0, q);
+  }
   const start = (q.page - 1) * q.limit;
 
   // 검색 모드 — total 은 매치 수 (실제 검색 API 의 의미론)

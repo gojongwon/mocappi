@@ -24,7 +24,7 @@ export interface ParsedQuery {
   locale: Locale;
   delay: number;
   status: number;
-  wrap: 'envelope' | 'none';
+  wrap: 'envelope' | 'none' | 'one';
   /** 응답 형식 — ndjson/csv 는 아이템 스트리밍 (envelope 없음) */
   format: 'json' | 'ndjson' | 'csv';
   /** _q 검색어 — 데이터는 동일하고 필터만 적용 (시드 제외). null 이면 검색 없음 */
@@ -119,7 +119,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   let locale: Locale = 'ko';
   let delay = 0;
   let status = 200;
-  let wrap: 'envelope' | 'none' = 'envelope';
+  let wrap: 'envelope' | 'none' | 'one' = 'envelope';
   let format: 'json' | 'ndjson' | 'csv' = 'json';
   let qSearch: string | null = null;
   let qin: string[] | null = null;
@@ -163,7 +163,9 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
           status = reqInt(key, value, 100, 599);
           break;
         case '_wrap':
-          if (value !== 'envelope' && value !== 'none') fail('Invalid reserved parameter', key, value, "_wrap 은 'envelope' 또는 'none' 입니다.");
+          if (value !== 'envelope' && value !== 'none' && value !== 'one') {
+            fail('Invalid reserved parameter', key, value, "_wrap 은 envelope | none(배열만) | one(단일 객체) 입니다.");
+          }
           wrap = value;
           break;
         case '_format':

@@ -104,7 +104,9 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-const RESOURCE_RE = /^\/api\/([A-Za-z0-9_-]+)\/?$/;
+// /api/ 뒤 1~8 단계 경로 — /api/v2/users/123/orders 처럼. 경로는 시드에 안 들어간다
+// (데이터는 쿼리로만 결정 — 부모 id 별로 다른 데이터가 필요하면 _seed=123 을 쓰세요).
+const RESOURCE_RE = /^\/api\/([A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){0,7})\/?$/;
 
 export default {
   async fetch(request: Request, env: Env = {}): Promise<Response> {

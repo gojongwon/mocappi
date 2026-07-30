@@ -9,9 +9,10 @@ import { compileType, NULLABLE_RE, type Generator } from './registry';
 
 type Tree = Map<string, Tree | FieldSpec>;
 
-/** users → User, products → Product (단순 복수형만 처리) */
+/** users → User, v2/users/123 → User (마지막 비숫자 세그먼트, 단순 복수형만 처리) */
 export function interfaceName(resource: string): string {
-  const base = resource.replace(/[^A-Za-z0-9]/g, '') || 'Item';
+  const seg = resource.split('/').filter((s) => s && !/^\d+$/.test(s)).pop() || 'Item';
+  const base = seg.replace(/[^A-Za-z0-9]/g, '') || 'Item';
   const singular = base.length > 2 && /s$/i.test(base) && !/ss$/i.test(base) ? base.slice(0, -1) : base;
   return singular.charAt(0).toUpperCase() + singular.slice(1);
 }
@@ -93,13 +94,21 @@ function emitNode(node: Tree, depth: number): string {
   return lines.join('\n');
 }
 
-export function generateTsTypes(fields: FieldSpec[], resource: string, wrap: 'envelope' | 'none'): string {
+export function generateTsTypes(fields: FieldSpec[], resource: string, wrap: 'envelope' | 'none' | 'one'): string {
   const name = interfaceName(resource);
   const body = emitNode(buildTree(fields), 1);
 
   const head = `// ${resource} — Mock API Builder 에서 자동 생성된 타입
 export interface ${name} ${body}
 `;
+
+  if (wrap === 'one') {
+    return `${head}
+// _wrap=one 이므로 응답은 ${name} 단일 객체입니다.
+// 사용 예:
+//   const item: ${name} = await (await fetch(url)).json();
+`;
+  }
 
   if (wrap === 'none') {
     return `${head}

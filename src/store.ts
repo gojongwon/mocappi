@@ -42,7 +42,7 @@ export interface SavedMeta {
   createdAt: string;
 }
 
-const RES_RE = /^[A-Za-z0-9_-]{1,50}$/;
+const RES_RE = /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){0,7}$/; // 다단계 경로 허용 (최대 8단계)
 const ID_RE = /^[a-z0-9]{4,16}$/;
 export const WS_RE = /^[a-z0-9]{6,24}$/;
 export const MAX_PER_WORKSPACE = 100;
@@ -111,8 +111,8 @@ export async function saveSchema(
   if (typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 60) {
     fail('Invalid name', '이름은 1~60자 문자열이어야 합니다.');
   }
-  if (typeof res !== 'string' || !RES_RE.test(res)) {
-    fail('Invalid resource', '리소스명은 영숫자/_/- 조합 1~50자입니다.');
+  if (typeof res !== 'string' || res.length > 80 || !RES_RE.test(res)) {
+    fail('Invalid resource', "리소스 경로는 영숫자/_/- 세그먼트를 '/' 로 이은 형태입니다 (최대 8단계, 80자). 예: v2/users/detail");
   }
   if (typeof query !== 'string' || query === '') {
     fail('Invalid query', '저장할 스키마 쿼리스트링이 비어 있습니다.');

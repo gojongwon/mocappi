@@ -52,6 +52,13 @@ Search (filtered items + match-count `total` — the data itself is unchanged, `
 /api/users?name=person.fullName&city=location.city&_q=kim&_qin=name   # search only the name field
 ```
 
+Nested paths and detail endpoints — any `/api/...` depth works (the path is cosmetic; data is determined by the query). Combine `_wrap=one` with `_seed=<id>` for per-id detail objects:
+
+```
+/api/v2/users/123/orders?id=uuid&amount=int:1000~90000&_seed=123
+/api/users/123?name=person.fullName&age=int:20~60&_wrap=one&_seed=123
+```
+
 Loading and error-state testing:
 
 ```
@@ -70,7 +77,7 @@ Loading and error-state testing:
 | `_locale` | ko | `ko` \| `en` \| `ja` \| `zh` |
 | `_delay` | 0 | Response delay in ms (max 5000) |
 | `_status` | 200 | Forced HTTP status code |
-| `_wrap` | envelope | `envelope` \| `none` (bare array) |
+| `_wrap` | envelope | `envelope` \| `none` (bare array) \| `one` (single object — detail endpoints) |
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv stream items only |
 | `_q` | — | Search: case-insensitive substring over generated values; `total` becomes the match count (scans the first 1,000 virtual items) |
 | `_qin` | — | Limit search to specific fields (comma-separated, dot paths). Use with `_q`: `_q=kim&_qin=name,city` |
