@@ -60,7 +60,17 @@ function matchValue(v: unknown, needle: string): boolean {
   return false;
 }
 
-/** 검색 창 안의 매치 전체 (페이지 슬라이스 전) */
+/** 점 표기 경로의 값 — 경로가 끊기면 undefined */
+function valueAt(item: Record<string, unknown>, path: string): unknown {
+  let cur: unknown = item;
+  for (const s of path.split('.')) {
+    if (!cur || typeof cur !== 'object' || Array.isArray(cur)) return undefined;
+    cur = (cur as Record<string, unknown>)[s];
+  }
+  return cur;
+}
+
+/** 검색 창 안의 매치 전체 (페이지 슬라이스 전). _qin 이 있으면 해당 경로의 값만 대상 */
 export function searchMatches(q: ParsedQuery): Record<string, unknown>[] {
   const baseSeed = baseSeedOf(q);
   const needle = (q.q ?? '').toLowerCase();
@@ -68,7 +78,10 @@ export function searchMatches(q: ParsedQuery): Record<string, unknown>[] {
   const out: Record<string, unknown>[] = [];
   for (let i = 0; i < scan; i++) {
     const item = generateItem(baseSeed, i, q);
-    if (matchValue(item, needle)) out.push(item);
+    const hit = q.qin
+      ? q.qin.some((p) => matchValue(valueAt(item, p), needle))
+      : matchValue(item, needle);
+    if (hit) out.push(item);
   }
   return out;
 }

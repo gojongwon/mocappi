@@ -49,6 +49,7 @@ Search (filtered items + match-count `total` — the data itself is unchanged, `
 
 ```
 /api/users?name=person.fullName&city=location.city&_q=kim&_locale=en
+/api/users?name=person.fullName&city=location.city&_q=kim&_qin=name   # search only the name field
 ```
 
 Loading and error-state testing:
@@ -72,6 +73,7 @@ Loading and error-state testing:
 | `_wrap` | envelope | `envelope` \| `none` (bare array) |
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv stream items only |
 | `_q` | — | Search: case-insensitive substring over generated values; `total` becomes the match count (scans the first 1,000 virtual items) |
+| `_qin` | — | Limit search to specific fields (comma-separated, dot paths). Use with `_q`: `_q=kim&_qin=name,city` |
 | `_s` | — | Saved schema ID (see Workspaces) |
 
 Anything not starting with `_` is a field definition.

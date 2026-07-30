@@ -29,6 +29,8 @@ export interface ParsedQuery {
   format: 'json' | 'ndjson' | 'csv';
   /** _q 검색어 — 데이터는 동일하고 필터만 적용 (시드 제외). null 이면 검색 없음 */
   q: string | null;
+  /** _qin 검색 대상 필드(점 표기 경로) — null 이면 전체 검색. 중첩은 부분트리 매치 */
+  qin: string[] | null;
   seedParam: string | null;
   /** name 기준 정렬 완료 상태 */
   fields: FieldSpec[];
@@ -36,7 +38,7 @@ export interface ParsedQuery {
   normalized: string;
 }
 
-const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format', '_q'];
+const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format', '_q', '_qin'];
 const MAX_LIMIT = 1000;
 const MAX_DELAY = 5000;
 const MAX_ARRAY_LEN = 100;
@@ -91,6 +93,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   let wrap: 'envelope' | 'none' = 'envelope';
   let format: 'json' | 'ndjson' | 'csv' = 'json';
   let qSearch: string | null = null;
+  let qin: string[] | null = null;
   let seedParam: string | null = null;
 
   const fields: FieldSpec[] = [];
@@ -134,6 +137,11 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
           const trimmed = value.trim();
           if (trimmed.length > 100) fail('Invalid reserved parameter', key, value, '_q 검색어는 최대 100자입니다.');
           if (trimmed !== '') qSearch = trimmed;
+          break;
+        }
+        case '_qin': {
+          const parts = value.split(',').map((s) => s.trim()).filter((s) => s !== '');
+          if (parts.length > 0) qin = parts; // 필드 존재 검증은 필드 파싱 후에
           break;
         }
         default:
@@ -199,6 +207,21 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   // 경로 충돌 검사 (a=int:1~5 와 a.b=uuid 동시 정의 등)
   checkPathConflicts(fields);
 
+  // _qin 검증 — 존재하는 필드 경로(또는 그 상위 경로)만 허용. 오타를 조용히 무시하면
+  // "왜 결과가 이상하지" 로 이어지므로 400 + 가용 목록으로 명시한다.
+  if (qin !== null) {
+    if (qSearch === null) {
+      fail('Invalid reserved parameter', '_qin', qin.join(','), '_qin 은 _q(검색어) 와 함께 사용합니다. 예: _q=김&_qin=name');
+    }
+    const available = [...new Set(fields.map((f) => f.path.join('.')))];
+    for (const p of qin) {
+      const ok = available.some((a) => a === p || a.startsWith(p + '.'));
+      if (!ok) {
+        fail('Unknown search field', '_qin', p, `'${p}' 필드가 없습니다. 사용 가능: ${available.join(', ')}`);
+      }
+    }
+  }
+
   // baseSeed 용 정규화 문자열 — _page/_limit/_delay/_status/_wrap 제외.
   // 기본값을 명시한 URL 과 생략한 URL 이 같은 시드를 갖도록 유효값 기준으로 만든다.
   const parts = [`_locale=${locale}`, `_total=${total}`];
@@ -206,7 +229,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   for (const f of fields) parts.push(`${f.name}=${f.typeRaw}`);
   const normalized = parts.join('&');
 
-  return { page, limit, total, locale, delay, status, wrap, format, q: qSearch, seedParam, fields, normalized };
+  return { page, limit, total, locale, delay, status, wrap, format, q: qSearch, qin, seedParam, fields, normalized };
 }
 
 function checkPathConflicts(fields: FieldSpec[]): void {

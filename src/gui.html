@@ -403,6 +403,7 @@
       </div>
       <div><label>지연 ms <code>_delay</code></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
       <div><label>검색 <code>_q</code></label><input id="oQ" placeholder="값 부분일치 (예: 김)" spellcheck="false"></div>
+      <div><label>검색 필드 <code>_qin</code></label><input id="oQin" placeholder="한정 (예: name,city)" spellcheck="false"></div>
       <div><label>상태코드 <code>_status</code></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
     </div>
 
@@ -494,6 +495,7 @@ customer.address.city  =  location.city</pre>
         <tr><td><code>_wrap=none</code></td><td>envelope 없이 배열만</td></tr>
         <tr><td><code>_format=ndjson</code></td><td>아이템만 줄 단위 스트리밍 — 대용량 (<code>csv</code> 도 가능)</td></tr>
         <tr><td><code>_q=김</code></td><td>생성 데이터 검색 — 값 부분일치, <code>total</code> 은 매치 수</td></tr>
+        <tr><td><code>_qin=name,city</code></td><td>검색 대상 필드 한정 — <code>_q</code> 와 함께 (중첩은 <code>a.b</code>)</td></tr>
       </table>
 
       <h4><span class="n">✓</span>알아두면 좋은 것</h4>
@@ -586,8 +588,8 @@ npm run deploy</pre>
   'use strict';
   const $ = (s) => document.querySelector(s);
   const fieldsEl = $('#fields');
-  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '' };
-  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ' };
+  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '' };
+  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin' };
 
   const PRESETS = {
     users: {

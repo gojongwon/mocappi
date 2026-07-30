@@ -86,3 +86,51 @@ describe('_q 검색', () => {
     expect(status).toBe(400);
   });
 });
+
+describe('_qin 필드 한정', () => {
+  // who 와 where 양쪽에 'kim' 이 등장할 수 있는 스키마
+  const S2 = 'who=enum:kim%7Clee&where=enum:kimchon%7Cseoul&_total=80&_limit=100';
+
+  it('지정 필드만 검색 — 다른 필드의 매치는 제외', async () => {
+    const scoped = (await get(`${S2}&_q=kim&_qin=who`)).body;
+    const global = (await get(`${S2}&_q=kim`)).body;
+    expect(scoped.total).toBeGreaterThan(0);
+    for (const it of scoped.data) expect(it.who).toBe('kim');
+    // 전체 검색에는 where=kimchon 때문에 who=lee 인 아이템도 섞여 있어야 함
+    expect(global.total).toBeGreaterThan(scoped.total);
+    expect(global.data.some((it) => it.who === 'lee')).toBe(true);
+  });
+
+  it('쉼표로 여러 필드', async () => {
+    const both = (await get(`${S2}&_q=kim&_qin=who,where`)).body;
+    const global = (await get(`${S2}&_q=kim`)).body;
+    expect(both.total).toBe(global.total); // 두 필드가 전부라 전체 검색과 동일
+  });
+
+  it('중첩 상위 경로는 부분트리 매치', async () => {
+    const hit = (await get(`a.b=const:xx&a.c=const:yy&_total=5&_q=xx&_qin=a`)).body;
+    expect(hit.total).toBe(5);
+    const miss = (await get(`a.b=const:xx&a.c=const:yy&_total=5&_q=xx&_qin=a.c`)).body;
+    expect(miss.total).toBe(0);
+  });
+
+  it('없는 필드는 400 + 가용 목록 안내', async () => {
+    const res = await worker.fetch(new Request(`https://x/api/items?${S2}&_q=kim&_qin=nope`));
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { hint: string };
+    expect(body.hint).toContain('who');
+  });
+
+  it('_q 없이 _qin 만 쓰면 400', async () => {
+    const res = await worker.fetch(new Request(`https://x/api/items?${S2}&_qin=who`));
+    expect(res.status).toBe(400);
+  });
+
+  it('ndjson 조합 + 결정성', async () => {
+    const a = await worker.fetch(new Request(`https://x/api/items?${S2}&_q=kim&_qin=who&_format=ndjson`));
+    const b = await worker.fetch(new Request(`https://x/api/items?${S2}&_q=kim&_qin=who&_format=ndjson`));
+    const ta = await a.text();
+    expect(ta).toBe(await b.text());
+    expect(ta.trimEnd().split('\n').every((l) => JSON.parse(l).who === 'kim')).toBe(true);
+  });
+});

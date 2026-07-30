@@ -338,6 +338,7 @@ export const TYPE_DOCS = {
     { name: '_wrap', default: 'envelope', desc: 'envelope | none(배열만)' },
     { name: '_format', default: 'json', desc: 'json | ndjson | csv — ndjson/csv 는 아이템만 스트리밍 (대용량용)' },
     { name: '_q', default: '—', desc: '검색어 — 모든 값에 부분일치(대소문자 무시). total 은 매치 수. 앞 1,000개 창 안에서 검색' },
+    { name: '_qin', default: '—', desc: '검색 대상 필드 한정 (쉼표 구분, 중첩은 a.b). _q 와 함께 사용. 예: _q=김&_qin=name,city' },
     { name: '_s', default: '—', desc: '저장된 팀 스키마 ID. 다른 파라미터로 오버라이드 가능 (예: ?_s=aB3xK9&_page=2)' },
   ],
   dslTypes: [
