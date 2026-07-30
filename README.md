@@ -45,6 +45,12 @@ Nested objects and arrays:
 /api/users?name=person.fullName&address.city=location.city&tags[]=lorem.word:3
 ```
 
+Search (filtered items + match-count `total` — the data itself is unchanged, `_q` only filters):
+
+```
+/api/users?name=person.fullName&city=location.city&_q=kim&_locale=en
+```
+
 Loading and error-state testing:
 
 ```
@@ -65,6 +71,7 @@ Loading and error-state testing:
 | `_status` | 200 | Forced HTTP status code |
 | `_wrap` | envelope | `envelope` \| `none` (bare array) |
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv stream items only |
+| `_q` | — | Search: case-insensitive substring over generated values; `total` becomes the match count (scans the first 1,000 virtual items) |
 | `_s` | — | Saved schema ID (see Workspaces) |
 
 Anything not starting with `_` is a field definition.

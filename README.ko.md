@@ -75,6 +75,7 @@ GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해
 | `_status` | 200 | 강제 HTTP 상태코드 |
 | `_wrap` | envelope | `envelope` \| `none`(배열만) |
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv 는 아이템만 스트리밍 |
+| `_q` | — | 검색 — 모든 값 부분일치(대소문자 무시), `total` 은 매치 수 (앞 1,000개 창) |
 
 `_` 로 시작하지 않는 파라미터는 전부 필드 정의다.
 

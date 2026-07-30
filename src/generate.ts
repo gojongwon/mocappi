@@ -44,9 +44,56 @@ export function generateItem(baseSeed: number, globalIndex: number, q: ParsedQue
   return item;
 }
 
-export function generateResponse(q: ParsedQuery): Envelope | unknown[] {
+/**
+ * _q 검색 — 가상 아이템을 실제로 생성해 훑어야 하므로 CPU 예산(무료 10ms) 때문에
+ * 앞 SEARCH_SCAN_MAX 개 창 안에서 검색한다. _q 는 시드에서 제외되므로
+ * "같은 데이터에서 필터만" — i 번째 아이템은 검색 유무와 무관하게 동일하다.
+ */
+export const SEARCH_SCAN_MAX = 1000;
+
+function matchValue(v: unknown, needle: string): boolean {
+  if (v === null || v === undefined || typeof v === 'boolean') return false;
+  if (typeof v === 'string') return v.toLowerCase().includes(needle);
+  if (typeof v === 'number') return String(v).includes(needle);
+  if (Array.isArray(v)) return v.some((x) => matchValue(x, needle));
+  if (typeof v === 'object') return Object.values(v).some((x) => matchValue(x, needle));
+  return false;
+}
+
+/** 검색 창 안의 매치 전체 (페이지 슬라이스 전) */
+export function searchMatches(q: ParsedQuery): Record<string, unknown>[] {
   const baseSeed = baseSeedOf(q);
+  const needle = (q.q ?? '').toLowerCase();
+  const scan = Math.min(q.total, SEARCH_SCAN_MAX);
+  const out: Record<string, unknown>[] = [];
+  for (let i = 0; i < scan; i++) {
+    const item = generateItem(baseSeed, i, q);
+    if (matchValue(item, needle)) out.push(item);
+  }
+  return out;
+}
+
+export function generateResponse(q: ParsedQuery): Envelope | unknown[] {
   const start = (q.page - 1) * q.limit;
+
+  // 검색 모드 — total 은 매치 수 (실제 검색 API 의 의미론)
+  if (q.q !== null) {
+    const matches = searchMatches(q);
+    const data = matches.slice(start, start + q.limit);
+    if (q.wrap === 'none') return data;
+    const totalPages = Math.max(1, Math.ceil(matches.length / q.limit));
+    return {
+      data,
+      page: q.page,
+      limit: q.limit,
+      total: matches.length,
+      totalPages,
+      hasNext: q.page < totalPages && matches.length > 0,
+      hasPrev: q.page > 1,
+    };
+  }
+
+  const baseSeed = baseSeedOf(q);
   // 마지막 페이지 잘림 / 범위 초과 페이지 → 빈 배열 (에러 아님)
   const count = Math.max(0, Math.min(q.limit, q.total - start));
   const data: unknown[] = [];

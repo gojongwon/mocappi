@@ -4,7 +4,7 @@
  */
 import guiHtml from './gui.html';
 import { parseQuery, type ParsedQuery } from './dsl';
-import { baseSeedOf, csvHeader, csvRow, generateItem, generateResponse } from './generate';
+import { baseSeedOf, csvHeader, csvRow, generateItem, generateResponse, searchMatches } from './generate';
 import { inferSchema } from './infer';
 import { generateTsTypes } from './tstype';
 import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateWs, type KVNamespaceLike } from './store';
@@ -60,7 +60,9 @@ function saveLimited(ip: string): boolean {
 function streamResponse(q: ParsedQuery): Response {
   const baseSeed = baseSeedOf(q);
   const start = (q.page - 1) * q.limit;
-  const count = Math.max(0, Math.min(q.limit, q.total - start));
+  // 검색 모드면 매치를 먼저 구해 페이지 슬라이스를 스트리밍 (창이 1,000이라 메모리 부담 없음)
+  const searched = q.q !== null ? searchMatches(q).slice(start, start + q.limit) : null;
+  const count = searched ? searched.length : Math.max(0, Math.min(q.limit, q.total - start));
   const enc = new TextEncoder();
   const BATCH = 100;
   let i = 0;
@@ -74,7 +76,7 @@ function streamResponse(q: ParsedQuery): Response {
       }
       const end = Math.min(i + BATCH, count);
       for (; i < end; i++) {
-        const item = generateItem(baseSeed, start + i, q);
+        const item = searched ? searched[i] : generateItem(baseSeed, start + i, q);
         chunk += q.format === 'csv' ? csvRow(item, q) + '\r\n' : JSON.stringify(item) + '\n';
       }
       if (chunk) controller.enqueue(enc.encode(chunk));

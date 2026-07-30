@@ -27,6 +27,8 @@ export interface ParsedQuery {
   wrap: 'envelope' | 'none';
   /** 응답 형식 — ndjson/csv 는 아이템 스트리밍 (envelope 없음) */
   format: 'json' | 'ndjson' | 'csv';
+  /** _q 검색어 — 데이터는 동일하고 필터만 적용 (시드 제외). null 이면 검색 없음 */
+  q: string | null;
   seedParam: string | null;
   /** name 기준 정렬 완료 상태 */
   fields: FieldSpec[];
@@ -34,7 +36,7 @@ export interface ParsedQuery {
   normalized: string;
 }
 
-const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format'];
+const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format', '_q'];
 const MAX_LIMIT = 1000;
 const MAX_DELAY = 5000;
 const MAX_ARRAY_LEN = 100;
@@ -88,6 +90,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   let status = 200;
   let wrap: 'envelope' | 'none' = 'envelope';
   let format: 'json' | 'ndjson' | 'csv' = 'json';
+  let qSearch: string | null = null;
   let seedParam: string | null = null;
 
   const fields: FieldSpec[] = [];
@@ -127,6 +130,12 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
           }
           format = value;
           break;
+        case '_q': {
+          const trimmed = value.trim();
+          if (trimmed.length > 100) fail('Invalid reserved parameter', key, value, '_q 검색어는 최대 100자입니다.');
+          if (trimmed !== '') qSearch = trimmed;
+          break;
+        }
         default:
           fail(
             'Unknown reserved parameter',
@@ -197,7 +206,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   for (const f of fields) parts.push(`${f.name}=${f.typeRaw}`);
   const normalized = parts.join('&');
 
-  return { page, limit, total, locale, delay, status, wrap, format, seedParam, fields, normalized };
+  return { page, limit, total, locale, delay, status, wrap, format, q: qSearch, seedParam, fields, normalized };
 }
 
 function checkPathConflicts(fields: FieldSpec[]): void {

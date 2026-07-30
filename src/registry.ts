@@ -337,6 +337,7 @@ export const TYPE_DOCS = {
     { name: '_status', default: '200', desc: '강제 HTTP 상태코드' },
     { name: '_wrap', default: 'envelope', desc: 'envelope | none(배열만)' },
     { name: '_format', default: 'json', desc: 'json | ndjson | csv — ndjson/csv 는 아이템만 스트리밍 (대용량용)' },
+    { name: '_q', default: '—', desc: '검색어 — 모든 값에 부분일치(대소문자 무시). total 은 매치 수. 앞 1,000개 창 안에서 검색' },
     { name: '_s', default: '—', desc: '저장된 팀 스키마 ID. 다른 파라미터로 오버라이드 가능 (예: ?_s=aB3xK9&_page=2)' },
   ],
   dslTypes: [
