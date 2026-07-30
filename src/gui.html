@@ -406,20 +406,19 @@
   @media (max-width: 640px) {
     header { padding: 10px 14px; gap: 8px; }
     header .sub { display: none; } /* 좁을 땐 부제 생략 — 제목이 곧 설명 */
-    /* 1행: 로고·제목 + 우측 사용법 / 2행: 프리셋 스크롤 줄 (ws 칩은 JS 로 합류) */
+    /* 1행: 작은 로고·제목 + 우측 워크스페이스 칩·사용법 / 2행~: 프리셋 wrap (스크롤 없음) */
     .logo { order: 1; }
-    header h1 { order: 2; }
-    .helpbtn { order: 3; margin-left: auto; }
-    .presets { order: 4; }
-    /* 프리셋 줄: 한 줄 가로 스크롤 — 잘림 대신 스와이프 */
-    .presets {
-      flex: 1 1 100%; margin-left: 0; overflow-x: auto; flex-wrap: nowrap;
-      -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px;
-    }
-    .presets::-webkit-scrollbar { display: none; }
+    .logo svg { width: 22px; height: 22px; }
+    header h1 { order: 2; font-size: 13.5px; line-height: 22px; letter-spacing: -.01em; }
+    .ws-chip { order: 3; margin-left: auto; max-width: 34vw; }
+    .ws-chip #wsBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .helpbtn { order: 4; }
+    .presets { order: 5; }
+    /* 프리셋 줄: 가로 스크롤 없이 줄바꿈 — 전부 보이게 */
+    .presets { flex: 1 1 100%; margin-left: 0; flex-wrap: wrap; row-gap: 6px; }
     .presets button, #teamSel { flex: none; }
+    #teamSel { max-width: calc(100vw - 56px); }
     .hdiv { display: none; }
-    .ws-chip { max-width: 46vw; overflow: hidden; }
 
     main { padding: 12px 12px 24px; gap: 14px; }
     .panel { padding: 16px 14px; }
@@ -1273,18 +1272,6 @@ npm run deploy</pre>
     }
     if (loadedPreset) sel.value = loadedPreset.sid; // 목록 갱신 후에도 현재 프리셋 유지
   }
-
-  // 모바일: 워크스페이스 칩을 프리셋 스크롤 줄로 이동 (헤더 3줄 → 2줄)
-  const mobileMql = window.matchMedia('(max-width: 640px)');
-  function placeWsChip() {
-    const chip = $('#wsBtn');
-    const help = $('#helpBtn');
-    if (!chip || !help) return;
-    if (mobileMql.matches) $('.presets') && document.querySelector('.presets').appendChild(chip);
-    else if (chip.nextElementSibling !== help) help.parentNode.insertBefore(chip, help);
-  }
-  if (mobileMql.addEventListener) mobileMql.addEventListener('change', placeWsChip);
-  placeWsChip();
 
   async function refreshTeam() {
     try {
