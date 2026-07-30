@@ -449,7 +449,12 @@
     .help-body td:last-child { color: var(--muted); font-size: 12px; padding-top: 5px; }
     /* 코드 칩: 내부 줄바꿈 금지 — 칩 단위로만 줄바꿈 */
     .help-body code { display: inline-block; white-space: nowrap; word-break: normal; margin: 2px 6px 3px 0; }
-    .help-body pre { white-space: pre-wrap; word-break: break-word; }
+    /* 예시 블록: 데스크톱용 칸 맞춤 공백을 접어(pre-line) 자연스러운 한 줄 코드로.
+       줄바꿈은 공백 단위, 긴 토큰만 예외적으로 꺾임 */
+    .help-body pre {
+      white-space: pre-line; word-break: keep-all; overflow-wrap: break-word;
+      font-size: 12px; line-height: 1.9; padding: 10px 12px;
+    }
     .help-body p { word-break: keep-all; }
 
     /* iOS 포커스 줌 방지 — 16px 미만 입력은 포커스 시 화면이 강제 확대됨 */
