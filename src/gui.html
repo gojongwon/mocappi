@@ -873,6 +873,23 @@ npm run deploy</pre>
     fn.title = fn.value;
   }
 
+  /**
+   * OS/브라우저 자동완성 바(iOS 열쇠·지갑·주소 등) 억제 힌트.
+   * 목업 도구의 입력은 개인정보 필드가 아닌데 브라우저가 추측으로 AutoFill 바를 띄운다.
+   * (OS 가 최종 결정권을 가지므로 100% 보장은 아님 — 표준 억제 수단 총동원)
+   */
+  function hardenInputs(root) {
+    for (const el of (root || document).querySelectorAll('input, textarea, select')) {
+      el.setAttribute('autocomplete', 'off');
+      el.setAttribute('autocorrect', 'off');
+      el.setAttribute('autocapitalize', 'off');
+      if (!el.hasAttribute('spellcheck')) el.setAttribute('spellcheck', 'false');
+      el.setAttribute('data-1p-ignore', '');      // 1Password
+      el.setAttribute('data-lpignore', 'true');   // LastPass
+      el.setAttribute('data-form-type', 'other'); // Dashlane 등
+    }
+  }
+
   function addRow(name = '', value = '') {
     const row = document.createElement('div');
     row.className = 'frow';
@@ -883,6 +900,7 @@ npm run deploy</pre>
     row.querySelector('.fname').value = name;
     row.querySelector('.fval').value = value;
     applyLock(row);
+    hardenInputs(row);
     fieldsEl.appendChild(row);
     return row;
   }
@@ -1563,6 +1581,7 @@ npm run deploy</pre>
   }
   syncTeamSelVisibility();
   renderTeamOptions();
+  hardenInputs();
 
   const modalObserver = new MutationObserver(syncScrollLock);
   for (const id of MODAL_IDS) {
