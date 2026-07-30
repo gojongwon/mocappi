@@ -416,9 +416,10 @@
     .helpbtn { order: 4; }
     .presets { order: 5; }
     /* 프리셋: 버튼 대신 드롭다운 하나로 통합 (기본 프리셋은 optgroup 으로 포함) */
-    .presets { flex: 1 1 100%; margin-left: 0; flex-wrap: nowrap; }
+    /* min-width:0 이 핵심 — 없으면 셀렉트의 '가장 긴 옵션 폭'이 최소폭이 되어 화면을 밀어냄 */
+    .presets { flex: 1 1 100%; margin-left: 0; flex-wrap: nowrap; min-width: 0; max-width: 100%; }
     .presets .plabel, .presets button[data-preset] { display: none; }
-    #teamSel { flex: 1 1 auto; min-width: 0; max-width: none; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    #teamSel { flex: 1 1 auto; width: 100%; min-width: 0; max-width: 100%; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .hdiv { display: none; }
 
     main { padding: 12px 12px 24px; gap: 14px; }
@@ -437,9 +438,12 @@
     .help-body { max-height: none; padding-right: 0; }
     /* 표 → 카드형 세로 배치 (가로 스크롤 제거) */
     .help-body table, .help-body tbody { display: block; width: 100%; }
-    .help-body tr { display: block; padding: 13px 0; border-bottom: 1px dashed rgba(23,23,26,.15); background: none !important; }
+    .help-body tr {
+      display: block; padding: 11px 13px; margin: 0 0 10px;
+      background: var(--bg) !important; border: 1px dashed rgba(23,23,26,.3); border-radius: 8px;
+    }
     .help-body tr:first-child { display: none; } /* th 헤더 행 숨김 */
-    .help-body tr:last-child { border-bottom: none; }
+    .help-body tr:last-child { margin-bottom: 0; }
     .help-body td { display: block; padding: 3px 0; border: none; width: auto !important; word-break: keep-all; overflow-wrap: break-word; line-height: 1.7; }
     .help-body td:first-child { font-weight: 700; font-size: 13.5px; padding-bottom: 5px; }
     .help-body td:last-child { color: var(--muted); font-size: 12px; padding-top: 5px; }
@@ -449,7 +453,7 @@
     .help-body p { word-break: keep-all; }
 
     /* iOS 포커스 줌 방지 — 16px 미만 입력은 포커스 시 화면이 강제 확대됨 */
-    .frow input, #resource, #teamSel, .opts input, .opts select, #pasteInput, #fbText, #wsJoin, #saveName { font-size: 16px; }
+    .frow input, #resource, .opts input, .opts select, #pasteInput, #fbText, #wsJoin, #saveName { font-size: 16px; }
 
     /* 코너 버튼: 모바일에선 플로팅 대신 페이지 맨 아래 정적 배치 — 입력을 가리지 않게 */
     .corner { position: static; justify-content: center; margin: 4px 0 24px; }
