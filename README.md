@@ -163,24 +163,29 @@ Saved schemas are **content-addressed and immutable**: the ID is a hash of the c
 
 ### Enable team storage (once)
 
+**Recommended — D1** (free tier: 100,000 writes/day, 100× KV):
+
 ```bash
-npx wrangler kv namespace create SCHEMAS
-# paste the printed id into [[kv_namespaces]] in wrangler.toml
+npx wrangler d1 create mock-api
+# paste the printed database_id into the commented [[d1_databases]] block in wrangler.toml and uncomment it
 npm run deploy
 ```
 
-Without the KV binding everything else works; only the save UI is disabled.
+The table is created automatically on first use. KV (`[[kv_namespaces]]`, binding `SCHEMAS`) still works as a fallback — if both are bound, D1 wins. Existing KV data is not migrated automatically; with few presets, just re-save them.
+
+Without either binding everything else works; only the save UI is disabled.
 
 ### Operating publicly
 
 - Save rate limiting **ships with the repo** — `wrangler.toml` includes a Workers Rate Limiting binding (`SAVE_RL`, burst guard) that works on `workers.dev` and activates automatically on deploy, plus an in-Worker cap of **10 saves/hour/IP** (429 with a clear message). The Worker also skips redundant re-writes of identical content. No dashboard setup needed.
   - Zone WAF rate limiting rules are only available if you serve the Worker on a custom domain you own — optional extra layer in that case.
-- Reading user feedback (GUI 피드백 button stores to KV, 90-day TTL):
+- Reading user feedback (GUI 피드백 button, 90-day TTL). With D1:
 
   ```bash
-  npx wrangler kv key list --binding=SCHEMAS --prefix=fb: | jq -r '.[].name' \
-    | while read k; do npx wrangler kv key get --binding=SCHEMAS "$k"; done
+  npx wrangler d1 execute mock-api --remote --command "SELECT value FROM kv WHERE key LIKE 'fb:%' ORDER BY key DESC"
   ```
+
+  (KV fallback: `npx wrangler kv key list --binding=SCHEMAS --prefix=fb:` then `kv key get` per key.)
 
 - Set usage alerts (free tier: 100K req/day, 1K KV writes/day). Move to Workers Paid ($5/mo) if traffic grows.
 

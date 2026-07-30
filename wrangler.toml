@@ -22,3 +22,11 @@ name = "SAVE_RL"
 type = "ratelimit"
 namespace_id = "1001"
 simple = { limit = 10, period = 60 }
+
+# D1 저장소 (권장) — KV 대비 쓰기 한도 100배 (무료 100,000/일, 읽기 5,000,000/일).
+# 활성화: npx wrangler d1 create mock-api 실행 → 출력된 database_id 를 붙여넣고 주석 해제.
+# DB 가 바인딩되면 KV(SCHEMAS) 보다 우선 사용됩니다. 테이블은 자동 생성.
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "mock-api"
+# database_id = "붙여넣기"

@@ -127,8 +127,7 @@ email=internet.email?0.2      # 20% 확률 null — 모든 타입 뒤에 ?확률
 - 사용자 피드백 읽기 (GUI 피드백 버튼 → KV 저장, 90일 보관):
 
   ```bash
-  npx wrangler kv key list --binding=SCHEMAS --prefix=fb: | jq -r '.[].name' \
-    | while read k; do npx wrangler kv key get --binding=SCHEMAS "$k"; done
+  npx wrangler d1 execute mock-api --remote --command "SELECT value FROM kv WHERE key LIKE 'fb:%' ORDER BY key DESC"
   ```
 
 - 사용량 알림 설정 (Workers 무료 100K req/일, KV 쓰기 1K/일)
@@ -146,14 +145,17 @@ GUI 의 **팀에 저장** 버튼으로 현재 스키마를 팀 전체가 쓸 수
 
 ### 팀 저장 활성화 (1회)
 
+**권장 — D1** (무료 쓰기 100,000/일, KV 의 100배):
+
 ```bash
-npx wrangler kv namespace create SCHEMAS
-# 출력된 id 를 wrangler.toml 의 [[kv_namespaces]] 블록에 붙여넣고 주석 해제
+npx wrangler d1 create mock-api
+# 출력된 database_id 를 wrangler.toml 의 [[d1_databases]] 주석 블록에 붙여넣고 주석 해제
 npm run deploy
 ```
 
-KV 를 연결하지 않아도 나머지 기능은 전부 정상 동작한다 (저장 UI 만 자동으로 숨겨짐).
-무료 티어: 읽기 10만/일, 쓰기 1천/일 — 팀 사용에 충분.
+테이블은 최초 사용 시 자동 생성된다. KV(`SCHEMAS` 바인딩)는 폴백으로 계속 지원 — 둘 다 있으면 D1 우선.
+기존 KV 데이터는 자동 이전되지 않으니 프리셋이 몇 개 없으면 다시 저장하면 된다.
+저장소를 연결하지 않아도 나머지 기능은 전부 정상 동작한다 (저장 UI 만 자동으로 숨겨짐).
 
 ## TypeScript 타입
 
