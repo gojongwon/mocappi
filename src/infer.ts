@@ -68,8 +68,28 @@ const KEY = {
   url: /(url|link|website|homepage)$/,
 };
 
+// 마스킹된 값 감지 — 실서비스 응답의 가려진 개인정보 ("김*준", "mi***@example.com")
+// 카드가 가장 구체적이므로 먼저, 전화는 카드 이후에 검사해야 오검출이 없다.
+const MASK_CARD_RE = /^(?:\*{4}[- ]){3}\d{4}$/;
+const MASK_EMAIL_RE = /^[A-Za-z0-9._%+-]{1,4}\*{2,}@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const MASK_PHONE_RE = /^\+?[\d()\- ]*\*{2,}[\d()*\- ]*\d{2,4}$/;
+const MASK_NAME_CJK_RE = /^[^\x00-\x7F]\*+[^\x00-\x7F]?$/;
+const MASK_NAME_LATIN_RE = /^[A-Za-z]\*{2,}(?: [A-Za-z][A-Za-z'.-]*)+$/;
+
+function inferMasked(v: string): string | null {
+  if (MASK_CARD_RE.test(v)) return 'mask.card';
+  if (MASK_EMAIL_RE.test(v)) return 'mask.email';
+  if (MASK_PHONE_RE.test(v)) return 'mask.phone';
+  if (MASK_NAME_CJK_RE.test(v) || MASK_NAME_LATIN_RE.test(v)) return 'mask.name';
+  return null;
+}
+
 /** 값/키가 특정 의미를 강하게 가리키는 경우 (uuid/email/date/url/faker 매핑) — 아니면 null */
 function inferStringKeyed(keyLc: string, v: string): string | null {
+  if (v.includes('*')) {
+    const masked = inferMasked(v);
+    if (masked) return masked;
+  }
   if (UUID_RE.test(v)) return 'uuid';
   if (EMAIL_RE.test(v) || KEY.email.test(keyLc)) return 'internet.email';
   const dm = v.match(ISO_DATE_RE);
