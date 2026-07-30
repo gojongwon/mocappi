@@ -409,16 +409,16 @@
     /* 1행: 작은 로고·제목 + 우측 워크스페이스 칩·사용법 / 2행~: 프리셋 wrap (스크롤 없음) */
     .logo { order: 1; }
     .logo svg { width: 22px; height: 22px; }
-    header h1 { order: 2; font-size: 13.5px; line-height: 22px; letter-spacing: -.01em; }
-    .ws-chip { order: 3; margin-left: auto; max-width: 34vw; }
+    header h1 { order: 2; font-size: 13.5px; line-height: 22px; letter-spacing: -.01em;
+      flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ws-chip { order: 3; margin-left: auto; max-width: 26vw; }
     .ws-chip #wsBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .helpbtn { order: 4; }
     .presets { order: 5; }
-    /* 프리셋 한 줄: 버튼은 고정폭, 저장된 프리셋이 남는 폭을 채우고 말줄임 */
+    /* 프리셋: 버튼 대신 드롭다운 하나로 통합 (기본 프리셋은 optgroup 으로 포함) */
     .presets { flex: 1 1 100%; margin-left: 0; flex-wrap: nowrap; }
-    .presets .plabel { display: none; }
-    .presets button { flex: none; padding: 0 11px; }
-    #teamSel { flex: 1 1 auto; min-width: 80px; max-width: none; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .presets .plabel, .presets button[data-preset] { display: none; }
+    #teamSel { flex: 1 1 auto; min-width: 0; max-width: none; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .hdiv { display: none; }
 
     main { padding: 12px 12px 24px; gap: 14px; }
@@ -1267,23 +1267,45 @@ npm run deploy</pre>
   let teamAvailable = false;
   let teamItems = [];
 
+  // 모바일에선 프리셋 버튼을 숨기고 이 드롭다운 하나로 통합 (기본은 optgroup 구분)
+  const presetMql = window.matchMedia('(max-width: 640px)');
+
   function renderTeamOptions() {
     const sel = $('#teamSel');
-    sel.innerHTML = '<option value="">저장된 프리셋…</option>';
+    const mobile = presetMql.matches;
+    sel.innerHTML = '<option value="">' + (mobile ? '프리셋 선택…' : '저장된 프리셋…') + '</option>';
+    if (mobile) {
+      const g = document.createElement('optgroup');
+      g.label = '기본 프리셋';
+      for (const [k, label] of [['users', '사용자'], ['products', '상품'], ['orders', '주문 상세']]) {
+        const o = document.createElement('option');
+        o.value = 'preset:' + k;
+        o.textContent = label;
+        g.appendChild(o);
+      }
+      sel.appendChild(g);
+    }
+    const parent = mobile && WS ? (() => { const g = document.createElement('optgroup'); g.label = '내 프리셋'; sel.appendChild(g); return g; })() : sel;
     if (WS && teamItems.length === 0) {
       const o = document.createElement('option');
       o.disabled = true;
       o.textContent = '아직 없음 — "프리셋으로 저장"으로 첫 항목을 만들어보세요';
-      sel.appendChild(o);
+      parent.appendChild(o);
     }
     for (const it of teamItems) {
       const o = document.createElement('option');
       o.value = it.sid;
       o.textContent = it.name + ' (/api/' + it.res + ')';
-      sel.appendChild(o);
+      parent.appendChild(o);
     }
     if (loadedPreset) sel.value = loadedPreset.sid; // 목록 갱신 후에도 현재 프리셋 유지
   }
+
+  /** 모바일이면 워크스페이스 없이도 드롭다운 노출 (기본 프리셋 접근 경로) */
+  function syncTeamSelVisibility() {
+    $('#teamSel').style.display = (WS || presetMql.matches) ? '' : 'none';
+  }
+  if (presetMql.addEventListener) presetMql.addEventListener('change', () => { renderTeamOptions(); syncTeamSelVisibility(); });
 
   async function refreshTeam() {
     try {
@@ -1293,9 +1315,8 @@ npm run deploy</pre>
       teamAvailable = true;
       $('#wsBtn').style.display = '';
       syncWsUi();
-      // 프리셋 목록·저장은 워크스페이스 전용 — 미사용 시 숨김
-      $('#teamSel').style.display = WS ? '' : 'none';
       teamItems = body.items;
+      syncTeamSelVisibility();
       renderTeamOptions();
     } catch {}
   }
@@ -1516,6 +1537,9 @@ npm run deploy</pre>
       window.scrollTo(0, scrollLockY);
     }
   }
+  syncTeamSelVisibility();
+  renderTeamOptions();
+
   const modalObserver = new MutationObserver(syncScrollLock);
   for (const id of MODAL_IDS) {
     const el = $('#' + id);
@@ -1524,7 +1548,9 @@ npm run deploy</pre>
 
   document.addEventListener('change', (e) => {
     if (e.target.id === 'teamSel') {
-      if (e.target.value) loadTeamPreset(e.target.value); // 선택 상태 유지
+      const v = e.target.value;
+      if (v.startsWith('preset:')) { applyPreset(v.slice(7)); e.target.value = ''; }
+      else if (v) loadTeamPreset(v); // 선택 상태 유지
       else unloadTeamPreset(); // placeholder 재선택 = 해제 + 이전 상태 복원
     }
   });
