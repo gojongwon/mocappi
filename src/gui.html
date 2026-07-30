@@ -416,7 +416,7 @@
     .hdiv { display: none; }
     .ws-chip { max-width: 46vw; overflow: hidden; }
 
-    main { padding: 12px 12px 96px; gap: 14px; } /* 하단은 코너 버튼 자리 확보 */
+    main { padding: 12px 12px 24px; gap: 14px; }
     .panel { padding: 16px 14px; }
     .frow { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) 24px; gap: 5px; }
     .opts { grid-template-columns: 1fr 1fr; }
@@ -430,9 +430,9 @@
     .help-body table { font-size: 12px; }
     .help-body th, .help-body td { padding: 6px 8px; }
 
-    /* 코너 버튼: 축소 + 콘텐츠와 덜 겹치게 */
-    .corner { right: 10px; bottom: 10px; gap: 7px; }
-    .corner button { padding: 7px 12px; font-size: 12px; box-shadow: var(--btn-shadow); }
+    /* 코너 버튼: 모바일에선 플로팅 대신 페이지 맨 아래 정적 배치 — 입력을 가리지 않게 */
+    .corner { position: static; justify-content: center; margin: 4px 0 24px; }
+    .corner button { padding: 8px 14px; font-size: 12.5px; box-shadow: var(--btn-shadow); }
     .corner button svg { width: 13px; height: 13px; }
   }
 </style>
