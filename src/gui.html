@@ -60,6 +60,13 @@
     background-repeat: no-repeat; background-position: right 11px center; background-size: 10px;
   }
   #teamSel.active { color: var(--ink); font-weight: 800; background-color: var(--accent-soft); }
+  .opts .okey {
+    font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600;
+    border: none; border-bottom: 1.5px dashed rgba(23,23,26,.35); background: transparent;
+    padding: 0 1px 1px; width: 5.2em; border-radius: 0;
+  }
+  .opts .okey:focus { color: var(--ink); border-bottom: 1.5px solid var(--accent); outline: none; box-shadow: none; }
+  .opts .okey.bad { color: var(--danger); border-bottom-color: var(--danger); }
   .hdiv { width: 1.5px; height: 20px; background: var(--ink); opacity: .25; flex: none; }
   .ws-chip {
     display: inline-flex; align-items: center; gap: 7px; flex: none;
@@ -395,17 +402,16 @@
 
     <h2 style="margin-top:20px">옵션</h2>
     <div class="opts">
-      <div><label>전체 개수 <code>_total</code></label><input id="oTotal" type="number" min="0" value="100"></div>
-      <div><label>페이지당 <code>_limit</code></label><input id="oLimit" type="number" min="1" max="1000" value="10"></div>
-      <div><label>페이지 <code>_page</code></label><input id="oPage" type="number" min="1" value="1"></div>
-      <div><label>로케일 <code>_locale</code></label>
+      <div><label>전체 개수 <input class="okey" data-for="_total" value="_total" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: total)"></label><input id="oTotal" type="number" min="0" value="100"></div>
+      <div><label>페이지당 <input class="okey" data-for="_limit" value="_limit" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: limit)"></label><input id="oLimit" type="number" min="1" max="1000" value="10"></div>
+      <div><label>페이지 <input class="okey" data-for="_page" value="_page" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: page)"></label><input id="oPage" type="number" min="1" value="1"></div>
+      <div><label>로케일 <input class="okey" data-for="_locale" value="_locale" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: locale)"></label>
         <select id="oLocale"><option value="ko">한국어</option><option value="en">English</option><option value="ja">日本語</option><option value="zh">中文</option></select>
       </div>
-      <div><label>지연 ms <code>_delay</code></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
-      <div><label>검색 <code>_q</code></label><input id="oQ" placeholder="값 부분일치 (예: 김)" spellcheck="false"></div>
-      <div><label>검색 필드 <code>_qin</code></label><input id="oQin" placeholder="한정 (예: name,city)" spellcheck="false"></div>
-      <div><label>키 별칭 <code>_alias</code></label><input id="oAlias" placeholder="예: page:_page,size:_limit" spellcheck="false"></div>
-      <div><label>상태코드 <code>_status</code></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
+      <div><label>지연 ms <input class="okey" data-for="_delay" value="_delay" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
+      <div><label>검색 <input class="okey" data-for="_q" value="_q" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: keyword)"></label><input id="oQ" placeholder="값 부분일치 (예: 김)" spellcheck="false"></div>
+      <div><label>검색 필드 <input class="okey" data-for="_qin" value="_qin" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: qin)"></label><input id="oQin" placeholder="한정 (예: name,city)" spellcheck="false"></div>
+      <div><label>상태코드 <input class="okey" data-for="_status" value="_status" spellcheck="false" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
     </div>
 
     <button id="pasteBtn" class="paste-primary">
@@ -497,7 +503,7 @@ customer.address.city  =  location.city</pre>
         <tr><td><code>_format=ndjson</code></td><td>아이템만 줄 단위 스트리밍 — 대용량 (<code>csv</code> 도 가능)</td></tr>
         <tr><td><code>_q=김</code></td><td>생성 데이터 검색 — 값 부분일치, <code>total</code> 은 매치 수</td></tr>
         <tr><td><code>_qin=name,city</code></td><td>검색 대상 필드 한정 — <code>_q</code> 와 함께 (중첩은 <code>a.b</code>)</td></tr>
-        <tr><td><code>_alias=page:_page</code></td><td>예약 키를 실제 API 이름으로 — <code>?page=2</code> 처럼 호출 (쉼표로 여러 개)</td></tr>
+        <tr><td><code>_alias=page:_page</code></td><td>예약 키를 실제 API 이름으로 — 옵션의 <u>키 이름을 직접 클릭</u>해 바꾸면 자동 생성됩니다</td></tr>
       </table>
 
       <h4><span class="n">✓</span>알아두면 좋은 것</h4>
@@ -590,8 +596,48 @@ npm run deploy</pre>
   'use strict';
   const $ = (s) => document.querySelector(s);
   const fieldsEl = $('#fields');
-  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _alias: '' };
-  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _alias: '#oAlias' };
+  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '' };
+  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin' };
+
+  // ---- 옵션 키 별칭 (인라인 편집 → _alias 자동 조립) ----
+  const ALIAS_OK_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
+
+  /** 기본값과 다르고 유효한 키만 { 예약어: 별칭 } 으로. 유효하지 않으면 .bad 표시 후 무시 */
+  function optAliases() {
+    const map = {};
+    for (const el of document.querySelectorAll('.okey')) {
+      const def = el.dataset.for;
+      const v = el.value.trim();
+      const valid = v === def || ALIAS_OK_RE.test(v);
+      el.classList.toggle('bad', !valid);
+      if (valid && v !== def && v !== '') map[def] = v;
+    }
+    return map;
+  }
+
+  /** { 예약어: 별칭 } 적용 — 없는 키는 기본값으로 복원 */
+  function setOptKeys(byDef) {
+    for (const el of document.querySelectorAll('.okey')) {
+      el.value = (byDef && byDef[el.dataset.for]) || el.dataset.for;
+      el.classList.remove('bad');
+    }
+  }
+
+  /** URL 의 _alias 파라미터 파싱 → { rev: 별칭→예약어, byDef: 예약어→별칭 } */
+  function parseAliasParam(params) {
+    const rev = {}; const byDef = {};
+    const raw = params.get('_alias');
+    if (raw) {
+      for (const ent of raw.split(',')) {
+        const i = ent.indexOf(':');
+        if (i > 0) {
+          const a = ent.slice(0, i).trim(); const d = ent.slice(i + 1).trim();
+          if (a && d) { rev[a] = d; byDef[d] = a; }
+        }
+      }
+    }
+    return { rev, byDef };
+  }
 
   const PRESETS = {
     users: {
@@ -744,7 +790,11 @@ npm run deploy</pre>
   function buildQuery(state) {
     const parts = [];
     for (const [n, v] of state.fields) parts.push(enc(n) + '=' + enc(v));
-    for (const [k, v] of Object.entries(state.opts)) parts.push(k + '=' + enc(v));
+    const alias = optAliases();
+    for (const [k, v] of Object.entries(state.opts)) parts.push((alias[k] || k) + '=' + enc(v));
+    // 값이 없어도 별칭 선언은 유지 — _s 저장 후 앱이 keyword=... 처럼 넘기는 시나리오
+    const pairs = Object.entries(alias).map(([def, a]) => a + ':' + def);
+    if (pairs.length) parts.push('_alias=' + enc(pairs.join(',')));
     return parts.join('&');
   }
 
@@ -764,9 +814,12 @@ npm run deploy</pre>
     if (![...params.keys()].length || !params.has('_res')) return false;
     $('#resource').value = params.get('_res') || 'items';
     fieldsEl.innerHTML = '';
+    const { rev, byDef } = parseAliasParam(params);
+    setOptKeys(byDef);
     for (const [k, v] of params) {
-      if (k === '_res') continue;
-      if (k in OPT_INPUTS) { $(OPT_INPUTS[k]).value = v; continue; }
+      if (k === '_res' || k === '_alias') continue;
+      const def = rev[k] || k;
+      if (def in OPT_INPUTS) { $(OPT_INPUTS[def]).value = v; continue; }
       if (k.startsWith('_')) continue;
       addRow(k, v);
     }
@@ -780,6 +833,7 @@ npm run deploy</pre>
     $('#resource').value = p.res;
     fieldsEl.innerHTML = '';
     for (const [n, v] of p.fields) addRow(n, v);
+    setOptKeys(null); // 내장 프리셋은 기본 키 사용
     for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
     update();
   }
@@ -1017,8 +1071,13 @@ npm run deploy</pre>
     $('#resource').value = res;
     fieldsEl.innerHTML = '';
     for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = OPT_DEFAULTS[k];
-    for (const [k, v] of new URLSearchParams(query)) {
-      if (k in OPT_INPUTS) { $(OPT_INPUTS[k]).value = v; continue; }
+    const qp = new URLSearchParams(query);
+    const { rev, byDef } = parseAliasParam(qp);
+    setOptKeys(byDef);
+    for (const [k, v] of qp) {
+      if (k === '_alias') continue;
+      const def = rev[k] || k;
+      if (def in OPT_INPUTS) { $(OPT_INPUTS[def]).value = v; continue; }
       if (k.startsWith('_')) continue;
       addRow(k, v);
     }
@@ -1252,6 +1311,7 @@ npm run deploy</pre>
       const p = PRESETS.users;
       $('#resource').value = p.res;
       for (const [n, v] of p.fields) addRow(n, v);
+      setOptKeys(null);
       for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
       $('#welcome').style.display = 'block';
     }
