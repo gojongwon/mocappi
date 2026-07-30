@@ -10,6 +10,7 @@ import { generateTsTypes } from './tstype';
 import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateWs, type KVNamespaceLike } from './store';
 import { d1Store, type D1Like } from './d1';
 import { DslError, TYPE_DOCS } from './registry';
+import { OG_PNG_B64 } from './og';
 
 export interface Env {
   /** D1 바인딩 (권장) — KV 대비 쓰기 한도 100배. 있으면 KV 보다 우선 사용 */
@@ -125,6 +126,19 @@ export default {
     if (url.pathname === '/' || url.pathname === '/index.html') {
       return new Response(guiHtml, {
         headers: { 'content-type': 'text/html; charset=utf-8', ...CORS_HEADERS },
+      });
+    }
+
+    // SEO/공유 정적 리소스
+    if (url.pathname === '/robots.txt') {
+      return new Response('User-agent: *\nAllow: /\n', {
+        headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=86400' },
+      });
+    }
+    if (url.pathname === '/og.png') {
+      const bin = Uint8Array.from(atob(OG_PNG_B64), (c) => c.charCodeAt(0));
+      return new Response(bin, {
+        headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=604800' },
       });
     }
 
