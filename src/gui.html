@@ -60,6 +60,26 @@
     background-repeat: no-repeat; background-position: right 11px center; background-size: 10px;
   }
   #teamSel.active { color: var(--ink); font-weight: 800; background-color: var(--accent-soft); }
+  .corner { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 8px; z-index: 50; }
+  .corner button {
+    border: 1.5px solid var(--ink); border-radius: 999px; background: var(--panel);
+    padding: 5px 13px; font-size: 12px; font-weight: 700; cursor: pointer;
+    box-shadow: var(--btn-shadow); color: var(--muted);
+  }
+  .corner button:hover { background: var(--accent-soft); color: var(--ink); }
+  .news-list { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.75; }
+  .news-list li { padding: 7px 0; border-bottom: 1px dashed rgba(23,23,26,.18); }
+  .news-list li:last-child { border-bottom: none; }
+  .news-list .v {
+    display: inline-block; background: var(--accent); color: var(--accent-text);
+    font-family: var(--mono); font-size: 11px; font-weight: 800;
+    padding: 1px 7px; border-radius: 6px; margin-right: 8px;
+  }
+  #fbText {
+    width: 100%; min-height: 110px; resize: vertical; font-size: 13px; line-height: 1.6;
+    font-family: inherit;
+  }
+  #fbStatus { font-size: 12.5px; min-height: 1.2em; margin-top: 6px; }
   .opts-adv { margin: 12px 0 0; border: 1.5px dashed var(--ink); border-radius: 8px; background: var(--bg); }
   .opts-adv summary {
     cursor: pointer; padding: 9px 13px; font-size: 12.5px; font-weight: 700;
@@ -276,17 +296,17 @@
   }
 
   /* ===== 모달 공통 ===== */
-  #pasteModal, #helpModal, #saveModal, #wsModal {
+  #pasteModal, #helpModal, #saveModal, #wsModal, #newsModal, #fbModal {
     display: none; position: fixed; inset: 0; background: rgba(23, 23, 26, .5);
     z-index: 20; align-items: center; justify-content: center; padding: 20px;
   }
-  #pasteModal .card, #helpModal .card, #saveModal .card, #wsModal .card {
+  #pasteModal .card, #helpModal .card, #saveModal .card, #wsModal .card, #newsModal .card, #fbModal .card {
     background: var(--panel); border: var(--bw) solid var(--ink); border-radius: var(--radius);
     box-shadow: 5px 5px 0 rgba(23, 23, 26, .9);
     width: 600px; max-width: 100%; padding: 22px;
   }
-  #pasteModal h3, #helpModal h3, #saveModal h3, #wsModal h3 { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
-  #pasteModal p, #saveModal p, #wsModal p { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+  #pasteModal h3, #helpModal h3, #saveModal h3, #wsModal h3, #newsModal h3, #fbModal h3 { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
+  #pasteModal p, #saveModal p, #wsModal p, #fbModal p { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.7; }
   #saveModal .card { width: 520px; }
   #saveError, #wsJoinError { color: var(--danger); font-size: 12.5px; min-height: 1.2em; margin: 6px 0 2px; }
   #pasteInput {
@@ -468,6 +488,42 @@
     </div>
   </section>
 </main>
+
+<div class="corner">
+  <button id="newsBtn" title="최근 업데이트 보기">v0.21 · 새 소식</button>
+  <button id="fbBtn" title="개발자에게 의견 보내기">피드백</button>
+</div>
+
+<div id="newsModal">
+  <div class="card" style="width:560px">
+    <h3>새 소식</h3>
+    <ul class="news-list">
+      <li><span class="v">v0.21</span>새 소식·피드백 창구가 생겼어요. 고급 옵션은 쓸 때만 펼쳐집니다</li>
+      <li><span class="v">v0.20</span>다단계 경로(<code>/api/v2/shops/57/reviews</code>)와 <code>_wrap=one</code> 단일 객체 응답 — 상세 API 흉내. 프리셋도 기능 쇼케이스로 리뉴얼</li>
+      <li><span class="v">v0.19</span>파라미터 키를 실제 API 이름으로 — 옵션의 키를 클릭해 <code>page</code>, <code>size</code> 처럼 변경</li>
+      <li><span class="v">v0.18</span>일본어(<code>ja</code>)·중국어(<code>zh</code>) 로케일</li>
+      <li><span class="v">v0.16</span>생성 데이터 검색 <code>_q</code> · 필드 한정 <code>_qin</code></li>
+      <li><span class="v">v0.14</span><code>_limit</code> 최대 1000 + NDJSON/CSV 스트리밍 (생성 10배 가속)</li>
+      <li><span class="v">v0.11~13</span>고급 타입(nullable·가중치 enum·pattern), JSON 붙여넣기가 이를 자동 감지, 실존 불가가 보장되는 이메일·전화</li>
+    </ul>
+    <div class="modal-actions">
+      <button id="newsClose" style="background:var(--accent);color:var(--accent-text)">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div id="fbModal">
+  <div class="card" style="width:520px">
+    <h3>피드백</h3>
+    <p>불편한 점, 갖고 싶은 기능 — 무엇이든 좋아요. 익명으로 개발자에게 전달됩니다.</p>
+    <textarea id="fbText" placeholder="예: CSV 에 BOM 이 있으면 좋겠어요 (엑셀 한글 깨짐)" maxlength="1000" spellcheck="false"></textarea>
+    <div id="fbStatus"></div>
+    <div class="modal-actions">
+      <button id="fbSend" style="background:var(--accent);color:var(--accent-text)">보내기</button>
+      <button id="fbClose" style="background:var(--bg);color:var(--muted)">닫기</button>
+    </div>
+  </div>
+</div>
 
 <div id="helpModal">
   <div class="card">
@@ -890,13 +946,16 @@ npm run deploy</pre>
 
   // ---- 미리보기 (디바운스 300ms) ----
   let timer = null; let reqSeq = 0; let lastPreviewText = '';
+  let prevAdvOn = false;
   function update() {
     const state = readState();
-    // 고급 옵션이 기본값이 아니면 접힌 채 숨겨지지 않게 자동으로 펼친다
-    if ($('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
-        $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '') {
-      $('#optsAdv').open = true;
-    }
+    // 고급 옵션 자동 열림/닫힘 — 비기본 값이면 펼치고, 기본값으로 "돌아오는 순간"만 접는다
+    // (사용자가 값을 넣으려고 방금 손으로 연 패널은 닫지 않는다)
+    const advOn = $('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
+      $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '';
+    if (advOn) $('#optsAdv').open = true;
+    else if (prevAdvOn) $('#optsAdv').open = false;
+    prevAdvOn = advOn;
     const url = apiUrl(state);
     $('#urlBox').innerHTML = '';
     const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
@@ -1312,6 +1371,33 @@ npm run deploy</pre>
       case 'helpBtn': case 'helpLink': case 'welcomeHelp':
         e.preventDefault(); $('#helpModal').style.display = 'flex'; break;
       case 'helpClose': $('#helpModal').style.display = 'none'; break;
+      case 'newsBtn': $('#newsModal').style.display = 'flex'; break;
+      case 'newsClose': $('#newsModal').style.display = 'none'; break;
+      case 'fbBtn':
+        $('#fbStatus').textContent = '';
+        $('#fbModal').style.display = 'flex';
+        $('#fbText').focus();
+        break;
+      case 'fbClose': $('#fbModal').style.display = 'none'; break;
+      case 'fbSend': {
+        const msg = $('#fbText').value.trim();
+        const st = $('#fbStatus');
+        if (msg.length < 5) { st.style.color = 'var(--danger)'; st.textContent = '5자 이상 적어주세요.'; break; }
+        st.style.color = 'var(--muted)'; st.textContent = '보내는 중…';
+        fetch('/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ msg }) })
+          .then(async (r) => {
+            const b = await r.json();
+            if (r.ok) {
+              st.style.color = 'var(--ok)'; st.textContent = b.hint || '전달됐어요 — 고맙습니다!';
+              $('#fbText').value = '';
+              setTimeout(() => { $('#fbModal').style.display = 'none'; }, 1200);
+            } else {
+              st.style.color = 'var(--danger)'; st.textContent = b.hint || '전송에 실패했어요.';
+            }
+          })
+          .catch(() => { st.style.color = 'var(--danger)'; st.textContent = '네트워크 오류 — 잠시 후 다시 시도해주세요.'; });
+        break;
+      }
       case 'welcomeClose': $('#welcome').style.display = 'none'; break;
       case 'copyBtn': copyIcon(apiUrl(readState()), btn); break;
       case 'tsBtn': copyTsTypes(btn); break;

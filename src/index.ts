@@ -190,6 +190,36 @@ export default {
       }
     }
 
+    // 사용자 피드백 — KV 에 fb: 프리픽스로 저장 (90일 TTL). 조회는 wrangler CLI (README).
+    if (url.pathname === '/feedback') {
+      if (request.method !== 'POST') {
+        return json({ error: 'Method not allowed', hint: '{msg} 를 POST 로 보내세요.' }, 405);
+      }
+      if (!env.SCHEMAS) return json({ error: 'Storage not configured', hint: 'KV 미설정 — 피드백을 저장할 수 없습니다.' }, 501);
+      const fbIp = request.headers.get('cf-connecting-ip') ?? 'unknown';
+      const fbLimited = env.SAVE_RL ? !(await env.SAVE_RL.limit({ key: 'fb:' + fbIp })).success : saveLimited('fb:' + fbIp);
+      if (fbLimited) {
+        return json({ error: 'Too many requests', hint: '피드백이 너무 잦습니다. 잠시 후 다시 보내주세요.' }, 429);
+      }
+      let fb: { msg?: unknown };
+      try {
+        fb = (await request.json()) as typeof fb;
+      } catch {
+        return json({ error: 'Invalid JSON', hint: '{msg} 형식의 JSON 이어야 합니다.' }, 400);
+      }
+      const msg = typeof fb.msg === 'string' ? fb.msg.trim() : '';
+      if (msg.length < 5 || msg.length > 1000) {
+        return json({ error: 'Invalid message', hint: '피드백은 5~1000자 사이로 적어주세요.' }, 400);
+      }
+      const at = new Date().toISOString();
+      const key = `fb:${at}:${Math.random().toString(36).slice(2, 6)}`;
+      await env.SCHEMAS.put(key, JSON.stringify({ msg, at, ip: fbIp }), {
+        metadata: { at },
+        expirationTtl: 60 * 60 * 24 * 90,
+      });
+      return json({ ok: true, hint: '전달됐어요 — 고맙습니다!' });
+    }
+
     // 저장 목록 / 개별 조회 / 삭제 (?ws=<워크스페이스> — 없으면 공용 풀)
     if (url.pathname === '/schema/saved') {
       if (!env.SCHEMAS) return json(NO_KV, 501);

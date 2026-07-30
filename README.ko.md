@@ -124,6 +124,13 @@ email=internet.email?0.2      # 20% 확률 null — 모든 타입 뒤에 ?확률
 
 - 저장 레이트리밋은 **저장소에 포함돼 있다** — `wrangler.toml` 의 Workers Rate Limiting 바인딩(`SAVE_RL`, 버스트 방어)이 `workers.dev` 에서도 동작하며 배포하면 자동 활성화되고, 워커 자체에 **IP당 시간당 10회** 상한이 있다 (초과 시 429 + 차단 안내). 동일 내용 재저장의 중복 쓰기 스킵도 내장. 대시보드 설정 불필요.
   - zone WAF 레이트리밋 룰은 커스텀 도메인으로 서비스할 때만 가능한 선택적 추가 계층.
+- 사용자 피드백 읽기 (GUI 피드백 버튼 → KV 저장, 90일 보관):
+
+  ```bash
+  npx wrangler kv key list --binding=SCHEMAS --prefix=fb: | jq -r '.[].name' \
+    | while read k; do npx wrangler kv key get --binding=SCHEMAS "$k"; done
+  ```
+
 - 사용량 알림 설정 (Workers 무료 100K req/일, KV 쓰기 1K/일)
 - 트래픽 증가 시 Workers Paid($5/월) 전환
 

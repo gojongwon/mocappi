@@ -175,6 +175,13 @@ Without the KV binding everything else works; only the save UI is disabled.
 
 - Save rate limiting **ships with the repo** — `wrangler.toml` includes a Workers Rate Limiting binding (`SAVE_RL`, burst guard) that works on `workers.dev` and activates automatically on deploy, plus an in-Worker cap of **10 saves/hour/IP** (429 with a clear message). The Worker also skips redundant re-writes of identical content. No dashboard setup needed.
   - Zone WAF rate limiting rules are only available if you serve the Worker on a custom domain you own — optional extra layer in that case.
+- Reading user feedback (GUI 피드백 button stores to KV, 90-day TTL):
+
+  ```bash
+  npx wrangler kv key list --binding=SCHEMAS --prefix=fb: | jq -r '.[].name' \
+    | while read k; do npx wrangler kv key get --binding=SCHEMAS "$k"; done
+  ```
+
 - Set usage alerts (free tier: 100K req/day, 1K KV writes/day). Move to Workers Paid ($5/mo) if traffic grows.
 
 ## TypeScript types
