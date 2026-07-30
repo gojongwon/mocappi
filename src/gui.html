@@ -60,11 +60,6 @@
     background-repeat: no-repeat; background-position: right 11px center; background-size: 10px;
   }
   #teamSel.active { color: var(--ink); font-weight: 800; background-color: var(--accent-soft); }
-  #teamSearch {
-    max-width: 120px; font-size: 12.5px; border-radius: 999px; padding: 5px 12px;
-    border: 1.5px solid var(--ink); background: var(--panel); font-weight: 600;
-  }
-  #teamSearch::placeholder { color: var(--faint); }
   .hdiv { width: 1.5px; height: 20px; background: var(--ink); opacity: .25; flex: none; }
   .ws-chip {
     display: inline-flex; align-items: center; gap: 7px; flex: none;
@@ -363,7 +358,6 @@
     <select id="teamSel" style="display:none" title="이 워크스페이스에 저장된 스키마">
       <option value="">저장된 프리셋…</option>
     </select>
-    <input id="teamSearch" type="search" placeholder="프리셋 검색" spellcheck="false" style="display:none" title="저장된 프리셋 이름/리소스 검색">
   </div>
   <span class="hdiv"></span>
   <button id="wsBtn" class="ws-chip" style="display:none" title="프리셋 저장·공유 공간 만들기/전환">
@@ -984,8 +978,6 @@ npm run deploy</pre>
 
   function renderTeamOptions() {
     const sel = $('#teamSel');
-    const q = ($('#teamSearch').value || '').trim().toLowerCase();
-    const items = q ? teamItems.filter((it) => (it.name + ' ' + it.res).toLowerCase().includes(q)) : teamItems;
     sel.innerHTML = '<option value="">저장된 프리셋…</option>';
     if (WS && teamItems.length === 0) {
       const o = document.createElement('option');
@@ -993,13 +985,7 @@ npm run deploy</pre>
       o.textContent = '아직 없음 — "프리셋으로 저장"으로 첫 항목을 만들어보세요';
       sel.appendChild(o);
     }
-    if (q && items.length === 0 && teamItems.length > 0) {
-      const o = document.createElement('option');
-      o.disabled = true;
-      o.textContent = "'" + q + "' 검색 결과 없음";
-      sel.appendChild(o);
-    }
-    for (const it of items) {
+    for (const it of teamItems) {
       const o = document.createElement('option');
       o.value = it.sid;
       o.textContent = it.name + ' (/api/' + it.res + ')';
@@ -1007,7 +993,6 @@ npm run deploy</pre>
     }
     if (loadedPreset) sel.value = loadedPreset.sid; // 목록 갱신 후에도 현재 프리셋 유지
   }
-  $('#teamSearch').addEventListener('input', renderTeamOptions);
 
   async function refreshTeam() {
     try {
@@ -1020,8 +1005,6 @@ npm run deploy</pre>
       // 프리셋 목록·저장은 워크스페이스 전용 — 미사용 시 숨김
       $('#teamSel').style.display = WS ? '' : 'none';
       teamItems = body.items;
-      // 6개 이상이면 검색창 표시 — 목록은 이미 다 받아온 상태라 클라이언트 필터 (KV 비용 0)
-      $('#teamSearch').style.display = WS && teamItems.length >= 6 ? '' : 'none';
       renderTeamOptions();
     } catch {}
   }
