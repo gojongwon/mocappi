@@ -43,31 +43,33 @@
   }
   .logo { display: inline-flex; flex: none; }
   .logo svg { width: 26px; height: 26px; display: block; }
-  header h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -.02em; }
-  header .sub { color: var(--faint); font-size: 12.5px; margin-left: 2px; }
+  header h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -.02em; line-height: 26px; }
+  header .sub { color: var(--faint); font-size: 12.5px; margin-left: 2px; line-height: 26px; }
   .presets { margin-left: auto; display: flex; gap: 6px; align-items: center; }
   .presets .plabel { color: var(--faint); font-size: 12px; margin-right: 2px; }
   .presets button {
     border: 1.5px solid var(--ink); background: var(--panel); border-radius: 999px;
-    padding: 5px 14px; cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 600;
+    height: 30px; display: inline-flex; align-items: center; box-sizing: border-box;
+    padding: 0 14px; cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 600;
     font-family: inherit; transition: all .1s ease;
   }
   .presets button:hover { background: var(--accent-soft); color: var(--ink); }
   #teamSel {
     max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; font-weight: 600;
-    -webkit-appearance: none; appearance: none; padding: 5px 28px 5px 14px; cursor: pointer;
+    height: 30px; box-sizing: border-box;
+    -webkit-appearance: none; appearance: none; padding: 0 28px 0 14px; cursor: pointer;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2317171a' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 11px center; background-size: 10px;
   }
   #teamSel.active { color: var(--ink); font-weight: 800; background-color: var(--accent-soft); }
-  .corner { position: fixed; right: 14px; bottom: 12px; display: flex; gap: 8px; z-index: 50; }
+  .corner { position: fixed; right: 16px; bottom: 15px; display: flex; gap: 10px; z-index: 50; }
   .corner button {
-    display: inline-flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; gap: 7px;
     border: 1.5px solid var(--ink); border-radius: 999px; background: var(--panel);
-    padding: 6px 13px; font-size: 12px; font-weight: 700; cursor: pointer;
-    box-shadow: var(--btn-shadow); color: var(--ink);
+    padding: 9px 17px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+    box-shadow: var(--shadow); color: var(--ink);
   }
-  .corner button svg { flex: none; }
+  .corner button svg { flex: none; width: 15px; height: 15px; }
   .corner button:hover { background: var(--accent); color: var(--accent-text); }
   .news-list { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.75; }
   .news-list li { padding: 7px 0; border-bottom: 1px dashed rgba(23,23,26,.18); }
@@ -103,7 +105,8 @@
   .ws-chip {
     display: inline-flex; align-items: center; gap: 7px; flex: none;
     border: 1.5px solid var(--ink); background: var(--box-bg); border-radius: 9px;
-    padding: 6px 14px; cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 700;
+    height: 30px; box-sizing: border-box;
+    padding: 0 14px; cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 700;
     font-family: inherit; transition: all .1s ease;
   }
   .ws-chip:hover { background: var(--accent-soft); color: var(--ink); }
@@ -112,7 +115,8 @@
   .ws-chip.ws-on .dot { background: var(--accent); }
   .helpbtn {
     border: 1.5px solid var(--ink); background: var(--accent); border-radius: 999px;
-    padding: 7px 18px; cursor: pointer; font-size: 13px; color: var(--accent-text); font-weight: 800;
+    height: 30px; box-sizing: border-box; display: inline-flex; align-items: center;
+    padding: 0 18px; cursor: pointer; font-size: 13px; color: var(--accent-text); font-weight: 800;
     font-family: inherit; transition: all .1s ease; flex: none; box-shadow: var(--btn-shadow);
   }
   .helpbtn:hover { background: var(--accent-hover); }
@@ -941,7 +945,7 @@ npm run deploy</pre>
   }
 
   function applyPreset(name) {
-    loadedPreset = null; // 내장 프리셋은 저장본과 무관
+    loadedPreset = null; preloadSnapshot = null; // 내장 프리셋은 저장본과 무관
     const p = PRESETS[name];
     $('#resource').value = p.res;
     fieldsEl.innerHTML = '';
@@ -1120,7 +1124,7 @@ npm run deploy</pre>
       result = await res.json();
       if (!res.ok) { $('#pasteError').textContent = (result.error || '추론 실패') + (result.hint ? ' — ' + result.hint : ''); return; }
     } catch (e) { $('#pasteError').textContent = '요청 실패: ' + e; return; }
-    loadedPreset = null; // 붙여넣기로 새 스키마 시작 — 저장본과 무관
+    loadedPreset = null; preloadSnapshot = null; // 붙여넣기로 새 스키마 시작 — 저장본과 무관
     fieldsEl.innerHTML = '';
     for (const f of result.fields) addRow(f.name, f.type);
     const note = $('#inferNote');
@@ -1170,7 +1174,7 @@ npm run deploy</pre>
 
   function switchWs(ws) {
     WS = ws;
-    loadedPreset = null;
+    loadedPreset = null; preloadSnapshot = null;
     syncWsUi();
     refreshTeam();
     update();
@@ -1266,14 +1270,31 @@ npm run deploy</pre>
   // 현재 불러온/저장한 프리셋 — 짧은 URL 표시의 근거
   let loadedPreset = null; // { id, res, query(정규형) }
 
+  let preloadSnapshot = null; // 저장 프리셋을 처음 선택하기 직전의 편집 상태
+
   async function loadTeamPreset(sid) {
     try {
       const res = await fetch('/schema/saved/' + sid);
       if (!res.ok) return;
       const rec = await res.json();
+      if (!loadedPreset) {
+        const s = readState();
+        preloadSnapshot = { res: s.res, query: buildQuery(s) };
+      }
       loadedPreset = { sid: rec.sid, res: rec.res, query: rec.query, name: rec.name };
       applyQueryString(rec.res, rec.query);
     } catch {}
+  }
+
+  /** '저장된 프리셋…'(빈 값) 선택 = 해제 → 선택 전 편집 상태로 복원 */
+  function unloadTeamPreset() {
+    if (!loadedPreset) return;
+    loadedPreset = null;
+    const snap = preloadSnapshot; // 초기화보다 먼저 읽는다
+    preloadSnapshot = null;
+    $('#teamSel').classList.remove('active');
+    if (snap) applyQueryString(snap.res, snap.query);
+    else update();
   }
 
   /**
@@ -1422,8 +1443,9 @@ npm run deploy</pre>
     if (e.key === 'Escape') { closePaste(); $('#helpModal').style.display = 'none'; $('#saveModal').style.display = 'none'; $('#wsModal').style.display = 'none'; }
   });
   document.addEventListener('change', (e) => {
-    if (e.target.id === 'teamSel' && e.target.value) {
-      loadTeamPreset(e.target.value); // 선택 상태 유지 — 어떤 프리셋인지 계속 표시
+    if (e.target.id === 'teamSel') {
+      if (e.target.value) loadTeamPreset(e.target.value); // 선택 상태 유지
+      else unloadTeamPreset(); // placeholder 재선택 = 해제 + 이전 상태 복원
     }
   });
   document.addEventListener('click', (e) => {
