@@ -498,7 +498,7 @@
   <button id="wsBtn" class="ws-chip" style="display:none" data-i18n-title="wsBtnTitle" title="프리셋 저장·공유 공간 만들기/전환">
     <span class="dot"></span><span id="wsBtnLabel" data-i18n="workspace">워크스페이스</span>
   </button>
-  <button id="langBtn" class="helpbtn" title="한국어 / English">EN</button>
+  <button id="langBtn" class="helpbtn" title="한국어 / English"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1.5px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span id="langLabel">EN</span></button>
   <button id="helpBtn" class="helpbtn" data-i18n="howToUse">사용법</button>
 </header>
 
@@ -1035,7 +1035,7 @@ npm run deploy</pre>
   }
   if (LANG === 'en') applyEn();
   // 토글은 리로드 방식 — 해시만 바꾸므로 스키마 상태(location.search)는 건드리지 않는다
-  $('#langBtn').textContent = LANG === 'en' ? 'KO' : 'EN';
+  $('#langLabel').textContent = LANG === 'en' ? 'KO' : 'EN';
   const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
   const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat' };
 
