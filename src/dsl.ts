@@ -38,7 +38,10 @@ export interface ParsedQuery {
   normalized: string;
 }
 
-const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format', '_q', '_qin'];
+const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format', '_q', '_qin', '_alias'];
+/** _alias 로 별칭을 걸 수 있는 대상 (자기 자신 제외 — _s 는 라우트 레벨이라 제외) */
+const ALIASABLE = RESERVED_NAMES.filter((n) => n !== '_alias');
+const ALIAS_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
 const MAX_LIMIT = 1000;
 const MAX_DELAY = 5000;
 const MAX_ARRAY_LEN = 100;
@@ -83,6 +86,32 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
     seen.add(k);
   }
 
+  // _alias 선처리 — 예약 파라미터를 실제 API 의 키 이름으로 받게 하는 매핑.
+  // 예: _alias=page:_page,size:_limit → ?page=2&size=20 이 _page/_limit 로 동작.
+  // 별칭은 시드에 영향을 주지 않는다 (매핑된 값이 같은 예약어로 흘러가므로).
+  const aliasMap = new Map<string, string>();
+  const aliasRaw = params.get('_alias');
+  if (aliasRaw !== null && aliasRaw.trim() !== '') {
+    for (const entry of aliasRaw.split(',')) {
+      const pair = entry.split(':');
+      if (pair.length !== 2) {
+        fail('Invalid reserved parameter', '_alias', entry, "형식: 별칭:예약어 를 쉼표로 나열. 예: _alias=page:_page,size:_limit");
+      }
+      const [alias, target] = [pair[0].trim(), pair[1].trim()];
+      if (!ALIAS_NAME_RE.test(alias)) {
+        fail('Invalid reserved parameter', '_alias', alias, "별칭은 '_' 없이 영문으로 시작해야 합니다. 예: page, size, keyword");
+      }
+      if (!ALIASABLE.includes(target)) {
+        fail('Invalid reserved parameter', '_alias', target, `별칭 대상은 예약어여야 합니다: ${ALIASABLE.join(', ')}`);
+      }
+      if (aliasMap.has(alias)) {
+        fail('Invalid reserved parameter', '_alias', alias, `'${alias}' 별칭이 두 번 정의됐습니다.`);
+      }
+      aliasMap.set(alias, target);
+    }
+  }
+  const seenReserved = new Set<string>(); // 별칭과 원래 키를 동시에 쓰는 중복 방지
+
   // 예약 파라미터
   let page = 1;
   let limit = 10;
@@ -98,9 +127,17 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
 
   const fields: FieldSpec[] = [];
 
-  for (const [key, value] of params) {
+  for (const [rawKey, value] of params) {
+    // 별칭이면 대상 예약어로 치환해 처리 (에러 메시지는 사용자가 쓴 이름 기준)
+    const key = aliasMap.get(rawKey) ?? rawKey;
     if (key.startsWith('_')) {
+      if (seenReserved.has(key)) {
+        fail('Duplicate parameter', rawKey, value, `'${key}' 가 별칭과 원래 키로 두 번 지정됐습니다. 하나만 쓰세요.`);
+      }
+      seenReserved.add(key);
       switch (key) {
+        case '_alias':
+          break; // 선처리 완료
         case '_page':
           page = reqInt(key, value, 1, Number.MAX_SAFE_INTEGER);
           break;

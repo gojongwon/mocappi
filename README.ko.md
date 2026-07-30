@@ -77,6 +77,7 @@ GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv 는 아이템만 스트리밍 |
 | `_q` | — | 검색 — 모든 값 부분일치(대소문자 무시), `total` 은 매치 수 (앞 1,000개 창) |
 | `_qin` | — | 검색 대상 필드 한정 (쉼표, 중첩은 `a.b`) — `_q` 와 함께. 예: `_q=김&_qin=name` |
+| `_alias` | — | 예약 키를 실제 API 이름으로: `_alias=page:_page,size:_limit,keyword:_q` → `?page=2&size=20&keyword=김` 으로 호출 |
 
 `_` 로 시작하지 않는 파라미터는 전부 필드 정의다.
 

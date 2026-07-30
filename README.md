@@ -74,9 +74,17 @@ Loading and error-state testing:
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv stream items only |
 | `_q` | — | Search: case-insensitive substring over generated values; `total` becomes the match count (scans the first 1,000 virtual items) |
 | `_qin` | — | Limit search to specific fields (comma-separated, dot paths). Use with `_q`: `_q=kim&_qin=name,city` |
+| `_alias` | — | Rename reserved params to match your real API: `_alias=page:_page,size:_limit,keyword:_q` → call with `?page=2&size=20&keyword=kim` |
 | `_s` | — | Saved schema ID (see Workspaces) |
 
 Anything not starting with `_` is a field definition.
+
+**Param aliases** let mock URLs use your real API's parameter names — combined with a saved schema, the frontend can call the mock exactly like production:
+
+```
+save:  name=person.fullName&_alias=page:_page,size:_limit,keyword:_q
+call:  /api/users?_s=<id>&page=2&size=20&keyword=kim
+```
 
 ## Field type DSL
 
