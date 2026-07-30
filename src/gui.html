@@ -226,7 +226,7 @@
   .urlbox {
     font-family: var(--mono); font-size: 12.5px; word-break: break-all; line-height: 1.7;
     background: var(--box-bg); border: 1.5px solid var(--ink); border-radius: var(--radius-s);
-    padding: 12px 64px 12px 14px; min-height: 3.2em; color: var(--ink);
+    padding: 12px 14px; min-height: 3.2em; color: var(--ink);
   }
   .urlbox a { color: var(--ink); text-decoration: none; }
   .urlbox a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2.5px; }
@@ -235,6 +235,7 @@
     border: 1.5px solid var(--ink); background: var(--panel); color: var(--muted);
     border-radius: 6px; padding: 5px 7px; cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; transition: all .1s ease;
+    box-shadow: 0 0 0 3px var(--box-bg); /* 아래 텍스트와 분리돼 보이게 */
   }
   .box-copy:hover { background: var(--accent-soft); color: var(--ink); }
   #shortLine {
