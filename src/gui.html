@@ -401,6 +401,40 @@
   .ac-item.sel, .ac-item:hover { background: var(--accent-soft); }
   .ac-item .v { font-family: var(--mono); font-size: 12.5px; }
   .ac-item .l { color: var(--faint); font-size: 12px; margin-left: auto; white-space: nowrap; }
+
+  /* ---- 모바일 (640px 이하) ---- */
+  @media (max-width: 640px) {
+    header { padding: 10px 14px; gap: 8px; }
+    header .sub { display: none; } /* 좁을 땐 부제 생략 — 제목이 곧 설명 */
+    /* 프리셋 줄: 한 줄 가로 스크롤 — 잘림 대신 스와이프 */
+    .presets {
+      flex: 1 1 100%; margin-left: 0; overflow-x: auto; flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px;
+    }
+    .presets::-webkit-scrollbar { display: none; }
+    .presets button, #teamSel { flex: none; }
+    .hdiv { display: none; }
+    .ws-chip { max-width: 46vw; overflow: hidden; }
+
+    main { padding: 12px 12px 96px; gap: 14px; } /* 하단은 코너 버튼 자리 확보 */
+    .panel { padding: 16px 14px; }
+    .frow { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) 24px; gap: 5px; }
+    .opts { grid-template-columns: 1fr 1fr; }
+    pre#preview { height: clamp(240px, 42vh, 420px); padding: 12px; font-size: 12px; }
+
+    /* 모달: 화면 폭에 맞추고 여백 축소 */
+    #pasteModal .card, #helpModal .card, #saveModal .card, #wsModal .card, #newsModal .card, #fbModal .card {
+      width: calc(100vw - 24px) !important; padding: 16px; max-height: 88vh; overflow-y: auto;
+    }
+    .help-body { max-height: none; padding-right: 0; }
+    .help-body table { font-size: 12px; }
+    .help-body th, .help-body td { padding: 6px 8px; }
+
+    /* 코너 버튼: 축소 + 콘텐츠와 덜 겹치게 */
+    .corner { right: 10px; bottom: 10px; gap: 7px; }
+    .corner button { padding: 7px 12px; font-size: 12px; box-shadow: var(--btn-shadow); }
+    .corner button svg { width: 13px; height: 13px; }
+  }
 </style>
 </head>
 <body>

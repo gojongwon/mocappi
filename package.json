@@ -1,6 +1,6 @@
 {
   "name": "mock-api",
-  "version": "0.22.2",
+  "version": "0.23.0",
   "description": "",
   "scripts": {
     "dev": "wrangler dev",
