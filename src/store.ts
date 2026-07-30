@@ -49,8 +49,8 @@ export const MAX_PER_WORKSPACE = 100;
 const WS_TTL_SECONDS = 60 * 60 * 24 * 180; // 180일 — 재저장 시 갱신
 const REWRITE_AFTER_MS = 7 * 24 * 60 * 60 * 1000; // 동일 내용 재저장 시 7일 이내면 쓰기 스킵
 
-function fail(error: string, hint: string): never {
-  throw new DslError({ error, hint });
+function fail(error: string, hint: string, hintEn?: string): never {
+  throw new DslError({ error, hint, hintEn });
 }
 
 function keyOf(ws: string | null, id: string): string {
@@ -79,7 +79,9 @@ export function parseSid(sid: string): { ws: string | null; id: string } | null 
 export function validateWs(ws: unknown): string | null {
   if (ws === undefined || ws === null || ws === '') return null;
   if (typeof ws !== 'string' || !WS_RE.test(ws)) {
-    fail('Invalid workspace', '워크스페이스 ID 는 소문자 영숫자 6~24자입니다.');
+    fail('Invalid workspace',
+      '워크스페이스 ID 는 소문자 영숫자 6~24자입니다.',
+      'Workspace IDs are 6-24 lowercase alphanumeric characters.');
   }
   return ws;
 }
@@ -109,13 +111,15 @@ export async function saveSchema(
   query: unknown,
 ): Promise<SavedSchema> {
   if (typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 60) {
-    fail('Invalid name', '이름은 1~60자 문자열이어야 합니다.');
+    fail('Invalid name', '이름은 1~60자 문자열이어야 합니다.', 'Name must be a string of 1-60 characters.');
   }
   if (typeof res !== 'string' || res.length > 80 || !RES_RE.test(res)) {
-    fail('Invalid resource', "리소스 경로는 영숫자/_/- 세그먼트를 '/' 로 이은 형태입니다 (최대 8단계, 80자). 예: v2/users/detail");
+    fail('Invalid resource',
+      "리소스 경로는 영숫자/_/- 세그먼트를 '/' 로 이은 형태입니다 (최대 8단계, 80자). 예: v2/users/detail",
+      "Resource paths are alphanumeric/_/- segments joined by '/' (up to 8 segments, 80 chars), e.g. v2/users/detail");
   }
   if (typeof query !== 'string' || query === '') {
-    fail('Invalid query', '저장할 스키마 쿼리스트링이 비어 있습니다.');
+    fail('Invalid query', '저장할 스키마 쿼리스트링이 비어 있습니다.', 'The schema query string to save is empty.');
   }
   const canonical = canonicalQuery(query);
   const id = schemaId(res, canonical);
@@ -129,7 +133,9 @@ export async function saveSchema(
     try {
       const prev = JSON.parse(existingRaw) as SavedSchema;
       if (prev.query !== canonical || prev.res !== res) {
-        fail('ID collision', '해시 충돌이 감지되었습니다. 필드를 하나 추가하는 등 스키마를 조금 바꿔 다시 저장해 주세요.');
+        fail('ID collision',
+          '해시 충돌이 감지되었습니다. 필드를 하나 추가하는 등 스키마를 조금 바꿔 다시 저장해 주세요.',
+          'A hash collision was detected. Change the schema slightly (e.g. add a field) and save again.');
       }
       // 중복 쓰기 스킵 — 같은 내용·같은 이름이 최근에 저장돼 있으면 KV 쓰기를 아낀다.
       // (무료 플랜 쓰기 1,000/일 보호. 7일이 지나면 TTL 갱신을 위해 다시 쓴다)
@@ -147,7 +153,9 @@ export async function saveSchema(
   if (existingRaw === null) {
     const { keys } = await kv.list({ prefix: prefixOf(ws), limit: MAX_PER_WORKSPACE });
     if (keys.length >= MAX_PER_WORKSPACE) {
-      fail('Workspace full', `워크스페이스당 최대 ${MAX_PER_WORKSPACE}개까지 저장할 수 있습니다. 안 쓰는 항목을 삭제하세요.`);
+      fail('Workspace full',
+        `워크스페이스당 최대 ${MAX_PER_WORKSPACE}개까지 저장할 수 있습니다. 안 쓰는 항목을 삭제하세요.`,
+        `A workspace can hold at most ${MAX_PER_WORKSPACE} schemas. Delete ones you no longer use.`);
     }
   }
 

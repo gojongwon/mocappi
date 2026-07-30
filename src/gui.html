@@ -1420,7 +1420,7 @@ npm run deploy</pre>
     clearTimeout(loadingTimer);
     loadingTimer = setTimeout(() => setLoading(true), 250);
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { headers: { 'Accept-Language': LANG } });
       const text = await res.text();
       if (seq !== reqSeq) return; // 오래된 응답 무시
       clearTimeout(loadingTimer);
@@ -1475,7 +1475,7 @@ npm run deploy</pre>
     }
     let result;
     try {
-      const res = await fetch('/schema/infer', { method: 'POST', body, headers: { 'content-type': 'application/json' } });
+      const res = await fetch('/schema/infer', { method: 'POST', body, headers: { 'content-type': 'application/json', 'Accept-Language': LANG } });
       result = await res.json();
       if (!res.ok) { $('#pasteError').textContent = (result.error || t('추론 실패', 'Inference failed')) + (result.hint ? ' — ' + result.hint : ''); return; }
     } catch (e) { $('#pasteError').textContent = t('요청 실패: ', 'Request failed: ') + e; return; }
@@ -1612,7 +1612,7 @@ npm run deploy</pre>
 
   async function refreshTeam() {
     try {
-      const res = await fetch('/schema/saved' + (WS ? '?ws=' + WS : ''));
+      const res = await fetch('/schema/saved' + (WS ? '?ws=' + WS : ''), { headers: { 'Accept-Language': LANG } });
       if (!res.ok) return; // 501 = KV 미설정
       const body = await res.json();
       teamAvailable = true;
@@ -1650,7 +1650,7 @@ npm run deploy</pre>
 
   async function loadTeamPreset(sid) {
     try {
-      const res = await fetch('/schema/saved/' + sid);
+      const res = await fetch('/schema/saved/' + sid, { headers: { 'Accept-Language': LANG } });
       if (!res.ok) return;
       const rec = await res.json();
       if (!loadedPreset) {
@@ -1716,7 +1716,7 @@ npm run deploy</pre>
     try {
       const res = await fetch('/schema/save', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'Accept-Language': LANG },
         body: JSON.stringify({ name, res: state.res, query: buildQuery(state), ws: WS || undefined }),
       });
       const body = await res.json();
@@ -1746,7 +1746,7 @@ npm run deploy</pre>
   async function copyTsTypes(btn) {
     const state = readState();
     try {
-      const res = await fetch('/schema/ts?' + buildQuery(state) + '&_res=' + enc(state.res));
+      const res = await fetch('/schema/ts?' + buildQuery(state) + '&_res=' + enc(state.res), { headers: { 'Accept-Language': LANG } });
       const text = await res.text();
       if (!res.ok) { btn.textContent = t('URL 오류', 'Bad URL'); setTimeout(() => (btn.textContent = t('TS 타입 복사', 'Copy TS types')), 1500); return; }
       copyText(text, btn, t('복사됨 ✓', 'Copied ✓'));
@@ -1900,7 +1900,7 @@ npm run deploy</pre>
         const st = $('#fbStatus');
         if (msg.length < 5) { st.style.color = 'var(--danger)'; st.textContent = t('5자 이상 적어주세요.', 'Please write at least 5 characters.'); break; }
         st.style.color = 'var(--muted)'; st.textContent = t('보내는 중…', 'Sending…');
-        fetch('/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ msg }) })
+        fetch('/feedback', { method: 'POST', headers: { 'content-type': 'application/json', 'Accept-Language': LANG }, body: JSON.stringify({ msg }) })
           .then(async (r) => {
             const b = await r.json();
             if (r.ok) {
@@ -1940,7 +1940,7 @@ npm run deploy</pre>
     const wsParam = new URLSearchParams(location.search).get('_ws');
     if (wsParam && /^[a-z0-9]{6,24}$/.test(wsParam)) WS = wsParam;
     try {
-      typeOptions = await (await fetch('/schema/types')).json();
+      typeOptions = await (await fetch('/schema/types', { headers: { 'Accept-Language': LANG } })).json();
     } catch { typeOptions = { fakerPaths: [], dslTypes: [] }; }
     buildAcItems();
     refreshTeam();

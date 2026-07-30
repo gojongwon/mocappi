@@ -52,6 +52,8 @@ export interface DslErrorInfo {
   field?: string;
   value?: string;
   hint: string;
+  /** 영어 힌트 (Accept-Language: en 응답용) — 직렬화 시 hint 자리에 대신 들어간다 */
+  hintEn?: string;
 }
 
 /** 파싱/생성 실패 시 던지는 에러. 워커가 400 + info 로 응답한다. */
@@ -67,9 +69,10 @@ const KNOWN_TYPES = 'int, float, bool, enum, const, text, image, date, uuid, ind
 /** nullable 수식자 — 아무 타입 뒤 '?확률'. 예: internet.email?0.2 */
 export const NULLABLE_RE = /^(.+)\?(0?\.\d+|1|0)$/;
 const RANGE_HINT = (t: string, ex: string) => `범위 구분자는 '~' 입니다. 예: ${t}:${ex}`;
+const RANGE_HINT_EN = (t: string, ex: string) => `Use '~' as the range separator, e.g. ${t}:${ex}`;
 
-function fail(error: string, value: string, hint: string): never {
-  throw new DslError({ error, value, hint });
+function fail(error: string, value: string, hint: string, hintEn?: string): never {
+  throw new DslError({ error, value, hint, hintEn });
 }
 
 function parseIntStrict(s: string): number | null {
@@ -193,17 +196,23 @@ function compileFakerPath(raw: string): Generator {
   const masked = MASK_TYPES[raw];
   if (masked) return masked;
   if (raw.startsWith('mask.')) {
-    fail('Unknown mask type', raw, `지원하는 마스킹 타입: ${Object.keys(MASK_TYPES).join(', ')}`);
+    fail('Unknown mask type', raw,
+      `지원하는 마스킹 타입: ${Object.keys(MASK_TYPES).join(', ')}`,
+      `Supported mask types: ${Object.keys(MASK_TYPES).join(', ')}`);
   }
   const override = PATH_OVERRIDES[raw];
   if (override) return override;
   const segs = raw.split('.');
   if (segs.length !== 2 || !segs[0] || !segs[1]) {
-    fail('Invalid faker path', raw, "faker 경로는 '모듈.메서드' 2단계입니다. 예: person.fullName");
+    fail('Invalid faker path', raw,
+      "faker 경로는 '모듈.메서드' 2단계입니다. 예: person.fullName",
+      "A faker path has two segments: 'module.method', e.g. person.fullName");
   }
   const [mod, method] = segs;
   const notFound = () =>
-    fail('Unknown faker path', raw, `'${raw}' 를 찾을 수 없습니다. GET /schema/types 에서 지원 목록을 확인하세요.`);
+    fail('Unknown faker path', raw,
+      `'${raw}' 를 찾을 수 없습니다. GET /schema/types 에서 지원 목록을 확인하세요.`,
+      `'${raw}' was not found. See GET /schema/types for the supported list.`);
   if (mod.startsWith('_') || method.startsWith('_') || DENY_MODULES.has(mod)) notFound();
   const m = (FAKERS.en as unknown as Record<string, unknown>)[mod];
   if (!m || typeof m !== 'object' || typeof (m as Record<string, unknown>)[method] !== 'function') notFound();
@@ -221,25 +230,29 @@ function compileFakerPath(raw: string): Generator {
 
 function compileInt(rest: string, raw: string): Generator {
   const m = rest.match(/^(-?\d+)~(-?\d+)$/);
-  if (!m) fail('Invalid int range', raw, RANGE_HINT('int', '20~60'));
+  if (!m) fail('Invalid int range', raw, RANGE_HINT('int', '20~60'), RANGE_HINT_EN('int', '20~60'));
   const min = parseInt(m[1], 10);
   const max = parseInt(m[2], 10);
-  if (min > max) fail('Invalid int range', raw, `최솟값(${min})이 최댓값(${max})보다 큽니다.`);
+  if (min > max) fail('Invalid int range', raw, `최솟값(${min})이 최댓값(${max})보다 큽니다.`, `min (${min}) is greater than max (${max}).`);
   return (seed) => createRNG(seed).int(min, max);
 }
 
 function compileFloat(rest: string, raw: string): Generator {
   const parts = rest.split(':');
-  if (parts.length > 2) fail('Invalid float spec', raw, '형식: float:min~max 또는 float:min~max:자릿수. 예: float:0~100:2');
+  if (parts.length > 2) fail('Invalid float spec', raw,
+    '형식: float:min~max 또는 float:min~max:자릿수. 예: float:0~100:2',
+    'Format: float:min~max or float:min~max:decimals, e.g. float:0~100:2');
   const m = parts[0].match(/^(-?\d+(?:\.\d+)?)~(-?\d+(?:\.\d+)?)$/);
-  if (!m) fail('Invalid float range', raw, RANGE_HINT('float', '0~100:2'));
+  if (!m) fail('Invalid float range', raw, RANGE_HINT('float', '0~100:2'), RANGE_HINT_EN('float', '0~100:2'));
   const min = parseFloat(m[1]);
   const max = parseFloat(m[2]);
-  if (min > max) fail('Invalid float range', raw, `최솟값(${min})이 최댓값(${max})보다 큽니다.`);
+  if (min > max) fail('Invalid float range', raw, `최솟값(${min})이 최댓값(${max})보다 큽니다.`, `min (${min}) is greater than max (${max}).`);
   let decimals = 2;
   if (parts.length === 2) {
     const d = parseIntStrict(parts[1]);
-    if (d === null || d < 0 || d > 10) fail('Invalid float decimals', raw, '소수점 자릿수는 0~10 사이 정수입니다. 예: float:0~100:2');
+    if (d === null || d < 0 || d > 10) fail('Invalid float decimals', raw,
+      '소수점 자릿수는 0~10 사이 정수입니다. 예: float:0~100:2',
+      'Decimals must be an integer between 0 and 10, e.g. float:0~100:2');
     decimals = d;
   }
   return (seed) => parseFloat(createRNG(seed).float(min, max).toFixed(decimals));
@@ -249,7 +262,9 @@ function compileBool(rest: string, raw: string): Generator {
   let prob = 0.5;
   if (rest !== '') {
     const p = parseNumStrict(rest);
-    if (p === null || p < 0 || p > 1) fail('Invalid bool probability', raw, 'true 확률은 0~1 사이 숫자입니다. 예: bool:0.8');
+    if (p === null || p < 0 || p > 1) fail('Invalid bool probability', raw,
+      'true 확률은 0~1 사이 숫자입니다. 예: bool:0.8',
+      'The probability of true must be a number between 0 and 1, e.g. bool:0.8');
     prob = p;
   }
   return (seed) => createRNG(seed).next() < prob;
@@ -258,7 +273,9 @@ function compileBool(rest: string, raw: string): Generator {
 function compileEnum(rest: string, raw: string): Generator {
   const members = rest.split('|');
   if (rest === '' || members.some((v) => v === '')) {
-    fail('Invalid enum values', raw, "'|' 로 구분한 값 목록이 필요합니다. 예: enum:admin|user|guest (가중치: enum:paid*8|refund*2)");
+    fail('Invalid enum values', raw,
+      "'|' 로 구분한 값 목록이 필요합니다. 예: enum:admin|user|guest (가중치: enum:paid*8|refund*2)",
+      "Provide a '|'-separated list of values, e.g. enum:admin|user|guest (weighted: enum:paid*8|refund*2)");
   }
   // 가중치 파싱 — 멤버 끝의 '*숫자'. 하나도 없으면 기존 균등 선택 경로(기존 URL 결정성 유지)
   let weighted = false;
@@ -268,7 +285,9 @@ function compileEnum(rest: string, raw: string): Generator {
     const wm = m.match(/^(.+)\*(\d+(?:\.\d+)?)$/);
     if (wm) {
       const w = parseFloat(wm[2]);
-      if (w <= 0) fail('Invalid enum weight', raw, `가중치는 0보다 커야 합니다: '${m}'. 예: enum:paid*8|refund*2`);
+      if (w <= 0) fail('Invalid enum weight', raw,
+        `가중치는 0보다 커야 합니다: '${m}'. 예: enum:paid*8|refund*2`,
+        `Weights must be greater than 0: '${m}', e.g. enum:paid*8|refund*2`);
       values.push(wm[1]);
       weights.push(w);
       weighted = true;
@@ -290,8 +309,10 @@ function compileEnum(rest: string, raw: string): Generator {
 }
 
 function compilePattern(rest: string, raw: string): Generator {
-  if (rest === '') fail('Invalid pattern', raw, '템플릿이 필요합니다. #=숫자, ?=대문자, *=영숫자, 나머지는 그대로. 예: pattern:ORD-####-???');
-  if (rest.length > 64) fail('Invalid pattern', raw, '템플릿은 최대 64자입니다.');
+  if (rest === '') fail('Invalid pattern', raw,
+    '템플릿이 필요합니다. #=숫자, ?=대문자, *=영숫자, 나머지는 그대로. 예: pattern:ORD-####-???',
+    'A template is required. #=digit, ?=uppercase, *=alphanumeric, everything else is literal, e.g. pattern:ORD-####-???');
+  if (rest.length > 64) fail('Invalid pattern', raw, '템플릿은 최대 64자입니다.', 'Templates are limited to 64 characters.');
   const UP = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const AN = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   return (seed) => {
@@ -309,7 +330,9 @@ function compilePattern(rest: string, raw: string): Generator {
 
 function compileText(rest: string, raw: string): Generator {
   const len = parseIntStrict(rest);
-  if (len === null || len < 1 || len > 10000) fail('Invalid text length', raw, '길이는 1~10000 사이 정수입니다. 예: text:50');
+  if (len === null || len < 1 || len > 10000) fail('Invalid text length', raw,
+    '길이는 1~10000 사이 정수입니다. 예: text:50',
+    'Length must be an integer between 1 and 10000, e.g. text:50');
   return (seed, ctx) => {
     const f = FAKERS[ctx.locale];
     f.seed(seed);
@@ -321,20 +344,24 @@ function compileText(rest: string, raw: string): Generator {
 
 function compileImage(rest: string, raw: string): Generator {
   const m = rest.match(/^(\d+)x(\d+)$/);
-  if (!m) fail('Invalid image size', raw, '형식: image:너비x높이. 예: image:200x200');
+  if (!m) fail('Invalid image size', raw, '형식: image:너비x높이. 예: image:200x200', 'Format: image:WIDTHxHEIGHT, e.g. image:200x200');
   const w = parseInt(m[1], 10);
   const h = parseInt(m[2], 10);
-  if (w < 1 || h < 1 || w > 4000 || h > 4000) fail('Invalid image size', raw, '크기는 1~4000 사이입니다.');
+  if (w < 1 || h < 1 || w > 4000 || h > 4000) fail('Invalid image size', raw, '크기는 1~4000 사이입니다.', 'Dimensions must be between 1 and 4000.');
   return (seed) => `https://picsum.photos/seed/${seed.toString(36)}/${w}/${h}`;
 }
 
 function compileDate(rest: string, raw: string): Generator {
   const m = rest.match(/^(\d{4}-\d{2}-\d{2})~(\d{4}-\d{2}-\d{2})$/);
-  if (!m) fail('Invalid date range', raw, "형식: date:YYYY-MM-DD~YYYY-MM-DD. 범위 구분자는 '~' 입니다. 예: date:2020-01-01~2024-12-31");
+  if (!m) fail('Invalid date range', raw,
+    "형식: date:YYYY-MM-DD~YYYY-MM-DD. 범위 구분자는 '~' 입니다. 예: date:2020-01-01~2024-12-31",
+    "Format: date:YYYY-MM-DD~YYYY-MM-DD. Use '~' as the range separator, e.g. date:2020-01-01~2024-12-31");
   const from = Date.parse(m[1] + 'T00:00:00.000Z');
   const to = Date.parse(m[2] + 'T23:59:59.999Z');
-  if (Number.isNaN(from) || Number.isNaN(to)) fail('Invalid date', raw, '유효한 날짜가 아닙니다. 예: date:2020-01-01~2024-12-31');
-  if (from > to) fail('Invalid date range', raw, '시작일이 종료일보다 늦습니다.');
+  if (Number.isNaN(from) || Number.isNaN(to)) fail('Invalid date', raw,
+    '유효한 날짜가 아닙니다. 예: date:2020-01-01~2024-12-31',
+    'Not a valid date, e.g. date:2020-01-01~2024-12-31');
+  if (from > to) fail('Invalid date range', raw, '시작일이 종료일보다 늦습니다.', 'The start date is after the end date.');
   return (seed) => new Date(createRNG(seed).int(from, to)).toISOString();
 }
 
@@ -359,10 +386,14 @@ export function compileType(raw: string): Generator {
 
   switch (head) {
     case 'uuid':
-      if (rest !== '') fail('Invalid uuid spec', raw, "uuid 는 인자를 받지 않습니다. 'uuid' 로만 쓰세요.");
+      if (rest !== '') fail('Invalid uuid spec', raw,
+        "uuid 는 인자를 받지 않습니다. 'uuid' 로만 쓰세요.",
+        "uuid takes no arguments — write just 'uuid'.");
       return (seed) => uuidFromSeed(seed);
     case 'index':
-      if (rest !== '') fail('Invalid index spec', raw, "index 는 인자를 받지 않습니다. 'index' 로만 쓰세요.");
+      if (rest !== '') fail('Invalid index spec', raw,
+        "index 는 인자를 받지 않습니다. 'index' 로만 쓰세요.",
+        "index takes no arguments — write just 'index'.");
       return (_seed, ctx) => ctx.globalIndex;
     case 'int': {
       // 계획서의 대표 에러 케이스: int:20-60 → '~' 힌트
@@ -390,6 +421,7 @@ export function compileType(raw: string): Generator {
         'Unknown field type',
         raw,
         `지원 타입: ${KNOWN_TYPES}. faker 경로는 'person.fullName' 처럼 '모듈.메서드' 형태입니다. 전체 목록: GET /schema/types`,
+        `Supported types: ${KNOWN_TYPES}. Faker paths use 'module.method' form like 'person.fullName'. Full list: GET /schema/types`,
       );
   }
 }
@@ -458,3 +490,103 @@ export const TYPE_DOCS = {
   arrays: { syntax: '이름[]=타입:개수', example: 'tags[]=lorem.word:3', desc: "배열 필드. 값의 마지막 ':정수' 가 배열 길이 (기본 3, 최대 100)" },
   nested: { syntax: 'a.b=타입', example: 'address.city=location.city', desc: '점 표기법 → 중첩 객체' },
 } as const;
+
+// ---------------------------------------------------------------------------
+// TYPE_DOCS 영어판 — 한국어 원본과 구조 완전 동일 (name/value/type/example 은 그대로,
+// 라벨·설명만 교체). GUI 가 fakerPaths[].value/label 을 그대로 소비하므로 사본으로 만든다.
+// ---------------------------------------------------------------------------
+
+/** /schema/types 응답의 공용 형태 — ko(as const 리터럴)/en(사본) 둘 다 여기에 맞는다 */
+export interface TypeDocs {
+  reserved: ReadonlyArray<{ name: string; default: string; desc: string }>;
+  dslTypes: ReadonlyArray<{ type: string; syntax: string; example: string; label: string }>;
+  fakerPaths: ReadonlyArray<{ value: string; label: string }>;
+  arrays: { syntax: string; example: string; desc: string };
+  nested: { syntax: string; example: string; desc: string };
+}
+
+const EN_RESERVED: Record<string, { default?: string; desc: string }> = {
+  _page: { desc: 'Page number (1-based)' },
+  _limit: { desc: 'Items per page (max 1000)' },
+  _total: { desc: 'Total item count (virtual)' },
+  _seed: { default: 'URL hash', desc: 'Set explicitly to pin the seed' },
+  _locale: { desc: 'ko | en | ja | zh' },
+  _delay: { desc: 'Response delay in ms (max 5000)' },
+  _status: { desc: 'Forced HTTP status code' },
+  _wrap: { desc: 'envelope | none (array only) | one (single object — for detail APIs)' },
+  _format: { desc: 'json | ndjson | csv — ndjson/csv stream items only (for large payloads)' },
+  _q: { desc: 'Search term — partial match on every value (case-insensitive). total is the match count. Searches within the first 1,000 items' },
+  _qin: { desc: 'Restrict search to specific fields (comma-separated, nested as a.b). Use with _q, e.g. _q=kim&_qin=name,city' },
+  _alias: { desc: "Aliases for reserved parameters — call with your real API's key names, e.g. _alias=page:_page,size:_limit → ?page=2&size=20" },
+  _s: { desc: 'Saved team schema ID. Other parameters can override it (e.g. ?_s=aB3xK9&_page=2)' },
+};
+
+/** dslTypes 와 같은 순서의 영어 syntax/label (positional — TYPE_DOCS.dslTypes 순서와 1:1) */
+const EN_DSL: ReadonlyArray<{ syntax: string; label: string }> = [
+  { syntax: 'int:min~max', label: 'Integer range' },
+  { syntax: 'float:min~max[:decimals]', label: 'Float range' },
+  { syntax: 'bool[:trueProbability]', label: 'Boolean' },
+  { syntax: 'enum:a|b|c', label: 'Pick one of enum values' },
+  { syntax: 'const:value', label: 'Fixed literal' },
+  { syntax: 'text:length', label: 'String of given length' },
+  { syntax: 'image:WxH', label: 'Image URL' },
+  { syntax: 'date:start~end', label: 'Date (ISO)' },
+  { syntax: 'uuid', label: 'UUID v4' },
+  { syntax: 'index', label: 'Global index (0,1,2…)' },
+  { syntax: 'pattern:template (#=digit ?=uppercase *=alphanumeric)', label: 'Pattern string' },
+  { syntax: 'enum:a*weight|b*weight', label: 'Weighted enum' },
+  { syntax: 'anyType?probability', label: 'Mix in nulls (modifier)' },
+];
+
+const EN_FAKER_LABELS: Record<string, string> = {
+  'person.fullName': 'Full name',
+  'person.firstName': 'First name',
+  'person.lastName': 'Last name',
+  'person.jobTitle': 'Job title',
+  'internet.email': 'Email (@example.com — guaranteed non-deliverable)',
+  'internet.url': 'URL',
+  'internet.ip': 'IP address',
+  'phone.number': 'Phone number (010-####-#### format)',
+  'mask.name': 'Masked name (J*** Smith)',
+  'mask.email': 'Masked email (mi***@example.com)',
+  'mask.phone': 'Masked phone (010-****-5678)',
+  'mask.card': 'Masked card number (****-****-****-4821)',
+  'location.city': 'City',
+  'location.streetAddress': 'Street address',
+  'location.zipCode': 'ZIP code',
+  'location.country': 'Country',
+  'company.name': 'Company name',
+  'commerce.productName': 'Product name',
+  'commerce.department': 'Product category',
+  'lorem.word': 'Word',
+  'lorem.sentence': 'Sentence',
+  'lorem.paragraph': 'Paragraph',
+  'string.alphanumeric': 'Alphanumeric string',
+  'color.rgb': 'Color (rgb)',
+};
+
+const TYPE_DOCS_EN: TypeDocs = {
+  reserved: TYPE_DOCS.reserved.map((r) => ({
+    name: r.name,
+    default: EN_RESERVED[r.name]?.default ?? r.default,
+    desc: EN_RESERVED[r.name]?.desc ?? r.desc,
+  })),
+  dslTypes: TYPE_DOCS.dslTypes.map((d, i) => ({
+    type: d.type,
+    syntax: EN_DSL[i]?.syntax ?? d.syntax,
+    example: d.example,
+    label: EN_DSL[i]?.label ?? d.label,
+  })),
+  fakerPaths: TYPE_DOCS.fakerPaths.map((f) => ({ value: f.value, label: EN_FAKER_LABELS[f.value] ?? f.label })),
+  arrays: {
+    syntax: 'name[]=type:count',
+    example: TYPE_DOCS.arrays.example,
+    desc: "Array field. A trailing ':integer' in the value sets the array length (default 3, max 100)",
+  },
+  nested: { syntax: 'a.b=type', example: TYPE_DOCS.nested.example, desc: 'Dot notation → nested object' },
+};
+
+/** /schema/types 를 언어별로 — 'ko' 는 기존 TYPE_DOCS 그대로 (하위호환) */
+export function typeDocsFor(lang: 'ko' | 'en'): TypeDocs {
+  return lang === 'en' ? TYPE_DOCS_EN : TYPE_DOCS;
+}

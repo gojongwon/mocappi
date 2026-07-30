@@ -49,14 +49,18 @@ const DEFAULT_ARRAY_LEN = 3;
 
 const FIELD_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*(\[\])?$/;
 
-function fail(error: string, field: string | undefined, value: string, hint: string): never {
-  throw new DslError({ error, field, value, hint });
+function fail(error: string, field: string | undefined, value: string, hint: string, hintEn?: string): never {
+  throw new DslError({ error, field, value, hint, hintEn });
 }
 
 function reqInt(name: string, value: string, min: number, max: number): number {
-  if (!/^-?\d+$/.test(value)) fail('Invalid reserved parameter', name, value, `${name} 은(는) 정수여야 합니다.`);
+  if (!/^-?\d+$/.test(value)) fail('Invalid reserved parameter', name, value,
+    `${name} 은(는) 정수여야 합니다.`,
+    `${name} must be an integer.`);
   const n = parseInt(value, 10);
-  if (n < min || n > max) fail('Invalid reserved parameter', name, value, `${name} 은(는) ${min}~${max} 범위여야 합니다.`);
+  if (n < min || n > max) fail('Invalid reserved parameter', name, value,
+    `${name} 은(는) ${min}~${max} 범위여야 합니다.`,
+    `${name} must be between ${min} and ${max}.`);
   return n;
 }
 
@@ -68,7 +72,9 @@ export function splitArrayLen(value: string): { itemType: string; len: number } 
     if (/^\d+$/.test(tail)) {
       const len = parseInt(tail, 10);
       if (len < 1 || len > MAX_ARRAY_LEN) {
-        fail('Invalid array length', undefined, value, `배열 길이는 1~${MAX_ARRAY_LEN} 사이입니다. 예: tags[]=lorem.word:3`);
+        fail('Invalid array length', undefined, value,
+          `배열 길이는 1~${MAX_ARRAY_LEN} 사이입니다. 예: tags[]=lorem.word:3`,
+          `Array length must be between 1 and ${MAX_ARRAY_LEN}, e.g. tags[]=lorem.word:3`);
       }
       return { itemType: value.slice(0, idx), len };
     }
@@ -81,7 +87,9 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   const seen = new Set<string>();
   for (const [k] of params) {
     if (seen.has(k)) {
-      fail('Duplicate parameter', k, String(params.getAll(k)), `'${k}' 가 두 번 이상 정의됐습니다. 하나만 남기세요.`);
+      fail('Duplicate parameter', k, String(params.getAll(k)),
+        `'${k}' 가 두 번 이상 정의됐습니다. 하나만 남기세요.`,
+        `'${k}' is defined more than once. Keep only one.`);
     }
     seen.add(k);
   }
@@ -95,17 +103,25 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
     for (const entry of aliasRaw.split(',')) {
       const pair = entry.split(':');
       if (pair.length !== 2) {
-        fail('Invalid reserved parameter', '_alias', entry, "형식: 별칭:예약어 를 쉼표로 나열. 예: _alias=page:_page,size:_limit");
+        fail('Invalid reserved parameter', '_alias', entry,
+          "형식: 별칭:예약어 를 쉼표로 나열. 예: _alias=page:_page,size:_limit",
+          'Format: comma-separated alias:reserved pairs, e.g. _alias=page:_page,size:_limit');
       }
       const [alias, target] = [pair[0].trim(), pair[1].trim()];
       if (!ALIAS_NAME_RE.test(alias)) {
-        fail('Invalid reserved parameter', '_alias', alias, "별칭은 '_' 없이 영문으로 시작해야 합니다. 예: page, size, keyword");
+        fail('Invalid reserved parameter', '_alias', alias,
+          "별칭은 '_' 없이 영문으로 시작해야 합니다. 예: page, size, keyword",
+          "Aliases must start with a letter (no leading '_'), e.g. page, size, keyword");
       }
       if (!ALIASABLE.includes(target)) {
-        fail('Invalid reserved parameter', '_alias', target, `별칭 대상은 예약어여야 합니다: ${ALIASABLE.join(', ')}`);
+        fail('Invalid reserved parameter', '_alias', target,
+          `별칭 대상은 예약어여야 합니다: ${ALIASABLE.join(', ')}`,
+          `The alias target must be a reserved parameter: ${ALIASABLE.join(', ')}`);
       }
       if (aliasMap.has(alias)) {
-        fail('Invalid reserved parameter', '_alias', alias, `'${alias}' 별칭이 두 번 정의됐습니다.`);
+        fail('Invalid reserved parameter', '_alias', alias,
+          `'${alias}' 별칭이 두 번 정의됐습니다.`,
+          `The alias '${alias}' is defined twice.`);
       }
       aliasMap.set(alias, target);
     }
@@ -132,7 +148,9 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
     const key = aliasMap.get(rawKey) ?? rawKey;
     if (key.startsWith('_')) {
       if (seenReserved.has(key)) {
-        fail('Duplicate parameter', rawKey, value, `'${key}' 가 별칭과 원래 키로 두 번 지정됐습니다. 하나만 쓰세요.`);
+        fail('Duplicate parameter', rawKey, value,
+          `'${key}' 가 별칭과 원래 키로 두 번 지정됐습니다. 하나만 쓰세요.`,
+          `'${key}' is given both via an alias and the original key. Use only one.`);
       }
       seenReserved.add(key);
       switch (key) {
@@ -152,7 +170,9 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
           break;
         case '_locale':
           if (value !== 'ko' && value !== 'en' && value !== 'ja' && value !== 'zh') {
-            fail('Invalid reserved parameter', key, value, "_locale 은 ko | en | ja | zh 입니다.");
+            fail('Invalid reserved parameter', key, value,
+              "_locale 은 ko | en | ja | zh 입니다.",
+              '_locale must be one of ko | en | ja | zh.');
           }
           locale = value;
           break;
@@ -164,19 +184,25 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
           break;
         case '_wrap':
           if (value !== 'envelope' && value !== 'none' && value !== 'one') {
-            fail('Invalid reserved parameter', key, value, "_wrap 은 envelope | none(배열만) | one(단일 객체) 입니다.");
+            fail('Invalid reserved parameter', key, value,
+              "_wrap 은 envelope | none(배열만) | one(단일 객체) 입니다.",
+              '_wrap must be envelope | none (array only) | one (single object).');
           }
           wrap = value;
           break;
         case '_format':
           if (value !== 'json' && value !== 'ndjson' && value !== 'csv') {
-            fail('Invalid reserved parameter', key, value, "_format 은 'json' | 'ndjson' | 'csv' 입니다. ndjson/csv 는 아이템만 스트리밍합니다.");
+            fail('Invalid reserved parameter', key, value,
+              "_format 은 'json' | 'ndjson' | 'csv' 입니다. ndjson/csv 는 아이템만 스트리밍합니다.",
+              "_format must be 'json' | 'ndjson' | 'csv'. ndjson/csv stream items only.");
           }
           format = value;
           break;
         case '_q': {
           const trimmed = value.trim();
-          if (trimmed.length > 100) fail('Invalid reserved parameter', key, value, '_q 검색어는 최대 100자입니다.');
+          if (trimmed.length > 100) fail('Invalid reserved parameter', key, value,
+            '_q 검색어는 최대 100자입니다.',
+            'The _q search term is limited to 100 characters.');
           if (trimmed !== '') qSearch = trimmed;
           break;
         }
@@ -191,6 +217,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
             key,
             value,
             `'_' 로 시작하는 이름은 예약어입니다. 필드명은 '_' 없이 시작하세요. 예약어: ${RESERVED_NAMES.join(', ')}`,
+            `Names starting with '_' are reserved. Field names must not start with '_'. Reserved: ${RESERVED_NAMES.join(', ')}`,
           );
       }
       continue;
@@ -203,16 +230,21 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
         key,
         value,
         "필드명은 영문으로 시작하고 [A-Za-z0-9_] 만 쓸 수 있습니다. 중첩은 'a.b', 배열은 'tags[]' 형태입니다.",
+        "Field names must start with a letter and use only [A-Za-z0-9_]. Nesting: 'a.b', arrays: 'tags[]'.",
       );
     }
     if (value === '') {
-      fail('Missing field type', key, value, `타입을 지정하세요. 예: ${key}=person.fullName 또는 ${key}=int:20~60`);
+      fail('Missing field type', key, value,
+        `타입을 지정하세요. 예: ${key}=person.fullName 또는 ${key}=int:20~60`,
+        `Specify a type, e.g. ${key}=person.fullName or ${key}=int:20~60`);
     }
 
     const isArray = key.endsWith('[]');
     const bare = isArray ? key.slice(0, -2) : key;
     const path = bare.split('.');
-    if (path.length > 5) fail('Too deep nesting', key, value, '중첩은 최대 5단계까지 지원합니다.');
+    if (path.length > 5) fail('Too deep nesting', key, value,
+      '중첩은 최대 5단계까지 지원합니다.',
+      'Nesting is supported up to 5 levels.');
 
     let itemType = value;
     let arrayLen = 1;
@@ -239,6 +271,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
       undefined,
       '',
       '필드를 하나 이상 정의하세요. 예: /api/users?name=person.fullName&age=int:20~60 — GUI: GET /',
+      'Define at least one field, e.g. /api/users?name=person.fullName&age=int:20~60 — GUI: GET /',
     );
   }
 
@@ -252,13 +285,17 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   // "왜 결과가 이상하지" 로 이어지므로 400 + 가용 목록으로 명시한다.
   if (qin !== null) {
     if (qSearch === null) {
-      fail('Invalid reserved parameter', '_qin', qin.join(','), '_qin 은 _q(검색어) 와 함께 사용합니다. 예: _q=김&_qin=name');
+      fail('Invalid reserved parameter', '_qin', qin.join(','),
+        '_qin 은 _q(검색어) 와 함께 사용합니다. 예: _q=김&_qin=name',
+        '_qin must be used together with _q (the search term), e.g. _q=kim&_qin=name');
     }
     const available = [...new Set(fields.map((f) => f.path.join('.')))];
     for (const p of qin) {
       const ok = available.some((a) => a === p || a.startsWith(p + '.'));
       if (!ok) {
-        fail('Unknown search field', '_qin', p, `'${p}' 필드가 없습니다. 사용 가능: ${available.join(', ')}`);
+        fail('Unknown search field', '_qin', p,
+          `'${p}' 필드가 없습니다. 사용 가능: ${available.join(', ')}`,
+          `There is no '${p}' field. Available: ${available.join(', ')}`);
       }
     }
   }
@@ -288,6 +325,7 @@ function checkPathConflicts(fields: FieldSpec[]): void {
           f.name,
           f.typeRaw,
           `'${prefix}' 가 값이면서 동시에 '${f.name}' 의 상위 객체일 수 없습니다. 둘 중 하나를 바꾸세요.`,
+          `'${prefix}' cannot be both a value and the parent object of '${f.name}'. Change one of them.`,
         );
       }
     }

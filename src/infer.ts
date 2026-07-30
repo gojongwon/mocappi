@@ -346,6 +346,7 @@ export function inferSchema(input: unknown): InferResult {
     throw new DslError({
       error: 'Cannot infer schema',
       hint: 'JSON 객체 또는 객체 배열을 붙여넣으세요. 예: {"name": "김민준", "age": 34}',
+      hintEn: 'Paste a JSON object or an array of objects, e.g. {"name": "Kim Minjun", "age": 34}',
     });
   }
 
@@ -415,6 +416,7 @@ export function inferSchema(input: unknown): InferResult {
     throw new DslError({
       error: 'No inferable fields',
       hint: '추론 가능한 필드가 없습니다. 스칼라 값을 가진 키가 하나 이상 필요합니다.',
+      hintEn: 'No inferable fields. At least one key with a scalar value is required.',
     });
   }
 
