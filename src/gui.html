@@ -437,14 +437,19 @@
     .help-body { max-height: none; padding-right: 0; }
     /* 표 → 카드형 세로 배치 (가로 스크롤 제거) */
     .help-body table, .help-body tbody { display: block; width: 100%; }
-    .help-body tr { display: block; padding: 9px 0; border-bottom: 1px dashed rgba(23,23,26,.15); background: none !important; }
+    .help-body tr { display: block; padding: 13px 0; border-bottom: 1px dashed rgba(23,23,26,.15); background: none !important; }
     .help-body tr:first-child { display: none; } /* th 헤더 행 숨김 */
     .help-body tr:last-child { border-bottom: none; }
-    .help-body td { display: block; padding: 2px 0; border: none; width: auto !important; }
-    .help-body td:first-child { font-weight: 700; font-size: 13px; }
-    .help-body td:last-child { color: var(--muted); font-size: 12px; }
-    .help-body code { word-break: break-all; white-space: normal; }
-    .help-body pre { white-space: pre-wrap; word-break: break-all; }
+    .help-body td { display: block; padding: 3px 0; border: none; width: auto !important; word-break: keep-all; overflow-wrap: break-word; line-height: 1.7; }
+    .help-body td:first-child { font-weight: 700; font-size: 13.5px; padding-bottom: 5px; }
+    .help-body td:last-child { color: var(--muted); font-size: 12px; padding-top: 5px; }
+    /* 코드 칩: 내부 줄바꿈 금지 — 칩 단위로만 줄바꿈 */
+    .help-body code { display: inline-block; white-space: nowrap; word-break: normal; margin: 2px 6px 3px 0; }
+    .help-body pre { white-space: pre-wrap; word-break: break-word; }
+    .help-body p { word-break: keep-all; }
+
+    /* iOS 포커스 줌 방지 — 16px 미만 입력은 포커스 시 화면이 강제 확대됨 */
+    .frow input, #resource, #teamSel, .opts input, .opts select, #pasteInput, #fbText, #wsJoin, #saveName { font-size: 16px; }
 
     /* 코너 버튼: 모바일에선 플로팅 대신 페이지 맨 아래 정적 배치 — 입력을 가리지 않게 */
     .corner { position: static; justify-content: center; margin: 4px 0 24px; }
