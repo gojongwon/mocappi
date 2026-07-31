@@ -83,8 +83,7 @@
   .methods button[data-method].on:hover { background: var(--accent-hover); color: var(--accent-text); }
   /* chip(30px) 과 같은 높이 — 다르면 flex 행 높이가 커져 chip 들이 아래로 밀린다.
      30px 안에서 글자가 잘리지 않게 세로 패딩을 0 으로 (사각 모양·그림자는 .url-actions 규칙에서) */
-  #wSend { height: 30px; padding: 0 15px; display: inline-flex; align-items: center; }
-  #wScenario { margin-left: auto; height: 30px; padding: 0 8px; font-size: 12.5px; }
+  #wSend { margin-left: auto; height: 30px; padding: 0 15px; display: inline-flex; align-items: center; }
   #teamSel {
     max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; font-weight: 600;
     height: 30px; box-sizing: border-box;
@@ -239,6 +238,9 @@
   .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-top: 4px; }
   .opts > div { display: flex; flex-direction: column; gap: 4px; }
   .opts input, .opts select { width: 100%; }
+  /* 체크박스 옵션 — 다른 셀과 높이를 맞추기 위해 라벨 아래 한 줄을 차지한다 */
+  .opts .chkline { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .opts .chkline input { width: auto; flex: none; }
   .opts select {
     -webkit-appearance: none; appearance: none; padding-right: 30px; cursor: pointer;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2317171a' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -564,6 +566,9 @@
       <div class="opts">
         <div><label><span data-i18n="optDelay">지연 ms</span> <input class="okey" data-for="_delay" value="_delay" spellcheck="false" data-i18n-title="okeyDelay" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
         <div><label><span data-i18n="optStatus">상태코드</span> <input class="okey" data-for="_status" value="_status" spellcheck="false" data-i18n-title="okeyStatus" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
+        <div><label><span data-i18n="optErrBody">에러 본문</span></label>
+          <label class="chkline" data-i18n-title="errBodyTitle" title="켜면 상태코드에 맞는 에러 본문({code, message, …})을 돌려줍니다. 끄면 코드만 바뀌고 본문은 성공 그대로 — 필드 표는 어느 쪽이든 건드리지 않습니다."><input type="checkbox" id="oErrBody"><span data-i18n="errBodyHint">4xx·5xx 일 때 적용</span></label>
+        </div>
         <div><label><span data-i18n="optWrap">모양</span> <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
         <select id="oWrap"><option value="envelope">envelope</option><option value="none" data-i18n="wrapNone">배열만</option><option value="one" data-i18n="wrapOne">단일 객체</option></select>
       </div>
@@ -603,12 +608,6 @@
       <button data-method="PUT">PUT</button>
       <button data-method="PATCH">PATCH</button>
       <button data-method="DELETE">DELETE</button>
-      <select id="wScenario" data-i18n-title="scTitle" title="응답 시나리오 — 실패를 고르면 스키마 대신 그 에러 본문을 돌려줍니다 (필드 표는 그대로)">
-        <option value="" data-i18n="scOk">성공</option>
-        <option value="400" data-i18n="sc400">400 잘못된 요청</option>
-        <option value="422" data-i18n="sc422">422 검증 실패</option>
-        <option value="500" data-i18n="sc500">500 서버 오류</option>
-      </select>
       <button id="wSend" data-i18n="wSend" style="display:none">보내기</button>
     </div>
     <div class="url-actions">
@@ -894,11 +893,9 @@ npm run deploy</pre>
     loading: 'Loading…',
     copyResp: 'Copy full response',
     wSend: 'Send',
-    scTitle: 'Response scenario — pick a failure and you get that error body instead of the schema (the field table is untouched)',
-    scOk: 'Success',
-    sc400: '400 Bad Request',
-    sc422: '422 Validation failed',
-    sc500: '500 Server error',
+    optErrBody: 'Error body',
+    errBodyHint: 'applies on 4xx · 5xx',
+    errBodyTitle: 'When on, you get an error body matching the status code ({code, message, …}). When off, only the code changes and the body stays the success one — either way the field table is untouched.',
     // 코너 버튼
     newsBtnTitle: 'See recent updates',
     newsLabel: "v0.27 · What's new",
@@ -1314,33 +1311,35 @@ npm run deploy</pre>
     return location.origin + '/api/' + encPath(state.res) + '?' + buildQuery(state);
   }
 
-  // 실패 응답 기본값. 함수로 감싼 이유는 t() 를 호출 시점 언어로 평가하기 위해서다.
-  // 필드 표를 건드리지 않고 응답 모양만 갈아끼우므로 성공 ↔ 실패 왕복이 가능하다.
-  const SCENARIOS = {
-    '400': () => ({ status: 400, fields: [
-      ['code', 'const:BAD_REQUEST'],
-      ['message', 'const:' + t('요청 형식이 올바르지 않습니다.', 'The request format is invalid.')],
-    ] }),
-    '422': () => ({ status: 422, fields: [
-      ['code', 'const:VALIDATION_FAILED'],
-      ['message', 'const:' + t('입력값을 확인해주세요.', 'Please check your input.')],
-      ['errors.email', 'const:' + t('이미 사용 중인 이메일입니다.', 'This email is already taken.')],
-    ] }),
-    '500': () => ({ status: 500, fields: [
-      ['code', 'const:INTERNAL_ERROR'],
-      ['message', 'const:' + t('일시적인 오류입니다. 잠시 후 다시 시도해주세요.', 'Temporary error — please try again shortly.')],
-      ['traceId', 'uuid'],
-    ] }),
+  const ERR_CODES = {
+    400: 'BAD_REQUEST', 401: 'UNAUTHORIZED', 403: 'FORBIDDEN', 404: 'NOT_FOUND',
+    409: 'CONFLICT', 422: 'VALIDATION_FAILED', 429: 'TOO_MANY_REQUESTS',
   };
-  let scenario = ''; // '' = 성공(현재 스키마)
 
-  /** 지금 보낼 URL. 실패 시나리오면 스키마 대신 그 에러 본문 모양으로 만든다 */
+  /** '에러 본문' 이 켜져 있고 상태코드가 실패인가 — 이때만 응답 모양을 갈아끼운다 */
+  function errBodyOn() {
+    return $('#oErrBody').checked && Number($('#oStatus').value || 200) >= 400;
+  }
+
+  /** 상태코드에 맞는 에러 본문 필드. [이름, DSL] 쌍 — 필드 표는 건드리지 않는다 */
+  function errorFields(status) {
+    const fields = [
+      ['code', 'const:' + (ERR_CODES[status] || (status >= 500 ? 'INTERNAL_ERROR' : 'ERROR'))],
+      ['message', 'const:' + (status >= 500
+        ? t('일시적인 오류입니다. 잠시 후 다시 시도해주세요.', 'Temporary error — please try again shortly.')
+        : t('요청을 처리할 수 없습니다.', 'The request could not be processed.'))],
+    ];
+    if (status === 422) fields.push(['errors.email', 'const:' + t('이미 사용 중인 이메일입니다.', 'This email is already taken.')]);
+    if (status >= 500) fields.push(['traceId', 'uuid']);
+    return fields;
+  }
+
+  /** 지금 보낼 URL. 에러 본문 모드면 스키마 대신 그 응답 모양으로 만든다 */
   function currentUrl(state) {
-    const make = SCENARIOS[scenario];
-    if (!make) return apiUrl(state);
-    const sc = make();
-    const parts = sc.fields.map(([n, v]) => enc(n) + '=' + enc(v));
-    parts.push('_wrap=one', '_status=' + sc.status); // 에러 본문은 envelope 없이 단일 객체
+    if (!errBodyOn()) return apiUrl(state);
+    const status = Number($('#oStatus').value);
+    const parts = errorFields(status).map(([n, v]) => enc(n) + '=' + enc(v));
+    parts.push('_wrap=one', '_status=' + status); // 에러 본문은 envelope 없이 단일 객체
     if (state.opts._delay) parts.push('_delay=' + enc(state.opts._delay)); // 느린 실패 테스트
     return location.origin + '/api/' + encPath(state.res) + '?' + parts.join('&');
   }
@@ -1470,7 +1469,7 @@ npm run deploy</pre>
   function advActive() {
     return $('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
       $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '' ||
-      $('#oFormat').value !== 'json';
+      $('#oFormat').value !== 'json' || $('#oErrBody').checked;
   }
 
   function update() {
@@ -1490,8 +1489,8 @@ npm run deploy</pre>
     // 저장된 프리셋 기반이면 짧은 URL + 프리셋 이름 표시, 드롭다운 선택 상태도 동기화
     // (자리는 항상 유지 — visibility 로만 토글해 레이아웃 점프 방지)
     const short = shortApiUrl(state);
-    // 짧은 URL(_s=) 은 성공 프리셋을 가리키므로 실패 시나리오에서는 의미가 없다
-    $('#shortLine').classList.toggle('ghosted', !short || scenario !== '');
+    // 짧은 URL(_s=) 은 성공 스키마 프리셋을 가리키므로 에러 본문 모드에서는 의미가 없다
+    $('#shortLine').classList.toggle('ghosted', !short || errBodyOn());
     if (short) {
       const sa = $('#shortA');
       sa.href = short; sa.textContent = short;
@@ -1959,12 +1958,6 @@ npm run deploy</pre>
   }
 
   document.addEventListener('change', (e) => {
-    if (e.target.id === 'wScenario') {
-      scenario = e.target.value;
-      update(); // GET 이면 자동 미리보기가 실패 응답을 바로 보여준다
-      if (method !== 'GET') clearPreview(); // 쓰기는 이전 응답을 남기지 않는다
-      return;
-    }
     if (e.target.id === 'teamSel') {
       const v = e.target.value;
       if (v.startsWith('preset:')) { applyPreset(v.slice(7)); e.target.value = ''; }
