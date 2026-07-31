@@ -32,11 +32,13 @@ const WS = 'guardws00001';
 const Q = 'name=person.fullName&age=int:20~60';
 
 describe('중복 쓰기 스킵', () => {
+  // 워크스페이스 저장은 put 2회 = 레코드 + 라우트 포인터(r:<ws>:<경로> → sid).
+  // 포인터는 이미 같은 sid 를 가리키면 다시 쓰지 않는다.
   it('같은 내용·같은 이름 재저장은 KV 쓰기 없이 기존 레코드 반환', async () => {
     const kv = new CountingKV();
     const a = await saveSchema(kv, WS, '사용자', 'users', Q);
     const b = await saveSchema(kv, WS, '사용자', 'users', Q);
-    expect(kv.puts).toBe(1);
+    expect(kv.puts).toBe(2); // 첫 저장의 레코드 + 포인터. 2회차는 둘 다 스킵
     expect(b.createdAt).toBe(a.createdAt);
     expect(b.sid).toBe(a.sid);
   });
@@ -45,7 +47,7 @@ describe('중복 쓰기 스킵', () => {
     const kv = new CountingKV();
     await saveSchema(kv, WS, '사용자', 'users', Q);
     const b = await saveSchema(kv, WS, '유저 목록', 'users', Q);
-    expect(kv.puts).toBe(2);
+    expect(kv.puts).toBe(3); // 레코드 2회 + 포인터 1회 (sid 가 같아 두 번째는 스킵)
     expect(b.name).toBe('유저 목록');
   });
 
@@ -58,7 +60,7 @@ describe('중복 쓰기 스킵', () => {
     rec.createdAt = new Date(Date.now() - 8 * 24 * 3600 * 1000).toISOString();
     kv.store.set(key, { value: JSON.stringify(rec) });
     const b = await saveSchema(kv, WS, '사용자', 'users', Q);
-    expect(kv.puts).toBe(2);
+    expect(kv.puts).toBe(3); // 레코드 2회 + 포인터 1회
     expect(Date.parse(b.createdAt)).toBeGreaterThan(Date.parse(a.createdAt) - 1000);
   });
 });

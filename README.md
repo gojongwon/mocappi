@@ -9,6 +9,8 @@ A mock REST API you define entirely in the URL. No app to install, no config to 
 - GUI (URL builder + live preview): `GET /`
 - Data: `GET /api/<resource>?field=type&...`
 - Write mocks: `POST|PUT|PATCH|DELETE /api/<resource>?field=type` — returns the query-defined response with your body merged in (2xx only). **Nothing is stored.**
+- Error responses: `?_status=422&_err=1` — a `{code, message, …}` body matching the status code. Works with no fields at all
+- **Route mode: `/w/<workspace>/<path>`** — no query string. Swap your app's base URL and you're done (see below)
 - Supported types: `GET /schema/types`
 - Infer a schema from example JSON: `POST /schema/infer`
 - Generate TypeScript types: `GET /schema/ts` (or the "TS 타입 복사" button in the GUI)
@@ -213,6 +215,28 @@ npm run deploy
 ```
 
 Local dev uses a simulated KV stored under `.wrangler/state/` — it does not touch production data. Use `wrangler dev --remote` to develop against real bindings.
+
+## Route mode — swap your base URL and you're done
+
+Call the mock with no query string. Saving a preset in a workspace **registers its path as a route**.
+
+```js
+const API = 'https://mocappi.gojongwon.workers.dev/w/team123x';  // ← change this one line
+
+fetch(`${API}/users`)                            // GET  → list
+fetch(`${API}/users`, { method: 'POST', body })   // POST → created item (201 + id)
+fetch(`${API}/users/42`)                         // GET  → detail
+```
+
+- **Wildcards**: save the path as `users/*` and `/users/42`, `/users/9` all match. The matched segment
+  is passed through as `_seed`, so **each id yields different data**. Exact matches always win, then
+  routes with fewer `*`.
+- **Request query beats the preset**, so your app appending `?_page=2` keeps working.
+- **Failure mode**: pick a code in the GUI's workspace panel and every route in that workspace responds
+  with that status plus an error body. **No app code changes** — test your toast and retry UI in the real
+  screen. API: `POST /schema/mode` `{ws, status}` (send `null` to clear).
+- Routes are a workspace feature (not in the public pool). They need a storage binding (D1/KV) and add one
+  lookup per request. `/api/*` stays pure-CPU with no storage.
 
 ## Structure
 

@@ -7,7 +7,10 @@ import { parseQuery, type ParsedQuery } from './dsl';
 import { baseSeedOf, csvHeader, csvRow, generateItem, generateResponse, searchMatches } from './generate';
 import { inferSchema } from './infer';
 import { generateTsTypes } from './tstype';
-import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateWs, type KVNamespaceLike } from './store';
+import {
+  deleteSchema, getSchema, listRoutes, listSchemas, matchRoute, mergeQuery,
+  saveSchema, setMode, validateWs, type KVNamespaceLike,
+} from './store';
 import { d1Store, type D1Like } from './d1';
 import { compileType, DslError, typeDocsFor, type DslErrorInfo } from './registry';
 import { combineSeed, hashString } from './rng';
@@ -167,6 +170,33 @@ function errorBody(q: ParsedQuery, lang: 'ko' | 'en'): Record<string, unknown> {
   return body;
 }
 
+/**
+ * 파싱된 쿼리 → 응답. /api/* 와 /w/* 가 공유하는 꼬리.
+ * 분기 순서가 곧 우선순위다: 에러 본문 → 쓰기 → 스트리밍 → JSON.
+ */
+async function respond(
+  request: Request,
+  url: URL,
+  q: ParsedQuery,
+  explicitStatus: boolean,
+  lang: 'ko' | 'en',
+): Promise<Response> {
+  // _err=1 — 읽기·쓰기 공통. 쓰기의 body 에코도 자연히 건너뛴다.
+  // (_format 은 무시 — 에러 본문은 표/스트림이 아니다)
+  if (q.err) {
+    if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
+    return json(errorBody(q, lang), q.status);
+  }
+  if (WRITE_METHODS.has(request.method)) return writeResponse(request, url, q, explicitStatus, lang);
+  if (q.format !== 'json') {
+    if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
+    return streamResponse(q);
+  }
+  const body = generateResponse(q); // 생성 먼저 — _delay/_status 가 달라도 데이터는 동일
+  if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
+  return json(body, q.status);
+}
+
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 /** 쓰기 body 상한 — 목이라 크게 받을 이유가 없고, 큰 JSON.parse 는 무료 CPU 예산(10ms)을 태운다 */
 const MAX_BODY_BYTES = 64 * 1024;
@@ -254,6 +284,10 @@ async function writeResponse(
 // /api/ 뒤 1~8 단계 경로 — /api/v2/users/123/orders 처럼. 경로는 시드에 안 들어간다
 // (데이터는 쿼리로만 결정 — 부모 id 별로 다른 데이터가 필요하면 _seed=123 을 쓰세요).
 const RESOURCE_RE = /^\/api\/([A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){0,7})\/?$/;
+
+// 라우트 모드 — /w/<워크스페이스>/<경로>. 쿼리스트링 없이 저장된 프리셋으로 해석한다.
+// 앱에서 베이스 URL 만 이 주소로 바꾸면 호출부를 고치지 않아도 목이 응답한다.
+const WROUTE_RE = /^\/w\/([a-z0-9]{6,24})\/([A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){0,7})\/?$/;
 
 export default {
   async fetch(request: Request, env: Env = {}): Promise<Response> {
@@ -413,7 +447,9 @@ export default {
       if (!storage) return json(noKv(lang), 501);
       try {
         const ws = validateWs(url.searchParams.get('ws'));
-        return json({ ws, items: await listSchemas(storage, ws) });
+        // items[].res 가 곧 라우트 경로다 — 실패 모드만 얹으면 GUI 가 라우트 표를 그릴 수 있다
+        const mode = ws ? (await listRoutes(storage, ws)).mode : null;
+        return json({ ws, mode, items: await listSchemas(storage, ws) });
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         throw e;
@@ -434,6 +470,46 @@ export default {
       return json(rec);
     }
 
+    // 워크스페이스 실패 모드 전환 — 켜면 그 워크스페이스의 /w/ 라우트 전체가 실패를 리턴한다
+    // (앱 코드를 고치지 않고 에러 UI 를 테스트하는 용도)
+    if (url.pathname === '/schema/mode') {
+      if (request.method !== 'POST') {
+        return json({ error: 'Method not allowed', hint: pick(lang, '{ws, status} 를 POST 로 보내세요.', 'Send {ws, status} as a POST request.') }, 405);
+      }
+      if (!storage) return json(noKv(lang), 501);
+      const mIp = request.headers.get('cf-connecting-ip') ?? 'unknown';
+      const mLimited = env.SAVE_RL ? !(await env.SAVE_RL.limit({ key: 'mode:' + mIp })).success : saveLimited('mode:' + mIp);
+      if (mLimited) {
+        return json({ error: 'Too many requests', hint: pick(lang, '모드 변경이 너무 잦습니다. 잠시 후 다시 시도하세요.', 'Too many mode changes. Please try again shortly.') }, 429);
+      }
+      let mb: { ws?: unknown; status?: unknown };
+      try {
+        mb = (await request.json()) as typeof mb;
+      } catch {
+        return json({ error: 'Invalid JSON', hint: pick(lang, '{ws, status} 형식의 JSON 이어야 합니다.', 'The body must be JSON of the form {ws, status}.') }, 400);
+      }
+      try {
+        const ws = validateWs(mb.ws);
+        if (!ws) {
+          return json({ error: 'Workspace required', hint: pick(lang, '실패 모드는 워크스페이스 단위입니다. 워크스페이스를 먼저 만들어 주세요.', 'Failure mode is per workspace. Create a workspace first.') }, 400);
+        }
+        // null · '' · 200 은 해제
+        let status: number | null = null;
+        if (mb.status !== null && mb.status !== undefined && mb.status !== '' && Number(mb.status) !== 200) {
+          const n = Number(mb.status);
+          if (!Number.isInteger(n) || n < 400 || n > 599) {
+            return json({ error: 'Invalid status', hint: pick(lang, '실패 모드는 400~599 정수입니다. 해제는 null 또는 200 을 보내세요.', 'Failure mode must be an integer between 400 and 599. Send null or 200 to clear it.') }, 400);
+          }
+          status = n;
+        }
+        await setMode(storage, ws, status);
+        return json({ ok: true, ws, mode: status });
+      } catch (e) {
+        if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
+        return json({ error: 'Internal error', hint: String(e) }, 500);
+      }
+    }
+
     // JSON 예시 붙여넣기 → 스키마 추론
     if (url.pathname === '/schema/infer') {
       if (request.method !== 'POST') {
@@ -447,6 +523,54 @@ export default {
       }
       try {
         return json(inferSchema(body));
+      } catch (e) {
+        if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
+        return json({ error: 'Internal error', hint: String(e) }, 500);
+      }
+    }
+
+    // 라우트 모드 — /w/<ws>/<경로>. 쿼리 없이 워크스페이스 프리셋으로 해석한다.
+    const wm = url.pathname.match(WROUTE_RE);
+    if (wm) {
+      if (!WRITE_METHODS.has(request.method) && request.method !== 'GET' && request.method !== 'HEAD') {
+        return json({ error: 'Method not allowed', hint: pick(lang, 'GET · POST · PUT · PATCH · DELETE 만 지원합니다.', 'Only GET, POST, PUT, PATCH and DELETE are supported.') }, 405);
+      }
+      if (!storage) return json(noKv(lang), 501);
+      const [, ws, path] = wm;
+      try {
+        // 조회 1회로 라우트 표 + 실패 모드를 모두 얻는다
+        const { routes, mode } = await listRoutes(storage, ws);
+        const hit = matchRoute(routes, path.split('/'));
+        if (!hit) {
+          const known = routes.map((r) => r.path).join(', ');
+          return json(
+            {
+              error: 'Unknown route',
+              value: path,
+              hint: pick(
+                lang,
+                (known ? `등록된 경로: ${known}. ` : '이 워크스페이스에 등록된 경로가 없습니다. ') +
+                  'GUI 의 "프리셋으로 저장" 이 경로를 등록합니다. 상세 경로는 users/* 처럼 * 를 쓰세요.',
+                (known ? `Registered paths: ${known}. ` : 'This workspace has no registered paths yet. ') +
+                  'Saving a preset in the GUI registers one. For detail paths use a wildcard like users/*.',
+              ),
+            },
+            404,
+          );
+        }
+        const rec = await getSchema(storage, hit.sid);
+        if (!rec) {
+          return json({ error: 'Unknown schema id', value: hit.sid, hint: pick(lang, '라우트가 가리키는 프리셋이 삭제됐습니다. 다시 저장하세요.', 'The preset this route points to was deleted. Save it again.') }, 404);
+        }
+        const params = mergeQuery(rec.query, url.searchParams); // 요청 쿼리가 우선 (앱이 ?_page=2 를 붙일 수 있다)
+        // 와일드카드에 걸린 세그먼트를 시드로 — /users/42 와 /users/43 이 다른 데이터를 준다
+        if (hit.seed !== null && !params.has('_seed')) params.set('_seed', hit.seed);
+        // 워크스페이스 실패 모드 — 요청·프리셋 어느 쪽도 _status 를 지정하지 않았을 때만 개입
+        if (mode !== null && !params.has('_status')) {
+          params.set('_status', String(mode));
+          params.set('_err', '1');
+        }
+        return await respond(request, url, parseQuery(params), params.has('_status'), lang);
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);
@@ -471,22 +595,7 @@ export default {
           }
           params = mergeQuery(rec.query, params);
         }
-        const q = parseQuery(params);
-        // _err=1 — 읽기·쓰기 공통. 쓰기의 body 에코도 자연히 건너뛴다.
-        // (_format 은 무시 — 에러 본문은 표/스트림이 아니다)
-        if (q.err) {
-          if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
-          return json(errorBody(q, lang), q.status);
-        }
-        // 쓰기 — 스키마 파싱·_s 병합·_status/_delay 를 GET 과 그대로 공유
-        if (isWrite) return await writeResponse(request, url, q, params.has('_status'), lang);
-        if (q.format !== 'json') {
-          if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
-          return streamResponse(q);
-        }
-        const body = generateResponse(q); // 생성 먼저 — _delay/_status 가 달라도 데이터는 동일
-        if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
-        return json(body, q.status);
+        return await respond(request, url, parseQuery(params), params.has('_status'), lang);
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);

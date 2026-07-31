@@ -751,6 +751,24 @@ customer.address.city = location.city</pre>
     <h3 data-i18n="workspace">워크스페이스</h3>
     <p data-en-block="wsIntro">프리셋 저장·공유는 <b>워크스페이스 단위</b>로 이뤄지고, <b>링크를 아는 사람만</b> 접근할 수 있습니다.</p>
     <div class="wsid" id="wsCurrent"></div>
+    <!-- 라우트 모드 — 앱의 베이스 URL 만 이걸로 바꾸면 호출부를 고치지 않아도 목이 응답한다 -->
+    <div id="wsRoute" style="display:none;margin-top:14px">
+      <label style="display:block;margin-bottom:4px" data-i18n="wsBaseUrl">앱에 붙일 베이스 URL (쿼리 없이 호출)</label>
+      <div class="urlwrap">
+        <div class="urlbox" id="wsBaseBox" style="min-height:0"></div>
+        <button class="box-copy" id="wsBaseCopy" data-i18n-title="copyUrl" title="URL 복사"></button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+        <label for="wsMode" style="flex:none" data-i18n="wsMode">실패 모드</label>
+        <select id="wsMode" style="flex:none" data-i18n-title="wsModeTitle" title="켜면 이 워크스페이스의 모든 라우트가 이 상태코드 + 에러 본문으로 응답합니다. 앱 코드는 그대로 두고 에러 UI 를 테스트할 수 있어요.">
+          <option value="" data-i18n="wsModeOff">정상</option>
+          <option value="401">401</option><option value="403">403</option><option value="404">404</option>
+          <option value="409">409</option><option value="422">422</option><option value="500">500</option><option value="503">503</option>
+        </select>
+        <span id="wsModeStatus" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+      <div id="wsRoutes" style="margin-top:10px;font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.8"></div>
+    </div>
     <div class="modal-actions" style="justify-content:flex-start">
       <button id="wsNew" data-i18n="wsNew" style="background:var(--accent);color:var(--accent-text)">새 워크스페이스 만들기</button>
       <button id="wsShare" data-i18n="wsShare" style="background:var(--accent);color:var(--accent-text)">워크스페이스 링크 복사</button>
@@ -893,6 +911,10 @@ npm run deploy</pre>
     loading: 'Loading…',
     copyResp: 'Copy full response',
     wSend: 'Send',
+    wsBaseUrl: 'Base URL for your app (no query string needed)',
+    wsMode: 'Failure mode',
+    wsModeOff: 'normal',
+    wsModeTitle: 'When set, every route in this workspace responds with that status code and an error body. Test your error UI without touching app code.',
     optErr: 'Error body',
     errNone: 'none',
     errUse: 'use',
@@ -1680,6 +1702,43 @@ npm run deploy</pre>
   }
   if (presetMql.addEventListener) presetMql.addEventListener('change', () => { renderTeamOptions(); syncTeamSelVisibility(); });
 
+  // ---- 라우트 모드 UI (워크스페이스 모달) ----
+  let wsMode = null; // null = 정상, 숫자 = 그 상태코드로 실패
+
+  function syncRouteUi() {
+    const box = $('#wsRoute');
+    box.style.display = WS ? '' : 'none'; // 라우트는 워크스페이스 기능
+    if (!WS) return;
+    const base = location.origin + '/w/' + WS;
+    $('#wsBaseBox').textContent = base;
+    $('#wsRoute').dataset.url = base;
+    $('#wsMode').value = wsMode === null ? '' : String(wsMode);
+    const paths = [...new Set(teamItems.map((it) => it.res))];
+    $('#wsRoutes').textContent = paths.length
+      ? t('등록된 경로: ', 'Registered paths: ') + paths.join(' · ')
+      : t('아직 등록된 경로가 없습니다 — 프리셋을 저장하면 등록됩니다.', 'No paths yet — saving a preset registers one.');
+  }
+
+  async function applyWsMode(value) {
+    const st = $('#wsModeStatus');
+    st.style.color = 'var(--muted)';
+    st.textContent = t('적용 중…', 'Applying…');
+    try {
+      const res = await fetch('/schema/mode', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'Accept-Language': LANG },
+        body: JSON.stringify({ ws: WS, status: value === '' ? null : Number(value) }),
+      });
+      const body = await res.json();
+      if (!res.ok) { st.style.color = 'var(--danger)'; st.textContent = body.hint || t('실패', 'Failed'); return; }
+      wsMode = body.mode;
+      st.textContent = wsMode === null ? t('정상 응답', 'Normal responses') : t('모든 라우트가 ', 'All routes return ') + wsMode;
+    } catch {
+      st.style.color = 'var(--danger)';
+      st.textContent = t('네트워크 오류', 'Network error');
+    }
+  }
+
   async function refreshTeam() {
     try {
       const res = await fetch('/schema/saved' + (WS ? '?ws=' + WS : ''), { headers: { 'Accept-Language': LANG } });
@@ -1689,6 +1748,8 @@ npm run deploy</pre>
       $('#wsBtn').style.display = '';
       syncWsUi();
       teamItems = body.items;
+      wsMode = body.mode ?? null;
+      syncRouteUi();
       syncTeamSelVisibility();
       renderTeamOptions();
     } catch {}
@@ -1926,6 +1987,7 @@ npm run deploy</pre>
   }
 
   document.addEventListener('change', (e) => {
+    if (e.target.id === 'wsMode') { applyWsMode(e.target.value); return; }
     if (e.target.id === 'teamSel') {
       const v = e.target.value;
       if (v.startsWith('preset:')) { applyPreset(v.slice(7)); e.target.value = ''; }
@@ -1991,7 +2053,8 @@ npm run deploy</pre>
       case 'respCopyBtn': copyIcon(lastPreviewText, btn); break;
       case 'wSend': preview(apiUrl(readState()), { method }); break;
       case 'saveBtn': openSave(); break;
-      case 'wsBtn': syncWsUi(); $('#wsModal').style.display = 'flex'; break;
+      case 'wsBtn': syncWsUi(); syncRouteUi(); $('#wsModal').style.display = 'flex'; break;
+      case 'wsBaseCopy': copyIcon($('#wsRoute').dataset.url, btn); break;
       case 'wsClose': $('#wsModal').style.display = 'none'; break;
       case 'wsNew': switchWs(randWs()); break;
       case 'wsPublic': switchWs(null); break;

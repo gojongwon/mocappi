@@ -42,7 +42,10 @@ export interface SavedMeta {
   createdAt: string;
 }
 
-const RES_RE = /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){0,7}$/; // 다단계 경로 허용 (최대 8단계)
+// 다단계 경로 허용 (최대 8단계). '*' 세그먼트는 라우트 모드의 와일드카드
+// (예: users/* → /users/42 매치, 42 는 _seed 로 넘어간다)
+const SEG = '(?:[A-Za-z0-9_-]+|\\*)';
+const RES_RE = new RegExp(`^${SEG}(?:/${SEG}){0,7}$`);
 const ID_RE = /^[a-z0-9]{4,16}$/;
 export const WS_RE = /^[a-z0-9]{6,24}$/;
 export const MAX_PER_WORKSPACE = 100;
@@ -59,6 +62,83 @@ function keyOf(ws: string | null, id: string): string {
 
 function prefixOf(ws: string | null): string {
   return ws ? `w:${ws}:` : 's:';
+}
+
+// ---------------------------------------------------------------------------
+// 라우트 인덱스 — /w/<ws>/<경로> 로 쿼리스트링 없이 호출하기 위한 경로 → sid 포인터.
+// 프리셋 키(w:<ws>:<id>) 와 프리픽스를 분리해 listSchemas 가 포인터를 프리셋으로
+// 오인하지 않게 한다. sid 를 metadata 에도 넣는 이유: list() 는 값을 주지 않으므로
+// 메타데이터에 넣어야 조회 1회로 라우트 표 전체를 얻는다.
+// ---------------------------------------------------------------------------
+const routePrefix = (ws: string) => `r:${ws}:`;
+/** '@' 는 RES_RE 로 만들 수 없어 경로와 절대 충돌하지 않는다 */
+const MODE_SUFFIX = '@mode';
+
+export interface RouteTable {
+  routes: Array<{ path: string; sid: string }>;
+  /** 워크스페이스 실패 모드 — 설정돼 있으면 모든 라우트가 이 상태코드로 실패한다 */
+  mode: number | null;
+}
+
+/** 라우트 표 + 실패 모드를 list 한 번으로 (D1 읽기 1회) */
+export async function listRoutes(kv: KVNamespaceLike, ws: string): Promise<RouteTable> {
+  const prefix = routePrefix(ws);
+  const { keys } = await kv.list({ prefix, limit: 1000 });
+  const routes: Array<{ path: string; sid: string }> = [];
+  let mode: number | null = null;
+  for (const k of keys) {
+    const tail = k.name.slice(prefix.length);
+    const meta = (k.metadata ?? {}) as { sid?: string; status?: number };
+    if (tail === MODE_SUFFIX) mode = typeof meta.status === 'number' ? meta.status : null;
+    else if (meta.sid) routes.push({ path: tail, sid: meta.sid });
+  }
+  return { routes, mode };
+}
+
+/**
+ * 요청 경로에 맞는 라우트. 정확 일치가 우선, 그다음 '*' 가 적은 것.
+ * 와일드카드에 걸린 첫 세그먼트는 seed 로 돌려준다 (/users/42 와 /users/43 을 구분).
+ */
+export function matchRoute(
+  routes: Array<{ path: string; sid: string }>,
+  segs: string[],
+): { sid: string; seed: string | null } | null {
+  let best: { sid: string; seed: string | null; stars: number } | null = null;
+  for (const r of routes) {
+    const pat = r.path.split('/');
+    if (pat.length !== segs.length) continue;
+    let stars = 0;
+    let seed: string | null = null;
+    let ok = true;
+    for (let i = 0; i < pat.length; i++) {
+      if (pat[i] === '*') {
+        stars++;
+        if (seed === null) seed = segs[i];
+      } else if (pat[i] !== segs[i]) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok && (best === null || stars < best.stars)) best = { sid: r.sid, seed, stars };
+  }
+  return best === null ? null : { sid: best.sid, seed: best.seed };
+}
+
+/** 실패 모드 설정 — null 이면 해제 */
+export async function setMode(kv: KVNamespaceLike, ws: string, status: number | null): Promise<void> {
+  const key = routePrefix(ws) + MODE_SUFFIX;
+  if (status === null) {
+    await kv.delete(key);
+    return;
+  }
+  await kv.put(key, String(status), { metadata: { status }, expirationTtl: WS_TTL_SECONDS });
+}
+
+/** 경로 → sid 포인터. 이미 같은 sid 를 가리키면 쓰지 않는다 (쓰기 한도 보호) */
+async function putRoute(kv: KVNamespaceLike, ws: string, res: string, sid: string): Promise<void> {
+  const key = routePrefix(ws) + res;
+  if ((await kv.get(key)) === sid) return;
+  await kv.put(key, sid, { metadata: { sid }, expirationTtl: WS_TTL_SECONDS });
 }
 
 export function sidOf(ws: string | null, id: string): string {
@@ -141,6 +221,8 @@ export async function saveSchema(
       // (무료 플랜 쓰기 1,000/일 보호. 7일이 지나면 TTL 갱신을 위해 다시 쓴다)
       const age = Date.now() - Date.parse(prev.createdAt);
       if (prev.name === name.trim() && Number.isFinite(age) && age >= 0 && age < REWRITE_AFTER_MS) {
+        // 레코드 쓰기는 건너뛰더라도 라우트 포인터는 맞춰둔다 (기능 추가 전 프리셋도 라우트를 얻는다)
+        if (ws) await putRoute(kv, ws, res, prev.sid);
         return prev;
       }
     } catch (e) {
@@ -165,6 +247,7 @@ export async function saveSchema(
     metadata: { name: rec.name, res, createdAt },
     ...(ws ? { expirationTtl: WS_TTL_SECONDS } : {}), // 공용 풀은 무기한 (기존 팀 데이터 보존)
   });
+  if (ws) await putRoute(kv, ws, res, rec.sid); // 라우트는 워크스페이스 기능 (공용 풀엔 없다)
   return rec;
 }
 
@@ -208,8 +291,19 @@ export async function deleteSchema(kv: KVNamespaceLike, sid: string): Promise<bo
   const parsed = parseSid(sid);
   if (!parsed) return false;
   const key = keyOf(parsed.ws, parsed.id);
-  if ((await kv.get(key)) === null) return false;
+  const raw = await kv.get(key);
+  if (raw === null) return false;
   await kv.delete(key);
+  // 라우트 포인터도 정리 — 다른 프리셋이 그 경로를 가져갔으면 건드리지 않는다
+  if (parsed.ws) {
+    try {
+      const rec = JSON.parse(raw) as SavedSchema;
+      const rkey = routePrefix(parsed.ws) + rec.res;
+      if ((await kv.get(rkey)) === sid) await kv.delete(rkey);
+    } catch {
+      // 손상 레코드면 경로를 알 수 없다 — 포인터는 TTL(180일) 로 만료된다
+    }
+  }
   return true;
 }
 
