@@ -73,7 +73,11 @@
   .presets button:hover, .methods button:hover { background: var(--accent-soft); color: var(--ink); }
   /* 메서드 전환 chip — 프리셋 chip 스타일을 그대로 쓰고 선택 상태만 추가 */
   .methods { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 0; }
-  .methods button.on { background: var(--accent-soft); color: var(--ink); font-weight: 800; }
+  .methods button.on {
+    background: var(--accent); color: var(--accent-text); font-weight: 800;
+    box-shadow: var(--btn-shadow);
+  }
+  .methods button.on:hover { background: var(--accent-hover); color: var(--accent-text); }
   #writeBox { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
   #writeBox textarea { width: 100%; font-family: var(--mono); font-size: 12px; }
   #writeBox button { align-self: flex-end; }
@@ -1404,7 +1408,7 @@ npm run deploy</pre>
     $('#methods').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.method === m));
     $('#writeBox').style.display = m === 'GET' ? 'none' : '';
     $('#wBody').style.display = m === 'DELETE' ? 'none' : ''; // DELETE 는 body 를 보내지 않는다
-    if (m === 'GET') update();
+    update(); // URL 표시 갱신. 자동 전송은 update() 안에서 GET 일 때만 걸린다
   }
   /** 고급 옵션 중 하나라도 기본값이 아닌가 */
   function advActive() {
@@ -1420,8 +1424,14 @@ npm run deploy</pre>
     if (advActive()) $('#optsAdv').open = true;
     const url = apiUrl(state);
     $('#urlBox').innerHTML = '';
-    const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
-    $('#urlBox').appendChild(a);
+    if (method === 'GET') {
+      const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
+      $('#urlBox').appendChild(a);
+    } else {
+      // 쓰기는 같은 URL(쿼리 포함) 로 나간다. 클릭으로는 열 수 없으므로(브라우저는 GET)
+      // 링크 대신 메서드 + 평문으로 보여준다.
+      $('#urlBox').textContent = method + ' ' + url;
+    }
     // 저장된 프리셋 기반이면 짧은 URL + 프리셋 이름 표시, 드롭다운 선택 상태도 동기화
     // (자리는 항상 유지 — visibility 로만 토글해 레이아웃 점프 방지)
     const short = shortApiUrl(state);
