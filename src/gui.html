@@ -73,13 +73,15 @@
   .presets button:hover, .methods button:hover { background: var(--accent-soft); color: var(--ink); }
   /* 메서드 전환 chip — 프리셋 chip 스타일을 그대로 쓰고 선택 상태만 추가 */
   .methods { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 0; }
+  /* 굵기는 선택 상태가 아니라 chip 전체에 고정 — 선택 시 글자가 굵어지면 폭이 늘어 뒤 chip 이 밀린다 */
+  .methods button { font-weight: 800; }
   .methods button.on {
-    background: var(--accent); color: var(--accent-text); font-weight: 800;
+    background: var(--accent); color: var(--accent-text);
     box-shadow: var(--btn-shadow);
   }
   .methods button.on:hover { background: var(--accent-hover); color: var(--accent-text); }
   #writeBox { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-  #writeBox textarea { width: 100%; font-family: var(--mono); font-size: 12px; }
+  #writeBox textarea { width: 100%; font-family: var(--mono); font-size: 12px; resize: vertical; }
   #writeBox button { align-self: flex-end; }
   #teamSel {
     max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; font-weight: 600;
