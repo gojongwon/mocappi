@@ -1405,8 +1405,8 @@ npm run deploy</pre>
 
   // ---- 미리보기 (디바운스 300ms) ----
   let timer = null; let reqSeq = 0; let lastPreviewText = '';
-  // 선택된 메서드. 자동 전송은 GET 의 디바운스 미리보기와 chip 전환 1회뿐 —
-  // body 를 타이핑하는 동안에는 보내지 않는다 ([보내기] 필요).
+  // 선택된 메서드. 자동으로 나가는 요청은 GET 의 디바운스 미리보기뿐이다 —
+  // 쓰기는 chip 전환·타이핑 모두 요청을 보내지 않고 [보내기] 를 눌러야 나간다.
   let method = 'GET';
 
   function setMethod(m) {
@@ -1419,11 +1419,19 @@ npm run deploy</pre>
     update(); // URL 표시 갱신 + GET 이면 자동 미리보기
     if (m !== 'GET') {
       checkBody();
-      // chip 을 누른 순간 1회 전송 — 안 그러면 패널에 이전 메서드의 응답이 남는다.
-      // ponytail: DELETE 도 한 번 보낸다. 지금은 상태를 저장하지 않아 무해하다 —
-      //  상태 있는 모드가 생기면 여기서 DELETE 를 제외해야 한다.
-      sendWrite();
+      clearPreview(); // 이전 메서드의 응답을 남기지 않는다. 요청은 [보내기] 를 누를 때만
     }
+  }
+
+  /** 패널 초기화 — 전환 시점에 진행 중인 요청의 응답까지 버린다 */
+  function clearPreview() {
+    ++reqSeq; // 늦게 도착하는 응답이 이 화면을 덮어쓰지 않게
+    clearTimeout(timer);
+    clearTimeout(loadingTimer);
+    setLoading(false); // 버려진 응답은 흐림을 해제하지 않으므로 여기서 푼다
+    $('#statusLine').innerHTML = '&nbsp;';
+    $('#preview').textContent = t('[보내기] 를 누르면 요청을 보냅니다.', 'Press [Send] to make the request.');
+    lastPreviewText = ''; // 응답 복사 버튼이 지워진 화면의 옛 응답을 주지 않게
   }
 
   function sendWrite() {
