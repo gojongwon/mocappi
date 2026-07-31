@@ -83,6 +83,9 @@
   #writeBox { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
   #writeBox textarea { width: 100%; font-family: var(--mono); font-size: 12px; resize: vertical; }
   #writeBox button { align-self: flex-end; }
+  /* body 안내/에러 한 줄 — 기본은 회색 안내, .bad 면 빨간 에러 + 테두리 */
+  #wBodyMsg { color: var(--muted); font-size: 12px; min-height: 1.2em; }
+  #wBodyMsg.bad, #writeBox textarea.bad { color: var(--danger); border-color: var(--danger); }
   #teamSel {
     max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; font-weight: 600;
     height: 30px; box-sizing: border-box;
@@ -608,6 +611,7 @@
     </div>
     <div id="writeBox" style="display:none">
       <textarea id="wBody" rows="3" spellcheck="false" placeholder='{"name":"고종원"}'></textarea>
+      <div id="wBodyMsg"></div>
       <button id="wSend" data-i18n="wSend">보내기</button>
     </div>
     <div class="status-line" id="statusLine">&nbsp;</div>
@@ -1401,16 +1405,60 @@ npm run deploy</pre>
 
   // ---- 미리보기 (디바운스 300ms) ----
   let timer = null; let reqSeq = 0; let lastPreviewText = '';
-  // 선택된 메서드. GET 이면 자동 미리보기, 쓰기면 [보내기] 를 눌러야 전송한다
-  // (타이핑 중 요청이 날아가지 않고, 스키마를 고쳐도 마지막 쓰기 응답이 유지된다).
+  // 선택된 메서드. 자동 전송은 GET 의 디바운스 미리보기와 chip 전환 1회뿐 —
+  // body 를 타이핑하는 동안에는 보내지 않는다 ([보내기] 필요).
   let method = 'GET';
 
   function setMethod(m) {
     method = m;
     $('#methods').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.method === m));
     $('#writeBox').style.display = m === 'GET' ? 'none' : '';
-    $('#wBody').style.display = m === 'DELETE' ? 'none' : ''; // DELETE 는 body 를 보내지 않는다
-    update(); // URL 표시 갱신. 자동 전송은 update() 안에서 GET 일 때만 걸린다
+    // DELETE 는 body 를 보내지 않으므로 입력칸과 안내를 함께 숨긴다
+    $('#wBody').style.display = m === 'DELETE' ? 'none' : '';
+    $('#wBodyMsg').style.display = m === 'DELETE' ? 'none' : '';
+    update(); // URL 표시 갱신 + GET 이면 자동 미리보기
+    if (m !== 'GET') {
+      checkBody();
+      // chip 을 누른 순간 1회 전송 — 안 그러면 패널에 이전 메서드의 응답이 남는다.
+      // ponytail: DELETE 도 한 번 보낸다. 지금은 상태를 저장하지 않아 무해하다 —
+      //  상태 있는 모드가 생기면 여기서 DELETE 를 제외해야 한다.
+      sendWrite();
+    }
+  }
+
+  function sendWrite() {
+    const body = method === 'DELETE' ? '' : $('#wBody').value.trim();
+    preview(apiUrl(readState()), {
+      method,
+      headers: body ? { 'content-type': 'application/json' } : {},
+      body: body || undefined,
+    });
+  }
+
+  /** body 상태 표시. 반환값은 유효 여부 — 빈 값도 유효(스키마 생성 아이템만 받는 경우) */
+  function checkBody() {
+    const raw = $('#wBody').value.trim();
+    let msg = '', bad = false;
+    if (raw === '') {
+      // 빈 body 로 보내면 생성기가 전부 채운 아이템이 온다. 이 안내가 없으면
+      // "안 보낸 값이 왜 응답에 있지" 로 읽힌다.
+      msg = t('body 를 비우면 스키마로 생성된 아이템이 그대로 돌아옵니다.',
+              'With an empty body you get back the item generated from the schema.');
+    } else {
+      try { JSON.parse(raw); }
+      catch (e) { msg = t('JSON 파싱 실패: ', 'JSON parse error: ') + e.message; bad = true; }
+    }
+    $('#wBodyMsg').textContent = msg;
+    $('#wBodyMsg').classList.toggle('bad', bad);
+    $('#wBody').classList.toggle('bad', bad);
+    return !bad;
+  }
+
+  /** blur 시 재정렬 — 한 줄로 붙여넣은 payload 를 줄 단위로 */
+  function formatBody() {
+    if (!checkBody()) return;
+    const raw = $('#wBody').value.trim();
+    if (raw !== '') $('#wBody').value = JSON.stringify(JSON.parse(raw), null, 2);
   }
   /** 고급 옵션 중 하나라도 기본값이 아닌가 */
   function advActive() {
@@ -1425,14 +1473,13 @@ npm run deploy</pre>
     // (닫힘은 프리셋 전환·URL 로드 같은 문맥 전환 시점에만 advActive 기준으로)
     if (advActive()) $('#optsAdv').open = true;
     const url = apiUrl(state);
-    $('#urlBox').innerHTML = '';
+    // 어느 메서드든 같은 URL(쿼리=스키마) 로 나간다 — 메서드를 항상 앞에 붙여 표시한다.
+    $('#urlBox').textContent = method + ' ';
     if (method === 'GET') {
       const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
       $('#urlBox').appendChild(a);
     } else {
-      // 쓰기는 같은 URL(쿼리 포함) 로 나간다. 클릭으로는 열 수 없으므로(브라우저는 GET)
-      // 링크 대신 메서드 + 평문으로 보여준다.
-      $('#urlBox').textContent = method + ' ' + url;
+      $('#urlBox').append(url); // 쓰기는 클릭으로 열 수 없어 링크가 거짓말이 된다
     }
     // 저장된 프리셋 기반이면 짧은 URL + 프리셋 이름 표시, 드롭다운 선택 상태도 동기화
     // (자리는 항상 유지 — visibility 로만 토글해 레이아웃 점프 방지)
@@ -1833,6 +1880,7 @@ npm run deploy</pre>
 
   // ---- 이벤트 ----
   document.addEventListener('input', (e) => {
+    if (e.target.matches('#wBody')) { checkBody(); return; } // 타이핑 중엔 검사만, 전송·정렬 안 함
     if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select')) {
       if (e.target.matches('.fname, .fval')) e.target.title = e.target.value;
       if (e.target.matches('.fval')) acRender(e.target);
@@ -1849,6 +1897,8 @@ npm run deploy</pre>
   });
   // 잠금은 입력이 끝난 뒤(blur)에만 적용 — 타이핑 중에 잠기지 않도록
   document.addEventListener('focusout', (e) => {
+    // 마우스로 [보내기] 를 눌러도 blur → click 순서라 정렬 후 전송된다
+    if (e.target.matches && e.target.matches('#wBody')) { formatBody(); return; }
     if (e.target.matches && e.target.matches('.fval')) {
       applyLock(e.target.closest('.frow'));
       acClose();
@@ -1968,11 +2018,7 @@ npm run deploy</pre>
       case 'copyBtn': copyIcon(apiUrl(readState()), btn); break;
       case 'tsBtn': copyTsTypes(btn); break;
       case 'respCopyBtn': copyIcon(lastPreviewText, btn); break;
-      case 'wSend': {
-        const body = method === 'DELETE' ? '' : $('#wBody').value.trim();
-        preview(apiUrl(readState()), { method, headers: body ? { 'content-type': 'application/json' } : {}, body: body || undefined });
-        break;
-      }
+      case 'wSend': sendWrite(); break;
       case 'saveBtn': openSave(); break;
       case 'wsBtn': syncWsUi(); $('#wsModal').style.display = 'flex'; break;
       case 'wsClose': $('#wsModal').style.display = 'none'; break;
