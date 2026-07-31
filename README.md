@@ -8,6 +8,7 @@ A mock REST API you define entirely in the URL. No app to install, no config to 
 
 - GUI (URL builder + live preview): `GET /`
 - Data: `GET /api/<resource>?field=type&...`
+- Write mocks: `POST|PUT|PATCH|DELETE /api/<resource>?field=type` — returns the query-defined response with your body merged in (2xx only). **Nothing is stored.**
 - Supported types: `GET /schema/types`
 - Infer a schema from example JSON: `POST /schema/infer`
 - Generate TypeScript types: `GET /schema/ts` (or the "TS 타입 복사" button in the GUI)

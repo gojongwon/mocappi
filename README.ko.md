@@ -6,6 +6,7 @@ URL 만으로 스키마를 정의하는 팀 내부용 목(mock) REST API. 앱 �
 
 - GUI (URL 빌더 + 실시간 미리보기): `GET /`
 - 데이터: `GET /api/<리소스명>?필드=타입&...`
+- 쓰기 목: `POST|PUT|PATCH|DELETE /api/<리소스명>?필드=타입` — 쿼리로 만든 응답에 보낸 body 를 덮어 돌려준다 (2xx 만). **저장은 하지 않는다.**
 - 지원 타입 목록: `GET /schema/types`
 - JSON 예시 → 스키마 추론: `POST /schema/infer`
 - 스키마 → TypeScript 타입: `GET /schema/ts` (GUI 의 "TS 타입 복사" 버튼)
@@ -227,4 +228,4 @@ test/          # dsl / determinism / worker 테스트
 
 ## v1 에서 뺀 것 (의도적)
 
-스키마 저장(KV), 쓰기 API(CRUD), 인증. 실사용에서 필요가 확인되면 v2로.
+상태를 저장하는 CRUD(POST 한 항목이 이후 GET 목록에 나타나는 것)와 인증. 쓰기는 무상태 목으로만 지원한다 — 실사용에서 필요가 확인되면 v2로.

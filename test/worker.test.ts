@@ -31,8 +31,9 @@ describe('라우팅', () => {
     expect(body.hint).toContain('/api/');
   });
 
-  it('POST /api/x → 405', async () => {
-    const res = await worker.fetch(new Request(BASE + '/api/users?id=uuid', { method: 'POST' }));
+  // POST/PUT/PATCH/DELETE 는 write.test.ts 에서 다룬다 — 그 외 메서드는 405
+  it('지원하지 않는 메서드 → 405', async () => {
+    const res = await worker.fetch(new Request(BASE + '/api/users?id=uuid', { method: 'LOCK' }));
     expect(res.status).toBe(405);
   });
 });

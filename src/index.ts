@@ -10,6 +10,7 @@ import { generateTsTypes } from './tstype';
 import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateWs, type KVNamespaceLike } from './store';
 import { d1Store, type D1Like } from './d1';
 import { DslError, typeDocsFor, type DslErrorInfo } from './registry';
+import { hashString } from './rng';
 import { OG_PNG_B64 } from './og';
 
 export interface Env {
@@ -26,8 +27,10 @@ export interface Env {
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, HEAD, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS',
   'Access-Control-Allow-Headers': '*',
+  // Location 은 CORS 안전목록이 아니다 — 노출하지 않으면 브라우저 JS 에서 null 로 읽힌다
+  'Access-Control-Expose-Headers': 'Location',
   'Access-Control-Max-Age': '86400',
 };
 
@@ -120,15 +123,104 @@ function streamResponse(q: ParsedQuery): Response {
   });
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body, null, 2), {
+// 본문을 가질 수 없는 상태코드 — Response 생성자가 TypeError 를 던지므로 본문을 비운다
+// (_status=204 같은 강제 상태코드로 GET/쓰기 양쪽에서 도달 가능)
+const NO_BODY_STATUS = new Set([101, 204, 205, 304]);
+
+function json(body: unknown, status = 200, extra?: Record<string, string>): Response {
+  return new Response(NO_BODY_STATUS.has(status) ? null : JSON.stringify(body, null, 2), {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
       'cache-control': 'no-store',
       ...CORS_HEADERS,
+      ...extra,
     },
   });
+}
+
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+/** 쓰기 body 상한 — 목이라 크게 받을 이유가 없고, 큰 JSON.parse 는 무료 CPU 예산(10ms)을 태운다 */
+const MAX_BODY_BYTES = 64 * 1024;
+
+/**
+ * 쓰기 목(mock) — 상태를 저장하지 않는다. 스키마로 아이템을 만든 뒤 body 를 덮어쓴다.
+ *  - 클라가 보낸 필드는 그대로 에코 (실제 API 처럼 보이게)
+ *  - 선언됐지만 안 보낸 필드(id·createdAt 등)는 생성기가 채움 = 서버 할당 필드
+ *
+ * 에코는 2xx 에서만 — 에러 응답(4xx/5xx)에 요청 payload(비밀번호 등)를 되돌려주는
+ * API 는 사실상 없다. 따라서 422 검증 에러 본문은 쿼리로 그린 모양 그대로 나온다.
+ *
+ * 시드는 body 해시라서 "같은 요청 → 같은 응답" 이 유지되고, body 가 다르면 id 도 다르다.
+ * 시드 계산은 GET 의 _seed 경로를 그대로 재사용하므로 Location 의 URL 을 GET 하면
+ * POST 응답과 완전히 같은 아이템이 나온다 (서버 할당 필드 포함).
+ */
+async function writeResponse(
+  request: Request,
+  url: URL,
+  q: ParsedQuery,
+  explicitStatus: boolean,
+  lang: 'ko' | 'en',
+): Promise<Response> {
+  const method = request.method;
+  const raw = method === 'DELETE' ? '' : await request.text();
+  if (raw.length > MAX_BODY_BYTES) {
+    return json(
+      {
+        error: 'Body too large',
+        hint: pick(
+          lang,
+          `요청 body 는 ${MAX_BODY_BYTES / 1024}KB 이하만 받습니다.`,
+          `The request body must be ${MAX_BODY_BYTES / 1024}KB or smaller.`,
+        ),
+      },
+      413,
+    );
+  }
+
+  let overlay: Record<string, unknown> = {};
+  if (raw.trim() !== '') {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return json({ error: 'Invalid JSON', hint: pick(lang, 'body 가 JSON 으로 파싱되지 않습니다.', 'The body could not be parsed as JSON.') }, 400);
+    }
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return json(
+        {
+          error: 'Invalid body',
+          hint: pick(lang, 'body 는 JSON 객체여야 합니다. 예: {"name":"홍길동"}', 'The body must be a JSON object, e.g. {"name":"Ada"}'),
+        },
+        400,
+      );
+    }
+    overlay = parsed as Record<string, unknown>;
+  }
+
+  if (method === 'DELETE') {
+    if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
+    return new Response(null, { status: explicitStatus ? q.status : 204, headers: CORS_HEADERS });
+  }
+
+  const status = explicitStatus ? q.status : method === 'POST' ? 201 : 200;
+  const seedKey = q.seedParam ?? hashString(raw).toString(36);
+  const generated = generateItem(baseSeedOf({ ...q, seedParam: seedKey }), 0, q);
+  const item = status >= 200 && status < 300 ? { ...generated, ...overlay } : generated;
+
+  // 생성 성공 시에만 Location — 그 URL 을 GET 하면 같은 아이템이 나온다
+  let extra: Record<string, string> | undefined;
+  if (method === 'POST' && status >= 200 && status < 300) {
+    const loc = new URL(url);
+    loc.searchParams.set('_wrap', 'one');
+    loc.searchParams.set('_seed', seedKey);
+    loc.searchParams.delete('_status');
+    loc.searchParams.delete('_delay');
+    extra = { Location: loc.toString() };
+  }
+
+  if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
+  return json(item, status, extra);
 }
 
 // /api/ 뒤 1~8 단계 경로 — /api/v2/users/123/orders 처럼. 경로는 시드에 안 들어간다
@@ -335,8 +427,9 @@ export default {
 
     const m = url.pathname.match(RESOURCE_RE);
     if (m) {
-      if (request.method !== 'GET' && request.method !== 'HEAD') {
-        return json({ error: 'Method not allowed', hint: pick(lang, 'v1 은 GET 만 지원합니다. 쓰기 API 는 v2 후보.', 'v1 supports GET only. Write APIs are a v2 candidate.') }, 405);
+      const isWrite = WRITE_METHODS.has(request.method);
+      if (!isWrite && request.method !== 'GET' && request.method !== 'HEAD') {
+        return json({ error: 'Method not allowed', hint: pick(lang, 'GET · POST · PUT · PATCH · DELETE 만 지원합니다.', 'Only GET, POST, PUT, PATCH and DELETE are supported.') }, 405);
       }
       try {
         // _s=<id> 면 저장된 스키마를 불러와 요청 파라미터와 병합 (요청이 우선)
@@ -351,6 +444,8 @@ export default {
           params = mergeQuery(rec.query, params);
         }
         const q = parseQuery(params);
+        // 쓰기 — 스키마 파싱·_s 병합·_status/_delay 를 GET 과 그대로 공유
+        if (isWrite) return await writeResponse(request, url, q, params.has('_status'), lang);
         if (q.format !== 'json') {
           if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
           return streamResponse(q);
