@@ -562,13 +562,7 @@
       <summary data-i18n="advSummary">고급 — 지연 · 상태코드 · 응답 모양 · 고정 시드 · 형식</summary>
       <div class="opts">
         <div><label><span data-i18n="optDelay">지연 ms</span> <input class="okey" data-for="_delay" value="_delay" spellcheck="false" data-i18n-title="okeyDelay" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
-        <div><label><span data-i18n="optStatus">상태코드</span> <input class="okey" data-for="_status" value="_status" spellcheck="false" data-i18n-title="okeyStatus" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
-        <div><label><span data-i18n="optErr">에러 본문</span> <input class="okey" data-for="_err" value="_err" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
-          <select id="oErr" data-i18n-title="errTitle" title="사용하면 상태코드에 맞는 에러 본문({code, message, …})을 돌려줍니다 (4xx·5xx 에서만). 없음이면 코드만 바뀌고 본문은 성공 그대로 — 필드 표는 어느 쪽이든 건드리지 않습니다.">
-            <option value="" data-i18n="errNone">없음</option>
-            <option value="1" data-i18n="errUse">사용</option>
-          </select>
-        </div>
+        <div><label><span data-i18n="optStatus">상태코드</span> <input class="okey" data-for="_status" value="_status" spellcheck="false" data-i18n-title="okeyStatus" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200" data-i18n-title="oStatusTitle" title="4xx·5xx 인데 필드가 하나도 없으면 상태코드에 맞는 기본 에러 본문이 나옵니다. 커스텀하려면 code·message 를 const: 필드로 정의하세요."></div>
         <div><label><span data-i18n="optWrap">모양</span> <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
         <select id="oWrap"><option value="envelope">envelope</option><option value="none" data-i18n="wrapNone">배열만</option><option value="one" data-i18n="wrapOne">단일 객체</option></select>
       </div>
@@ -911,14 +905,11 @@ npm run deploy</pre>
     loading: 'Loading…',
     copyResp: 'Copy full response',
     wSend: 'Send',
+    oStatusTitle: 'On a 4xx/5xx with no fields defined you get a default error body matching the code. To customise it, define code/message as const: fields.',
     wsBaseUrl: 'Base URL for your app (no query string needed)',
     wsMode: 'Failure mode',
     wsModeOff: 'normal',
     wsModeTitle: 'When set, every route in this workspace responds with that status code and an error body. Test your error UI without touching app code.',
-    optErr: 'Error body',
-    errNone: 'none',
-    errUse: 'use',
-    errTitle: 'When set to "use" you get an error body matching the status code ({code, message, …}) — 4xx/5xx only. With "none" only the code changes and the body stays the success one. Either way the field table is untouched.',
     // 코너 버튼
     newsBtnTitle: 'See recent updates',
     newsLabel: "v0.27 · What's new",
@@ -1095,8 +1086,8 @@ npm run deploy</pre>
   if (LANG === 'en') applyEn();
   // 토글은 리로드 방식 — 해시만 바꾸므로 스키마 상태(location.search)는 건드리지 않는다
   $('#langLabel').textContent = LANG === 'en' ? 'KO' : 'EN';
-  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json', _err: '' };
-  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat', _err: '#oErr' };
+  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
+  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat' };
 
   // ---- 옵션 키 별칭 (인라인 편집 → _alias 자동 조립) ----
   const ALIAS_OK_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -1460,7 +1451,7 @@ npm run deploy</pre>
   function advActive() {
     return $('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
       $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '' ||
-      $('#oFormat').value !== 'json' || $('#oErr').value !== '';
+      $('#oFormat').value !== 'json';
   }
 
   function update() {

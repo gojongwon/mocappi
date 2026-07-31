@@ -9,7 +9,7 @@ A mock REST API you define entirely in the URL. No app to install, no config to 
 - GUI (URL builder + live preview): `GET /`
 - Data: `GET /api/<resource>?field=type&...`
 - Write mocks: `POST|PUT|PATCH|DELETE /api/<resource>?field=type` — returns the query-defined response with your body merged in (2xx only). **Nothing is stored.**
-- Error responses: `?_status=422&_err=1` — a `{code, message, …}` body matching the status code. Works with no fields at all
+- Error responses: `?_status=422` — with no fields defined you get a `{code, message, …}` body matching the code. Define `code`/`message` as fields to customise it
 - **Route mode: `/w/<workspace>/<path>`** — no query string. Swap your app's base URL and you're done (see below)
 - Supported types: `GET /schema/types`
 - Infer a schema from example JSON: `POST /schema/infer`

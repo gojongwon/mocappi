@@ -7,7 +7,7 @@ URL 만으로 스키마를 정의하는 팀 내부용 목(mock) REST API. 앱 �
 - GUI (URL 빌더 + 실시간 미리보기): `GET /`
 - 데이터: `GET /api/<리소스명>?필드=타입&...`
 - 쓰기 목: `POST|PUT|PATCH|DELETE /api/<리소스명>?필드=타입` — 쿼리로 만든 응답에 보낸 body 를 덮어 돌려준다 (2xx 만). **저장은 하지 않는다.**
-- 에러 응답: `?_status=422&_err=1` — 상태코드에 맞는 `{code, message, …}`. 필드 없이도 동작
+- 에러 응답: `?_status=422` — 필드를 하나도 안 쓰면 상태코드에 맞는 `{code, message, …}` 가 나온다. 커스텀은 `code`·`message` 를 필드로 정의
 - **라우트 모드: `/w/<워크스페이스>/<경로>`** — 쿼리스트링 없이 호출. 앱의 베이스 URL 만 바꾸면 끝 (아래 참고)
 - 지원 타입 목록: `GET /schema/types`
 - JSON 예시 → 스키마 추론: `POST /schema/infer`

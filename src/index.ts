@@ -142,15 +142,15 @@ function json(body: unknown, status = 200, extra?: Record<string, string>): Resp
   });
 }
 
-// _err=1 — 상태코드에 맞는 에러 본문. 매핑에 없는 4xx 는 ERROR, 5xx 는 INTERNAL_ERROR.
+// 상태코드에 맞는 에러 본문. 매핑에 없는 4xx 는 ERROR, 5xx 는 INTERNAL_ERROR.
 const ERR_CODES: Record<number, string> = {
   400: 'BAD_REQUEST', 401: 'UNAUTHORIZED', 403: 'FORBIDDEN', 404: 'NOT_FOUND',
   409: 'CONFLICT', 422: 'VALIDATION_FAILED', 429: 'TOO_MANY_REQUESTS',
 };
 
 /**
- * 스키마 대신 돌려주는 에러 본문. 필드 생성 파이프라인을 거치지 않고 객체를 직접 만든다
- * (에러 응답은 구조가 고정이라 DSL 을 통과시킬 이유가 없다).
+ * 필드 없는 4xx·5xx 의 기본 에러 본문. 필드 생성 파이프라인을 거치지 않고 객체를 직접 만든다.
+ * 커스텀하려면 필드를 정의하면 된다 — 필드가 있으면 이 함수를 타지 않는다.
  */
 function errorBody(q: ParsedQuery, lang: 'ko' | 'en'): Record<string, unknown> {
   const s = q.status;
@@ -181,9 +181,9 @@ async function respond(
   explicitStatus: boolean,
   lang: 'ko' | 'en',
 ): Promise<Response> {
-  // _err=1 — 읽기·쓰기 공통. 쓰기의 body 에코도 자연히 건너뛴다.
+  // 필드 없는 4xx·5xx → 기본 에러 본문. 읽기·쓰기 공통이고 쓰기의 body 에코도 건너뛴다.
   // (_format 은 무시 — 에러 본문은 표/스트림이 아니다)
-  if (q.err) {
+  if (q.status >= 400 && q.fields.length === 0) {
     if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
     return json(errorBody(q, lang), q.status);
   }
@@ -565,10 +565,11 @@ export default {
         const params = mergeQuery(rec.query, url.searchParams); // 요청 쿼리가 우선 (앱이 ?_page=2 를 붙일 수 있다)
         // 와일드카드에 걸린 세그먼트를 시드로 — /users/42 와 /users/43 이 다른 데이터를 준다
         if (hit.seed !== null && !params.has('_seed')) params.set('_seed', hit.seed);
-        // 워크스페이스 실패 모드 — 요청·프리셋 어느 쪽도 _status 를 지정하지 않았을 때만 개입
+        // 워크스페이스 실패 모드 — 요청·프리셋 어느 쪽도 _status 를 지정하지 않았을 때만 개입.
+        // 프리셋의 필드를 지워야 기본 에러 본문이 나온다 (필드가 있으면 그게 응답이 되므로)
         if (mode !== null && !params.has('_status')) {
+          for (const k of [...params.keys()]) if (!k.startsWith('_')) params.delete(k);
           params.set('_status', String(mode));
-          params.set('_err', '1');
         }
         return await respond(request, url, parseQuery(params), params.has('_status'), lang);
       } catch (e) {
