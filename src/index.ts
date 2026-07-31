@@ -9,8 +9,8 @@ import { inferSchema } from './infer';
 import { generateTsTypes } from './tstype';
 import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateWs, type KVNamespaceLike } from './store';
 import { d1Store, type D1Like } from './d1';
-import { DslError, typeDocsFor, type DslErrorInfo } from './registry';
-import { hashString } from './rng';
+import { compileType, DslError, typeDocsFor, type DslErrorInfo } from './registry';
+import { combineSeed, hashString } from './rng';
 import { OG_PNG_B64 } from './og';
 
 export interface Env {
@@ -137,6 +137,34 @@ function json(body: unknown, status = 200, extra?: Record<string, string>): Resp
       ...extra,
     },
   });
+}
+
+// _err=1 — 상태코드에 맞는 에러 본문. 매핑에 없는 4xx 는 ERROR, 5xx 는 INTERNAL_ERROR.
+const ERR_CODES: Record<number, string> = {
+  400: 'BAD_REQUEST', 401: 'UNAUTHORIZED', 403: 'FORBIDDEN', 404: 'NOT_FOUND',
+  409: 'CONFLICT', 422: 'VALIDATION_FAILED', 429: 'TOO_MANY_REQUESTS',
+};
+
+/**
+ * 스키마 대신 돌려주는 에러 본문. 필드 생성 파이프라인을 거치지 않고 객체를 직접 만든다
+ * (에러 응답은 구조가 고정이라 DSL 을 통과시킬 이유가 없다).
+ */
+function errorBody(q: ParsedQuery, lang: 'ko' | 'en'): Record<string, unknown> {
+  const s = q.status;
+  const body: Record<string, unknown> = {
+    code: ERR_CODES[s] ?? (s >= 500 ? 'INTERNAL_ERROR' : 'ERROR'),
+    message: s >= 500
+      ? pick(lang, '일시적인 오류입니다. 잠시 후 다시 시도해주세요.', 'Temporary error — please try again shortly.')
+      : pick(lang, '요청을 처리할 수 없습니다.', 'The request could not be processed.'),
+  };
+  if (s === 422) {
+    body.errors = { email: pick(lang, '이미 사용 중인 이메일입니다.', 'This email is already taken.') };
+  }
+  // traceId 도 결정론 — 같은 요청이면 항상 같은 값 (로그 대조 테스트가 가능하도록)
+  if (s >= 500) {
+    body.traceId = compileType('uuid')(combineSeed(baseSeedOf(q), 'err'), { globalIndex: 0, locale: q.locale });
+  }
+  return body;
 }
 
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -444,6 +472,12 @@ export default {
           params = mergeQuery(rec.query, params);
         }
         const q = parseQuery(params);
+        // _err=1 — 읽기·쓰기 공통. 쓰기의 body 에코도 자연히 건너뛴다.
+        // (_format 은 무시 — 에러 본문은 표/스트림이 아니다)
+        if (q.err) {
+          if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
+          return json(errorBody(q, lang), q.status);
+        }
         // 쓰기 — 스키마 파싱·_s 병합·_status/_delay 를 GET 과 그대로 공유
         if (isWrite) return await writeResponse(request, url, q, params.has('_status'), lang);
         if (q.format !== 'json') {

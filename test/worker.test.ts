@@ -21,7 +21,7 @@ describe('라우팅', () => {
     const body = (await res.json()) as { dslTypes: unknown[]; fakerPaths: unknown[]; reserved: unknown[] };
     expect(body.dslTypes.length).toBeGreaterThan(5);
     expect(body.fakerPaths.length).toBeGreaterThan(10);
-    expect(body.reserved.length).toBe(13);
+    expect(body.reserved.length).toBe(14);
   });
 
   it('알 수 없는 경로 → 404 + 힌트', async () => {

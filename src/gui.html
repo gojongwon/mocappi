@@ -238,9 +238,6 @@
   .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-top: 4px; }
   .opts > div { display: flex; flex-direction: column; gap: 4px; }
   .opts input, .opts select { width: 100%; }
-  /* 체크박스 옵션 — 다른 셀과 높이를 맞추기 위해 라벨 아래 한 줄을 차지한다 */
-  .opts .chkline { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
-  .opts .chkline input { width: auto; flex: none; }
   .opts select {
     -webkit-appearance: none; appearance: none; padding-right: 30px; cursor: pointer;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2317171a' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -566,8 +563,11 @@
       <div class="opts">
         <div><label><span data-i18n="optDelay">지연 ms</span> <input class="okey" data-for="_delay" value="_delay" spellcheck="false" data-i18n-title="okeyDelay" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
         <div><label><span data-i18n="optStatus">상태코드</span> <input class="okey" data-for="_status" value="_status" spellcheck="false" data-i18n-title="okeyStatus" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
-        <div><label><span data-i18n="optErrBody">에러 본문</span></label>
-          <label class="chkline" data-i18n-title="errBodyTitle" title="켜면 상태코드에 맞는 에러 본문({code, message, …})을 돌려줍니다. 끄면 코드만 바뀌고 본문은 성공 그대로 — 필드 표는 어느 쪽이든 건드리지 않습니다."><input type="checkbox" id="oErrBody"><span data-i18n="errBodyHint">4xx·5xx 일 때 적용</span></label>
+        <div><label><span data-i18n="optErr">에러 본문</span> <input class="okey" data-for="_err" value="_err" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
+          <select id="oErr" data-i18n-title="errTitle" title="사용하면 상태코드에 맞는 에러 본문({code, message, …})을 돌려줍니다 (4xx·5xx 에서만). 없음이면 코드만 바뀌고 본문은 성공 그대로 — 필드 표는 어느 쪽이든 건드리지 않습니다.">
+            <option value="" data-i18n="errNone">없음</option>
+            <option value="1" data-i18n="errUse">사용</option>
+          </select>
         </div>
         <div><label><span data-i18n="optWrap">모양</span> <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
         <select id="oWrap"><option value="envelope">envelope</option><option value="none" data-i18n="wrapNone">배열만</option><option value="one" data-i18n="wrapOne">단일 객체</option></select>
@@ -893,9 +893,10 @@ npm run deploy</pre>
     loading: 'Loading…',
     copyResp: 'Copy full response',
     wSend: 'Send',
-    optErrBody: 'Error body',
-    errBodyHint: 'applies on 4xx · 5xx',
-    errBodyTitle: 'When on, you get an error body matching the status code ({code, message, …}). When off, only the code changes and the body stays the success one — either way the field table is untouched.',
+    optErr: 'Error body',
+    errNone: 'none',
+    errUse: 'use',
+    errTitle: 'When set to "use" you get an error body matching the status code ({code, message, …}) — 4xx/5xx only. With "none" only the code changes and the body stays the success one. Either way the field table is untouched.',
     // 코너 버튼
     newsBtnTitle: 'See recent updates',
     newsLabel: "v0.27 · What's new",
@@ -1072,8 +1073,8 @@ npm run deploy</pre>
   if (LANG === 'en') applyEn();
   // 토글은 리로드 방식 — 해시만 바꾸므로 스키마 상태(location.search)는 건드리지 않는다
   $('#langLabel').textContent = LANG === 'en' ? 'KO' : 'EN';
-  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
-  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat' };
+  const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json', _err: '' };
+  const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat', _err: '#oErr' };
 
   // ---- 옵션 키 별칭 (인라인 편집 → _alias 자동 조립) ----
   const ALIAS_OK_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -1311,38 +1312,6 @@ npm run deploy</pre>
     return location.origin + '/api/' + encPath(state.res) + '?' + buildQuery(state);
   }
 
-  const ERR_CODES = {
-    400: 'BAD_REQUEST', 401: 'UNAUTHORIZED', 403: 'FORBIDDEN', 404: 'NOT_FOUND',
-    409: 'CONFLICT', 422: 'VALIDATION_FAILED', 429: 'TOO_MANY_REQUESTS',
-  };
-
-  /** '에러 본문' 이 켜져 있고 상태코드가 실패인가 — 이때만 응답 모양을 갈아끼운다 */
-  function errBodyOn() {
-    return $('#oErrBody').checked && Number($('#oStatus').value || 200) >= 400;
-  }
-
-  /** 상태코드에 맞는 에러 본문 필드. [이름, DSL] 쌍 — 필드 표는 건드리지 않는다 */
-  function errorFields(status) {
-    const fields = [
-      ['code', 'const:' + (ERR_CODES[status] || (status >= 500 ? 'INTERNAL_ERROR' : 'ERROR'))],
-      ['message', 'const:' + (status >= 500
-        ? t('일시적인 오류입니다. 잠시 후 다시 시도해주세요.', 'Temporary error — please try again shortly.')
-        : t('요청을 처리할 수 없습니다.', 'The request could not be processed.'))],
-    ];
-    if (status === 422) fields.push(['errors.email', 'const:' + t('이미 사용 중인 이메일입니다.', 'This email is already taken.')]);
-    if (status >= 500) fields.push(['traceId', 'uuid']);
-    return fields;
-  }
-
-  /** 지금 보낼 URL. 에러 본문 모드면 스키마 대신 그 응답 모양으로 만든다 */
-  function currentUrl(state) {
-    if (!errBodyOn()) return apiUrl(state);
-    const status = Number($('#oStatus').value);
-    const parts = errorFields(status).map(([n, v]) => enc(n) + '=' + enc(v));
-    parts.push('_wrap=one', '_status=' + status); // 에러 본문은 envelope 없이 단일 객체
-    if (state.opts._delay) parts.push('_delay=' + enc(state.opts._delay)); // 느린 실패 테스트
-    return location.origin + '/api/' + encPath(state.res) + '?' + parts.join('&');
-  }
 
   // ---- GUI 상태 ↔ 주소창 (현재 URL 이 곧 GUI 상태) ----
   function syncAddressBar(state) {
@@ -1469,7 +1438,7 @@ npm run deploy</pre>
   function advActive() {
     return $('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
       $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '' ||
-      $('#oFormat').value !== 'json' || $('#oErrBody').checked;
+      $('#oFormat').value !== 'json' || $('#oErr').value !== '';
   }
 
   function update() {
@@ -1477,7 +1446,7 @@ npm run deploy</pre>
     // 입력 중에는 절대 닫지 않는다 — 자동으로는 열기만.
     // (닫힘은 프리셋 전환·URL 로드 같은 문맥 전환 시점에만 advActive 기준으로)
     if (advActive()) $('#optsAdv').open = true;
-    const url = currentUrl(state);
+    const url = apiUrl(state);
     // 어느 메서드든 같은 URL(쿼리=스키마) 로 나간다 — 메서드를 항상 앞에 붙여 표시한다.
     $('#urlBox').textContent = method + ' ';
     if (method === 'GET') {
@@ -1489,8 +1458,7 @@ npm run deploy</pre>
     // 저장된 프리셋 기반이면 짧은 URL + 프리셋 이름 표시, 드롭다운 선택 상태도 동기화
     // (자리는 항상 유지 — visibility 로만 토글해 레이아웃 점프 방지)
     const short = shortApiUrl(state);
-    // 짧은 URL(_s=) 은 성공 스키마 프리셋을 가리키므로 에러 본문 모드에서는 의미가 없다
-    $('#shortLine').classList.toggle('ghosted', !short || errBodyOn());
+    $('#shortLine').classList.toggle('ghosted', !short);
     if (short) {
       const sa = $('#shortA');
       sa.href = short; sa.textContent = short;
@@ -2018,10 +1986,10 @@ npm run deploy</pre>
         break;
       }
       case 'welcomeClose': $('#welcome').style.display = 'none'; break;
-      case 'copyBtn': copyIcon(currentUrl(readState()), btn); break;
+      case 'copyBtn': copyIcon(apiUrl(readState()), btn); break;
       case 'tsBtn': copyTsTypes(btn); break;
       case 'respCopyBtn': copyIcon(lastPreviewText, btn); break;
-      case 'wSend': preview(currentUrl(readState()), { method }); break;
+      case 'wSend': preview(apiUrl(readState()), { method }); break;
       case 'saveBtn': openSave(); break;
       case 'wsBtn': syncWsUi(); $('#wsModal').style.display = 'flex'; break;
       case 'wsClose': $('#wsModal').style.display = 'none'; break;

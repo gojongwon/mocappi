@@ -31,6 +31,8 @@ export interface ParsedQuery {
   q: string | null;
   /** _qin 검색 대상 필드(점 표기 경로) — null 이면 전체 검색. 중첩은 부분트리 매치 */
   qin: string[] | null;
+  /** _err=1 — 스키마 대신 상태코드에 맞는 에러 본문을 응답 (4xx·5xx 에서만) */
+  err: boolean;
   seedParam: string | null;
   /** name 기준 정렬 완료 상태 */
   fields: FieldSpec[];
@@ -38,7 +40,7 @@ export interface ParsedQuery {
   normalized: string;
 }
 
-const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format', '_q', '_qin', '_alias'];
+const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format', '_q', '_qin', '_alias', '_err'];
 /** _alias 로 별칭을 걸 수 있는 대상 (자기 자신 제외 — _s 는 라우트 레벨이라 제외) */
 const ALIASABLE = RESERVED_NAMES.filter((n) => n !== '_alias');
 const ALIAS_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -139,6 +141,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   let format: 'json' | 'ndjson' | 'csv' = 'json';
   let qSearch: string | null = null;
   let qin: string[] | null = null;
+  let err = false;
   let seedParam: string | null = null;
 
   const fields: FieldSpec[] = [];
@@ -206,6 +209,14 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
           if (trimmed !== '') qSearch = trimmed;
           break;
         }
+        case '_err':
+          if (value !== '1') {
+            fail('Invalid reserved parameter', key, value,
+              "_err 은 '1' 만 받습니다 (에러 본문 사용). 끄려면 파라미터를 지우세요.",
+              "_err only accepts '1' (use an error body). Remove the parameter to turn it off.");
+          }
+          err = true;
+          break;
         case '_qin': {
           const parts = value.split(',').map((s) => s.trim()).filter((s) => s !== '');
           if (parts.length > 0) qin = parts; // 필드 존재 검증은 필드 파싱 후에
@@ -265,7 +276,14 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
     fields.push({ name: key, path, isArray, arrayLen, typeRaw: value, gen });
   }
 
-  if (fields.length === 0) {
+  // _err 은 응답이 에러 본문이라 필드가 필요 없다 (?_status=422&_err=1 만으로 유효)
+  if (err && status < 400) {
+    fail('Invalid reserved parameter', '_err', '1',
+      '_err 은 4xx·5xx 와 함께 씁니다. _status 를 400 이상으로 지정하세요.',
+      '_err must be used with a 4xx or 5xx code. Set _status to 400 or above.');
+  }
+
+  if (fields.length === 0 && !err) {
     fail(
       'No fields defined',
       undefined,
@@ -307,7 +325,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   for (const f of fields) parts.push(`${f.name}=${f.typeRaw}`);
   const normalized = parts.join('&');
 
-  return { page, limit, total, locale, delay, status, wrap, format, q: qSearch, qin, seedParam, fields, normalized };
+  return { page, limit, total, locale, delay, status, wrap, format, q: qSearch, qin, err, seedParam, fields, normalized };
 }
 
 function checkPathConflicts(fields: FieldSpec[]): void {
