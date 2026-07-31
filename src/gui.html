@@ -81,7 +81,9 @@
     box-shadow: var(--btn-shadow);
   }
   .methods button[data-method].on:hover { background: var(--accent-hover); color: var(--accent-text); }
-  #wSend { margin-left: auto; }
+  /* chip(30px) 과 같은 높이 — 다르면 flex 행 높이가 커져 chip 들이 아래로 밀린다.
+     30px 안에서 글자가 잘리지 않게 세로 패딩을 0 으로 (사각 모양·그림자는 .url-actions 규칙에서) */
+  #wSend { margin-left: auto; height: 30px; padding: 0 15px; display: inline-flex; align-items: center; }
   #teamSel {
     max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; font-weight: 600;
     height: 30px; box-sizing: border-box;
