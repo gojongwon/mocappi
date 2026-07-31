@@ -83,7 +83,8 @@
   .methods button[data-method].on:hover { background: var(--accent-hover); color: var(--accent-text); }
   /* chip(30px) 과 같은 높이 — 다르면 flex 행 높이가 커져 chip 들이 아래로 밀린다.
      30px 안에서 글자가 잘리지 않게 세로 패딩을 0 으로 (사각 모양·그림자는 .url-actions 규칙에서) */
-  #wSend { margin-left: auto; height: 30px; padding: 0 15px; display: inline-flex; align-items: center; }
+  #wSend { height: 30px; padding: 0 15px; display: inline-flex; align-items: center; }
+  #wScenario { margin-left: auto; height: 30px; padding: 0 8px; font-size: 12.5px; }
   #teamSel {
     max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; font-weight: 600;
     height: 30px; box-sizing: border-box;
@@ -602,6 +603,12 @@
       <button data-method="PUT">PUT</button>
       <button data-method="PATCH">PATCH</button>
       <button data-method="DELETE">DELETE</button>
+      <select id="wScenario" data-i18n-title="scTitle" title="응답 시나리오 — 실패를 고르면 스키마 대신 그 에러 본문을 돌려줍니다 (필드 표는 그대로)">
+        <option value="" data-i18n="scOk">성공</option>
+        <option value="400" data-i18n="sc400">400 잘못된 요청</option>
+        <option value="422" data-i18n="sc422">422 검증 실패</option>
+        <option value="500" data-i18n="sc500">500 서버 오류</option>
+      </select>
       <button id="wSend" data-i18n="wSend" style="display:none">보내기</button>
     </div>
     <div class="url-actions">
@@ -887,6 +894,11 @@ npm run deploy</pre>
     loading: 'Loading…',
     copyResp: 'Copy full response',
     wSend: 'Send',
+    scTitle: 'Response scenario — pick a failure and you get that error body instead of the schema (the field table is untouched)',
+    scOk: 'Success',
+    sc400: '400 Bad Request',
+    sc422: '422 Validation failed',
+    sc500: '500 Server error',
     // 코너 버튼
     newsBtnTitle: 'See recent updates',
     newsLabel: "v0.27 · What's new",
@@ -1302,6 +1314,37 @@ npm run deploy</pre>
     return location.origin + '/api/' + encPath(state.res) + '?' + buildQuery(state);
   }
 
+  // 실패 응답 기본값. 함수로 감싼 이유는 t() 를 호출 시점 언어로 평가하기 위해서다.
+  // 필드 표를 건드리지 않고 응답 모양만 갈아끼우므로 성공 ↔ 실패 왕복이 가능하다.
+  const SCENARIOS = {
+    '400': () => ({ status: 400, fields: [
+      ['code', 'const:BAD_REQUEST'],
+      ['message', 'const:' + t('요청 형식이 올바르지 않습니다.', 'The request format is invalid.')],
+    ] }),
+    '422': () => ({ status: 422, fields: [
+      ['code', 'const:VALIDATION_FAILED'],
+      ['message', 'const:' + t('입력값을 확인해주세요.', 'Please check your input.')],
+      ['errors.email', 'const:' + t('이미 사용 중인 이메일입니다.', 'This email is already taken.')],
+    ] }),
+    '500': () => ({ status: 500, fields: [
+      ['code', 'const:INTERNAL_ERROR'],
+      ['message', 'const:' + t('일시적인 오류입니다. 잠시 후 다시 시도해주세요.', 'Temporary error — please try again shortly.')],
+      ['traceId', 'uuid'],
+    ] }),
+  };
+  let scenario = ''; // '' = 성공(현재 스키마)
+
+  /** 지금 보낼 URL. 실패 시나리오면 스키마 대신 그 에러 본문 모양으로 만든다 */
+  function currentUrl(state) {
+    const make = SCENARIOS[scenario];
+    if (!make) return apiUrl(state);
+    const sc = make();
+    const parts = sc.fields.map(([n, v]) => enc(n) + '=' + enc(v));
+    parts.push('_wrap=one', '_status=' + sc.status); // 에러 본문은 envelope 없이 단일 객체
+    if (state.opts._delay) parts.push('_delay=' + enc(state.opts._delay)); // 느린 실패 테스트
+    return location.origin + '/api/' + encPath(state.res) + '?' + parts.join('&');
+  }
+
   // ---- GUI 상태 ↔ 주소창 (현재 URL 이 곧 GUI 상태) ----
   function syncAddressBar(state) {
     const q = (WS ? '_ws=' + WS + '&' : '') +
@@ -1435,7 +1478,7 @@ npm run deploy</pre>
     // 입력 중에는 절대 닫지 않는다 — 자동으로는 열기만.
     // (닫힘은 프리셋 전환·URL 로드 같은 문맥 전환 시점에만 advActive 기준으로)
     if (advActive()) $('#optsAdv').open = true;
-    const url = apiUrl(state);
+    const url = currentUrl(state);
     // 어느 메서드든 같은 URL(쿼리=스키마) 로 나간다 — 메서드를 항상 앞에 붙여 표시한다.
     $('#urlBox').textContent = method + ' ';
     if (method === 'GET') {
@@ -1447,7 +1490,8 @@ npm run deploy</pre>
     // 저장된 프리셋 기반이면 짧은 URL + 프리셋 이름 표시, 드롭다운 선택 상태도 동기화
     // (자리는 항상 유지 — visibility 로만 토글해 레이아웃 점프 방지)
     const short = shortApiUrl(state);
-    $('#shortLine').classList.toggle('ghosted', !short);
+    // 짧은 URL(_s=) 은 성공 프리셋을 가리키므로 실패 시나리오에서는 의미가 없다
+    $('#shortLine').classList.toggle('ghosted', !short || scenario !== '');
     if (short) {
       const sa = $('#shortA');
       sa.href = short; sa.textContent = short;
@@ -1915,6 +1959,12 @@ npm run deploy</pre>
   }
 
   document.addEventListener('change', (e) => {
+    if (e.target.id === 'wScenario') {
+      scenario = e.target.value;
+      update(); // GET 이면 자동 미리보기가 실패 응답을 바로 보여준다
+      if (method !== 'GET') clearPreview(); // 쓰기는 이전 응답을 남기지 않는다
+      return;
+    }
     if (e.target.id === 'teamSel') {
       const v = e.target.value;
       if (v.startsWith('preset:')) { applyPreset(v.slice(7)); e.target.value = ''; }
@@ -1975,10 +2025,10 @@ npm run deploy</pre>
         break;
       }
       case 'welcomeClose': $('#welcome').style.display = 'none'; break;
-      case 'copyBtn': copyIcon(apiUrl(readState()), btn); break;
+      case 'copyBtn': copyIcon(currentUrl(readState()), btn); break;
       case 'tsBtn': copyTsTypes(btn); break;
       case 'respCopyBtn': copyIcon(lastPreviewText, btn); break;
-      case 'wSend': preview(apiUrl(readState()), { method }); break;
+      case 'wSend': preview(currentUrl(readState()), { method }); break;
       case 'saveBtn': openSave(); break;
       case 'wsBtn': syncWsUi(); $('#wsModal').style.display = 'flex'; break;
       case 'wsClose': $('#wsModal').style.display = 'none'; break;
