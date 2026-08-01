@@ -7,7 +7,7 @@ A mock REST API you define entirely in the URL. No app to install, no config to 
 **Live demo:** https://mocappi.gojongwon.workers.dev
 
 - GUI (URL builder + live preview): `GET /`
-- Data: `GET /api/<resource>?field=type&...`
+- Data: `GET | POST | PUT | PATCH | DELETE /api/<resource>?field=type&...`
 - Supported types: `GET /schema/types`
 - Infer a schema from example JSON: `POST /schema/infer`
 - Generate TypeScript types: `GET /schema/ts` (or the "TS 타입 복사" button in the GUI)
@@ -62,9 +62,50 @@ Nested paths and detail endpoints — any `/api/...` depth works (the path is co
 Loading and error-state testing:
 
 ```
-/api/products?name=commerce.productName&_delay=3000     # 3s delay
-/api/orders?id=uuid&_status=500                          # forced status code
+/api/products?name=commerce.productName&_delay=3000      # 3s delay
+/api/orders?id=uuid&_status=500                          # forced status code → failure body
 ```
+
+## HTTP methods
+
+The request body is ignored — what a mock owes you is the right **response shape and status**.
+
+| Method | Status | Body |
+|---|---|---|
+| `GET` / `HEAD` | 200 | List (per `_wrap`) |
+| `POST` | 201 | The single created item |
+| `PUT` / `PATCH` | 200 | The single updated item |
+| `DELETE` | 204 | Empty |
+
+The single item a write method returns is byte-identical to item 0 of the matching `GET` list —
+the method changes the shape, never the data.
+
+`_method` overrides the actual verb, so a plain browser GET can preview a POST response:
+
+```
+curl -X POST /api/users?name=person.fullName      # 201 + single item
+/api/users?name=person.fullName&_method=post      # same response, plain GET
+```
+
+## Failure responses
+
+`_status` at 400 or above replaces the data with a failure body:
+
+```
+/api/users?name=person.fullName&_status=404
+→ 404 { "error": "Not Found", "status": 404, "message": "The requested resource was not found." }
+```
+
+Use `_body` for your own error shape (raw JSON, max 2000 chars, only with `_status` ≥ 400):
+
+```
+/api/users?name=person.fullName&_status=401&_body={"code":"E_AUTH","message":"Token expired"}
+→ 401 { "code": "E_AUTH", "message": "Token expired" }
+```
+
+Failure wins over everything — the body is JSON even with `_format=csv`, and even for `DELETE`.
+Statuses below 400 (e.g. `_status=302`) keep the normal data and only change the code.
+`_body` cannot contain a literal `&` (it would split the query when saved as a preset) — write it as `&` inside the JSON.
 
 ## Reserved parameters (prefix `_`)
 
@@ -76,7 +117,9 @@ Loading and error-state testing:
 | `_seed` | URL hash | Explicit seed |
 | `_locale` | ko | `ko` \| `en` \| `ja` \| `zh` |
 | `_delay` | 0 | Response delay in ms (max 5000) |
-| `_status` | 200 | Forced HTTP status code |
+| `_status` | 200 | Forced HTTP status code. At 400+ a failure body replaces the data |
+| `_method` | actual verb | `GET` \| `POST` \| `PUT` \| `PATCH` \| `DELETE` — takes precedence over the actual verb |
+| `_body` | — | Failure response body (raw JSON, max 2000 chars). Only with `_status` ≥ 400 |
 | `_wrap` | envelope | `envelope` \| `none` (bare array) \| `one` (single object — detail endpoints) |
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv stream items only |
 | `_q` | — | Search: case-insensitive substring over generated values; `total` becomes the match count (scans the first 1,000 virtual items) |

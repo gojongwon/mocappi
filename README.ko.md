@@ -5,7 +5,7 @@
 URL 만으로 스키마를 정의하는 팀 내부용 목(mock) REST API. 앱 설치도, PR도, 재배포도 없이 **URL만 고쳐 쓰면 된다.** 같은 URL은 항상 같은 데이터를 반환한다.
 
 - GUI (URL 빌더 + 실시간 미리보기): `GET /`
-- 데이터: `GET /api/<리소스명>?필드=타입&...`
+- 데이터: `GET | POST | PUT | PATCH | DELETE /api/<리소스명>?필드=타입&...`
 - 지원 타입 목록: `GET /schema/types`
 - JSON 예시 → 스키마 추론: `POST /schema/infer`
 - 스키마 → TypeScript 타입: `GET /schema/ts` (GUI 의 "TS 타입 복사" 버튼)
@@ -52,15 +52,49 @@ GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해
 
 ```
 /api/orders?id=uuid&_status=500
+→ 500 { "error": "Internal Server Error", "status": 500, "message": "서버 오류가 발생했습니다." }
 ```
-
-(상태코드만 바뀌고 본문은 그대로라 파싱 로직도 함께 테스트 가능)
 
 **5. envelope 없이 배열만 + 영어 데이터**
 
 ```
 /api/users?name=person.fullName&_wrap=none&_locale=en
 ```
+
+## HTTP 메서드
+
+요청 바디는 보지 않는다 — 목이 돌려줘야 하는 건 **메서드에 맞는 응답 모양과 상태코드**다.
+
+| 메서드 | 상태 | 바디 |
+|---|---|---|
+| `GET` / `HEAD` | 200 | 목록 (`_wrap` 에 따라) |
+| `POST` | 201 | 생성된 단건 |
+| `PUT` / `PATCH` | 200 | 수정된 단건 |
+| `DELETE` | 204 | 없음 |
+
+쓰기 메서드가 돌려주는 단건은 같은 스키마 `GET` 목록의 0번 아이템과 바이트까지 같다 —
+메서드는 모양만 바꾸고 데이터는 건드리지 않는다.
+
+`_method` 는 실제 verb 보다 우선하므로, 브라우저 주소창의 평범한 GET 으로도 POST 응답을 볼 수 있다.
+
+```
+curl -X POST /api/users?name=person.fullName      # 201 + 단건
+/api/users?name=person.fullName&_method=post      # 같은 응답, 평범한 GET
+```
+
+## 실패 응답
+
+`_status` 가 400 이상이면 데이터 대신 실패 바디가 나간다. 직접 정의하려면 `_body`
+(JSON 원문, 최대 2000자, `_status` ≥ 400 일 때만):
+
+```
+/api/users?name=person.fullName&_status=401&_body={"code":"E_AUTH","message":"토큰 만료"}
+→ 401 { "code": "E_AUTH", "message": "토큰 만료" }
+```
+
+실패가 최우선이다 — `_format=csv` 여도, `DELETE` 여도 JSON 실패 바디가 나간다.
+400 미만(예: `_status=302`)은 기존대로 데이터를 그대로 두고 코드만 바꾼다.
+`_body` 안에는 리터럴 `&` 를 쓸 수 없다 (프리셋 저장 시 쿼리가 쪼개진다) — JSON 안에서 `&` 로 쓴다.
 
 ## 예약 파라미터 (`_` 로 시작)
 
@@ -72,7 +106,9 @@ GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해
 | `_seed` | URL 해시 | 명시하면 고정 시드 |
 | `_locale` | ko | `ko` \| `en` \| `ja` \| `zh` |
 | `_delay` | 0 | 응답 지연 ms (최대 5000) |
-| `_status` | 200 | 강제 HTTP 상태코드 |
+| `_status` | 200 | 강제 HTTP 상태코드. 400 이상이면 데이터 대신 실패 바디 |
+| `_method` | 실제 verb | `GET` \| `POST` \| `PUT` \| `PATCH` \| `DELETE` — 명시하면 실제 verb 보다 우선 |
+| `_body` | — | 실패 응답 바디 (JSON 원문, 최대 2000자). `_status` ≥ 400 일 때만 |
 | `_wrap` | envelope | `envelope` \| `none`(배열만) \| `one`(단일 객체 — 상세 API 용) |
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv 는 아이템만 스트리밍 |
 | `_q` | — | 검색 — 모든 값 부분일치(대소문자 무시), `total` 은 매치 수 (앞 1,000개 창) |
@@ -232,4 +268,6 @@ test/          # dsl / determinism / worker 테스트
 
 ## v1 에서 뺀 것 (의도적)
 
-스키마 저장(KV), 쓰기 API(CRUD), 인증. 실사용에서 필요가 확인되면 v2로.
+인증, 그리고 **요청 바디를 실제로 읽는 쓰기 API**. 보낸 값을 그대로 돌려주거나 상태를 쌓아두면
+같은 URL이 같은 바이트를 낸다는 약속이 깨진다 — `POST`/`PUT`/`PATCH`/`DELETE` 는 응답 모양과
+상태코드만 흉내 낸다 (위 "HTTP 메서드" 참고).
