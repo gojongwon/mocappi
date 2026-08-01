@@ -8,6 +8,9 @@
     "noEmit": true,
     "skipLibCheck": true,
     "isolatedModules": true,
+    // GUI 모듈은 브라우저용 순수 JS — 테스트가 src/gui/pure.js 를 import 할 수 있게만 허용.
+    // checkJs 는 켜지 않는다 (기본 false): .js 안까지 strict 로 보면 DOM 타입 소음만 잔뜩 나온다.
+    "allowJs": true,
     "forceConsistentCasingInFileNames": true,
     "types": []
   },
