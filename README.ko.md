@@ -75,10 +75,17 @@ GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해
 쓰기 메서드가 돌려주는 단건은 같은 스키마 `GET` 목록의 0번 아이템과 바이트까지 같다 —
 메서드는 모양만 바꾸고 데이터는 건드리지 않는다.
 
-`_method` 는 실제 verb 보다 우선하므로, 브라우저 주소창의 평범한 GET 으로도 POST 응답을 볼 수 있다.
+생성된 URL 은 메서드 중립이다 — 메서드는 쿼리가 아니라 요청에서 온다.
+GUI 에서 메서드를 고르면 그 verb 로 실제 요청을 보내고, 복사해 가는 URL 은 깨끗하게 남는다.
 
 ```
 curl -X POST /api/users?name=person.fullName      # 201 + 단건
+```
+
+`_method` 는 손으로 URL 을 쓸 때의 탈출구다. 실제 verb 보다 우선하므로 브라우저 주소창의
+평범한 GET 으로도 POST 응답을 볼 수 있다.
+
+```
 /api/users?name=person.fullName&_method=post      # 같은 응답, 평범한 GET
 ```
 

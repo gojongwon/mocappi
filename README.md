@@ -80,10 +80,17 @@ The request body is ignored — what a mock owes you is the right **response sha
 The single item a write method returns is byte-identical to item 0 of the matching `GET` list —
 the method changes the shape, never the data.
 
-`_method` overrides the actual verb, so a plain browser GET can preview a POST response:
+Generated URLs are method-neutral — the method comes from your request, not the query string.
+Pick a method in the GUI and it sends that verb for real; the URL you copy stays clean:
 
 ```
 curl -X POST /api/users?name=person.fullName      # 201 + single item
+```
+
+`_method` is the escape hatch for hand-written URLs — it overrides the actual verb, so a plain
+browser GET can preview a POST response:
+
+```
 /api/users?name=person.fullName&_method=post      # same response, plain GET
 ```
 
