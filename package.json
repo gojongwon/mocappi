@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "build:gui": "node build/gui.mjs",
+    "pretest": "npm run build:gui",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "size": "esbuild src/index.ts --bundle --format=esm --minify --loader:.html=text --outfile=dist/index.js && gzip -9 -c dist/index.js | wc -c"
+    "size": "npm run build:gui && esbuild src/index.ts --bundle --format=esm --minify --loader:.html=text --outfile=dist/index.js && gzip -9 -c dist/index.js | wc -c"
   },
   "keywords": [],
   "author": "",

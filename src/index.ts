@@ -2,7 +2,7 @@
  * 라우터: GET / (GUI), GET /api/:resource, /schema/* (types·infer·ts·save·saved)
  * 의존성 없이 URL.pathname 분기.
  */
-import guiHtml from './gui.html';
+import guiHtml from './gui.generated.html';
 import { parseQuery, type ParsedQuery } from './dsl';
 import { baseSeedOf, csvHeader, csvRow, generateItem, generateResponse, searchMatches } from './generate';
 import { inferSchema } from './infer';

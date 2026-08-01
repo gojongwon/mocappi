@@ -1,4 +1,5 @@
 node_modules/
 dist/
+src/gui.generated.html
 .wrangler/
 spike/

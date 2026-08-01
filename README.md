@@ -224,9 +224,14 @@ src/
   store.ts     # KV storage — content-addressed, workspaces
   tstype.ts    # schema → TypeScript types
   rng.ts       # FNV-1a hash + mulberry32 PRNG
-  gui.html     # single-file GUI
+  gui/         # GUI source — index.html + app.css + app.js
+build/gui.mjs  # inlines the GUI source into one HTML file (src/gui.generated.html)
 test/          # vitest suites
 ```
+
+The Worker serves the GUI as a single HTML string, so you edit `src/gui/` and `npm run build:gui`
+inlines it. `wrangler dev`, `deploy`, and `npm test` run that build automatically first.
+The generated `src/gui.generated.html` is not committed — never edit it directly.
 
 ## License
 

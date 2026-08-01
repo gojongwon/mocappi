@@ -3,6 +3,13 @@ name = "mocappi"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
+# GUI 소스(src/gui/*)를 한 덩어리 HTML 로 합친다 — dev·deploy 앞에 자동 실행.
+# watch_dir 은 반드시 src/gui — "src" 로 두면 산출물(src/gui.generated.html) 쓰기가
+# 다시 빌드를 트리거해 무한 루프가 된다.
+[build]
+command = "node build/gui.mjs"
+watch_dir = "src/gui"
+
 # ---- 팀 스키마 저장 ----
 [[kv_namespaces]]
 binding = "SCHEMAS"

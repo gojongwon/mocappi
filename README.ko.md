@@ -221,9 +221,14 @@ src/
   registry.ts  # 타입 레지스트리 (타입명 → 생성 함수) + /schema/types 문서
   generate.ts  # 항목별 시드 생성 + 페이지네이션
   rng.ts       # FNV-1a 해시 + mulberry32 PRNG
-  gui.html     # 단일 파일 GUI
+  gui/         # GUI 소스 — index.html + app.css + app.js
+build/gui.mjs  # GUI 소스를 한 덩어리 HTML(src/gui.generated.html)로 합침
 test/          # dsl / determinism / worker 테스트
 ```
+
+워커는 GUI 를 HTML 문자열 하나로 서빙하므로, `src/gui/` 를 편집하고 `npm run build:gui` 로 합친다.
+`wrangler dev`·`deploy`·`npm test` 는 이 빌드를 자동으로 먼저 실행한다.
+산출물 `src/gui.generated.html` 은 커밋하지 않는다 — 직접 편집하지 말 것.
 
 ## v1 에서 뺀 것 (의도적)
 
