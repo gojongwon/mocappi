@@ -1,29 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_PER_WORKSPACE, canonicalQuery, parseSid, schemaId, type KVNamespaceLike } from '../src/store';
+import { MAX_PER_WORKSPACE, canonicalQuery, parseSid, schemaId } from '../src/store';
 import { DslError } from '../src/registry';
 import worker from '../src/index';
-
-/** 인메모리 KV 목 */
-class MemKV implements KVNamespaceLike {
-  store = new Map<string, { value: string; metadata?: unknown }>();
-  async get(key: string) {
-    return this.store.get(key)?.value ?? null;
-  }
-  async put(key: string, value: string, options?: { metadata?: unknown }) {
-    this.store.set(key, { value, metadata: options?.metadata });
-  }
-  async delete(key: string) {
-    this.store.delete(key);
-  }
-  async list(options?: { prefix?: string }) {
-    const prefix = options?.prefix ?? '';
-    return {
-      keys: [...this.store.entries()]
-        .filter(([k]) => k.startsWith(prefix))
-        .map(([name, v]) => ({ name, metadata: v.metadata })),
-    };
-  }
-}
+import { MemKV } from './helpers';
 
 const BASE = 'https://mock.test';
 const env = () => ({ SCHEMAS: new MemKV() });

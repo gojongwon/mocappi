@@ -4,29 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { saveSchema, type KVNamespaceLike, type SavedSchema } from '../src/store';
 import worker from '../src/index';
-
-class CountingKV implements KVNamespaceLike {
-  store = new Map<string, { value: string; metadata?: unknown }>();
-  puts = 0;
-  async get(key: string) {
-    return this.store.get(key)?.value ?? null;
-  }
-  async put(key: string, value: string, options?: { metadata?: unknown }) {
-    this.puts++;
-    this.store.set(key, { value, metadata: options?.metadata });
-  }
-  async delete(key: string) {
-    this.store.delete(key);
-  }
-  async list(options?: { prefix?: string }) {
-    const prefix = options?.prefix ?? '';
-    return {
-      keys: [...this.store.entries()]
-        .filter(([k]) => k.startsWith(prefix))
-        .map(([name, v]) => ({ name, metadata: v.metadata })),
-    };
-  }
-}
+import { CountingKV } from './helpers';
 
 const WS = 'guardws00001';
 const Q = 'name=person.fullName&age=int:20~60';

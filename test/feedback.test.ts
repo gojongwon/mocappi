@@ -3,18 +3,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import worker from '../src/index';
-import type { KVNamespaceLike } from '../src/store';
-
-class MemKV implements KVNamespaceLike {
-  store = new Map<string, { value: string; metadata?: unknown }>();
-  async get(k: string) { return this.store.get(k)?.value ?? null; }
-  async put(k: string, v: string, o?: { metadata?: unknown }) { this.store.set(k, { value: v, metadata: o?.metadata }); }
-  async delete(k: string) { this.store.delete(k); }
-  async list(o?: { prefix?: string }) {
-    const p = o?.prefix ?? '';
-    return { keys: [...this.store.entries()].filter(([k]) => k.startsWith(p)).map(([name, v]) => ({ name, metadata: v.metadata })) };
-  }
-}
+import { MemKV } from './helpers';
 
 const post = (msg: unknown, kv: MemKV, ip = '10.20.0.1') =>
   worker.fetch(

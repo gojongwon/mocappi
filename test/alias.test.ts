@@ -3,7 +3,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import worker from '../src/index';
-import { saveSchema, type KVNamespaceLike } from '../src/store';
+import { saveSchema } from '../src/store';
+import { MemKV } from './helpers';
 
 const fetchText = async (url: string, env?: object) => {
   const res = await worker.fetch(new Request(url), env as never);
@@ -43,16 +44,6 @@ describe('_alias', () => {
   });
 
   it('_s 저장 스키마와 조합 — 실제 API 모양으로 호출', async () => {
-    class MemKV implements KVNamespaceLike {
-      store = new Map<string, { value: string; metadata?: unknown }>();
-      async get(k: string) { return this.store.get(k)?.value ?? null; }
-      async put(k: string, v: string, o?: { metadata?: unknown }) { this.store.set(k, { value: v, metadata: o?.metadata }); }
-      async delete(k: string) { this.store.delete(k); }
-      async list(o?: { prefix?: string }) {
-        const p = o?.prefix ?? '';
-        return { keys: [...this.store.entries()].filter(([k]) => k.startsWith(p)).map(([name, v]) => ({ name, metadata: v.metadata })) };
-      }
-    }
     const kv = new MemKV();
     const rec = await saveSchema(kv, 'aliasws00001', '유저', 'u', 'name=person.fullName&_alias=page:_page,size:_limit');
     const env = { SCHEMAS: kv };
