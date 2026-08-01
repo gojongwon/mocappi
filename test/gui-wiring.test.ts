@@ -95,6 +95,17 @@ describe('이벤트 배선', () => {
     expect(pick('#wsBtnLabel').textContent).not.toBe('');
   });
 
+  // 자동 정렬은 포커스가 없을 때만 돌아 손으로 친 JSON 을 놓친다 — 버튼이 그 자리를 메운다
+  it('{ } 정렬 버튼 클릭 → 실패 바디가 2칸 들여쓰기로', () => {
+    pick('#oBody').value = '{"code":"E_AUTH"}';
+    const btn = { ...el(), id: 'oBodyFmt' };
+    (globalThis as unknown as { document: { dispatchEvent(e: unknown): void } }).document.dispatchEvent({
+      type: 'click',
+      target: { ...el(), closest: () => btn },
+    });
+    expect(pick('#oBody').value).toBe('{\n  "code": "E_AUTH"\n}');
+  });
+
   it('아무도 구독하지 않는 이벤트는 조용히 무시된다', () => {
     expect(() => emit('nobody:listens')).not.toThrow();
   });

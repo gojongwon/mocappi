@@ -4,7 +4,7 @@
  * 터진다. 그래서 DOM 없이 검증 가능한 것은 pure.js 로 모아두고, 여기서만 테스트한다.
  */
 import { describe, expect, it } from 'vitest';
-import { buildQuery, enc, encPath, highlightJson, minifyJson, parseAliasParam, parseCsv, parseWsInput } from '../src/gui/pure.js';
+import { buildQuery, enc, encPath, highlightJson, minifyJson, parseAliasParam, parseCsv, parseWsInput, prettyJson } from '../src/gui/pure.js';
 
 describe('enc — 읽기 좋은 URL', () => {
   it('DSL 문법 문자는 되살린다', () => {
@@ -84,6 +84,21 @@ describe('minifyJson — 화면은 정렬형, URL 은 압축형', () => {
 
   it('객체가 아니어도 통과 (배열·문자열)', () => {
     expect(minifyJson('[ 1, 2 ]')).toBe('[1,2]');
+  });
+});
+
+describe('prettyJson — 정렬 버튼이 쓰는 반대 방향', () => {
+  it('2칸 들여쓰기로', () => {
+    expect(prettyJson('{"code":"E_AUTH","n":1}')).toBe('{\n  "code": "E_AUTH",\n  "n": 1\n}');
+  });
+
+  it('깨진 JSON 은 null — 버튼이 "정렬 못 했다" 를 알아야 오류를 띄운다', () => {
+    expect(prettyJson('{nope}')).toBe(null);
+  });
+
+  it('빈 칸은 오류가 아니다', () => {
+    expect(prettyJson('')).toBe('');
+    expect(prettyJson('   \n ')).toBe('');
   });
 });
 

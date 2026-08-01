@@ -7,7 +7,7 @@ import { enc } from './pure.js';
 import { applySave, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
 import { enhanceSelects } from './select.js';
 import { shared } from './shared.js';
-import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyFailPreset, applyPreset, buildQuery, loadFromAddressBar, readState, setMethod, setOptKeys } from './url-state.js';
+import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyFailPreset, applyPreset, buildQuery, formatBody, loadFromAddressBar, readState, setMethod, setOptKeys } from './url-state.js';
 import { joinWs, randWs, switchWs, syncWsUi } from './workspace.js';
 
 if (LANG === 'en') applyEn();
@@ -121,6 +121,16 @@ document.addEventListener('click', (e) => {
     // 언어 토글 — 해시만 바꾸고 리로드 (스키마 상태는 location.search 에 있어 안전)
     case 'langBtn': location.hash = LANG === 'en' ? '#ko' : '#en'; location.reload(); break;
     case 'addField': addRow(); break;
+    case 'oBodyFmt': {
+      // 자동 정렬은 포커스가 없을 때만 돌아 손으로 친 JSON 은 안 걸린다 — 그 자리를 메우는 버튼
+      const ok = formatBody();
+      emit('schema:changed'); // 하이라이트 다시 칠하기
+      if (!ok) {
+        btn.textContent = t('JSON 오류', 'Invalid JSON');
+        setTimeout(() => (btn.textContent = t('{ } 정렬', '{ } Format')), 1500);
+      }
+      break;
+    }
     case 'pasteBtn': case 'welcomePaste': openPaste(); break;
     case 'pasteCancel': closePaste(); break;
     case 'pasteApply': applyPaste(); break;
@@ -179,10 +189,7 @@ document.addEventListener('click', (e) => {
 {
   const ta = $('#oBody');
   ta.addEventListener('scroll', () => { $('#oBodyHl').scrollTop = ta.scrollTop; });
-  ta.addEventListener('paste', () => setTimeout(() => {
-    try { ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); } catch {}
-    emit('schema:changed');
-  }, 0));
+  ta.addEventListener('paste', () => setTimeout(() => { formatBody(); emit('schema:changed'); }, 0));
 }
 
 // ---- 초기화 ----

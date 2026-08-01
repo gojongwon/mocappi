@@ -1,6 +1,6 @@
 import { $, addRow, emit, fieldsEl } from './dom.js';
 import { t } from './i18n.js';
-import { buildQuery as buildQueryPure, enc, encPath, highlightJson, minifyJson, parseAliasParam } from './pure.js';
+import { buildQuery as buildQueryPure, enc, encPath, highlightJson, minifyJson, parseAliasParam, prettyJson } from './pure.js';
 import { shared } from './shared.js';
 
 export const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _method: 'get', _body: '', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
@@ -161,17 +161,24 @@ export function applyFailPreset(status) {
   emit('schema:changed');
 }
 
+/** 실패 바디를 화면용으로 정렬. 깨진 JSON 이면 손대지 않고 false — 호출부가 오류를 알린다 */
+export function formatBody() {
+  const ta = $('#oBody');
+  const out = prettyJson(ta.value);
+  if (out === null) return false;
+  ta.value = out;
+  return true;
+}
+
 /**
  * 실패 바디 정렬 + 오버레이 하이라이트.
- * 정렬은 포커스가 없을 때만 — 타이핑 중에 값을 갈아끼우면 캐럿이 끝으로 튄다.
- * (붙여넣기는 포커스가 있으므로 main.js 의 paste 리스너가 따로 정렬한다)
+ * 자동 정렬은 포커스가 없을 때만 — 타이핑 중에 값을 갈아끼우면 캐럿이 끝으로 튄다.
+ * 그래서 blur 로는 정렬이 안 걸리고, 손으로 친 JSON 은 '{ } 정렬' 버튼이 담당한다.
  * highlightJson 이 & < > 를 이스케이프하므로 innerHTML 로 안전하다.
  */
 export function paintBody() {
   const ta = $('#oBody');
-  if (document.activeElement !== ta) {
-    try { ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); } catch { /* 깨진 JSON 은 그대로 둔다 */ }
-  }
+  if (document.activeElement !== ta) formatBody();
   $('#oBodyHl').innerHTML = highlightJson(ta.value) + '\n'; // pre 가 끝 줄바꿈을 삼키는 것 보정
   // 내용만큼 자라게 — 짧을 땐 스크롤바가 아예 안 생겨 두 겹이 확실히 맞는다 (상한은 CSS max-height)
   ta.style.height = 'auto';

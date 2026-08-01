@@ -33,6 +33,8 @@ const EN = {
   failPreset401: '401 Unauthorized',
   failPreset404: '404 Not found',
   failPreset500: '500 Server error',
+  fmtBody: '{ } Format',
+  fmtBodyTitle: 'Re-indent the current JSON with 2 spaces — pasting formats automatically, hand-typed JSON needs this button',
   optWrap: 'Shape',
   optSeed: 'Seed',
   optFormat: 'Format',
@@ -110,7 +112,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
-    <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body, and the <b>Failure body</b> field under Advanced has 401/404/500 presets plus auto-formatting and syntax colors when you paste JSON</li>
+    <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body, and the <b>Failure body</b> field under Advanced has 401/404/500 presets plus auto-formatting and syntax colors when you paste JSON (hand-typed JSON: hit <b>{ } Format</b>)</li>
     <li><span class="v">v0.27</span>English support — switch with the EN/KO button in the header, auto-detected from your browser. API error hints follow <code>Accept-Language</code> too</li>
     <li><span class="v">v0.26</span>Masking types <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — redacted PII like real services show ("김*준", "010-****-5678")</li>
     <li><span class="v">v0.25</span>New name — Mock API Builder → <b>mocappi</b>, with a lightning badge on the logo ⚡ Now at <code>mocappi.gojongwon.workers.dev</code>; features and saved data unchanged</li>

@@ -76,6 +76,16 @@ export function minifyJson(s) {
   try { return JSON.stringify(JSON.parse(s)); } catch { return s; }
 }
 
+/**
+ * 위의 반대 방향 — 화면용 2칸 들여쓰기.
+ * 파싱 실패는 null 로 명시한다 ("정렬 못 했다"를 버튼이 알아야 오류를 띄운다).
+ * 빈 칸은 오류가 아니라 그냥 빈 칸이다.
+ */
+export function prettyJson(s) {
+  if (!s.trim()) return '';
+  try { return JSON.stringify(JSON.parse(s), null, 2); } catch { return null; }
+}
+
 // ---- JSON 구문 하이라이팅 ----
 export function highlightJson(text) {
   const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
