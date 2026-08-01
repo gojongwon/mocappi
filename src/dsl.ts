@@ -24,6 +24,10 @@ export interface ParsedQuery {
   locale: Locale;
   delay: number;
   status: number;
+  /** _status 를 명시했는가 — 명시값이 메서드별 기본 상태코드(POST=201 등)를 이긴다 */
+  statusSet: boolean;
+  /** 응답 모양을 정하는 HTTP 메서드. null 이면 실제 요청 verb 로 폴백 (시드 제외) */
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | null;
   wrap: 'envelope' | 'none' | 'one';
   /** 응답 형식 — ndjson/csv 는 아이템 스트리밍 (envelope 없음) */
   format: 'json' | 'ndjson' | 'csv';
@@ -34,16 +38,17 @@ export interface ParsedQuery {
   seedParam: string | null;
   /** name 기준 정렬 완료 상태 */
   fields: FieldSpec[];
-  /** baseSeed 계산용 정규화 문자열 (_page/_limit/_delay/_status/_wrap/_format 제외, 정렬됨) */
+  /** baseSeed 계산용 정규화 문자열 (_page/_limit/_delay/_status/_method/_wrap/_format 제외, 정렬됨) */
   normalized: string;
 }
 
-const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_wrap', '_format', '_q', '_qin', '_alias'];
+const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_method', '_wrap', '_format', '_q', '_qin', '_alias'];
 /** _alias 로 별칭을 걸 수 있는 대상 (자기 자신 제외 — _s 는 라우트 레벨이라 제외) */
 const ALIASABLE = RESERVED_NAMES.filter((n) => n !== '_alias');
 const ALIAS_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
 const MAX_LIMIT = 1000;
 const MAX_DELAY = 5000;
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 const MAX_ARRAY_LEN = 100;
 const DEFAULT_ARRAY_LEN = 3;
 
@@ -135,6 +140,8 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   let locale: Locale = 'ko';
   let delay = 0;
   let status = 200;
+  let statusSet = false;
+  let method: ParsedQuery['method'] = null;
   let wrap: 'envelope' | 'none' | 'one' = 'envelope';
   let format: 'json' | 'ndjson' | 'csv' = 'json';
   let qSearch: string | null = null;
@@ -181,7 +188,18 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
           break;
         case '_status':
           status = reqInt(key, value, 100, 599);
+          statusSet = true;
           break;
+        case '_method': {
+          const up = value.trim().toUpperCase();
+          if (!(METHODS as readonly string[]).includes(up)) {
+            fail('Invalid reserved parameter', key, value,
+              `_method 는 ${METHODS.join(' | ')} 입니다 (대소문자 무시).`,
+              `_method must be one of ${METHODS.join(' | ')} (case-insensitive).`);
+          }
+          method = up as ParsedQuery['method'];
+          break;
+        }
         case '_wrap':
           if (value !== 'envelope' && value !== 'none' && value !== 'one') {
             fail('Invalid reserved parameter', key, value,
@@ -300,14 +318,14 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
     }
   }
 
-  // baseSeed 용 정규화 문자열 — _page/_limit/_delay/_status/_wrap 제외.
+  // baseSeed 용 정규화 문자열 — _page/_limit/_delay/_status/_method/_wrap 제외.
   // 기본값을 명시한 URL 과 생략한 URL 이 같은 시드를 갖도록 유효값 기준으로 만든다.
   const parts = [`_locale=${locale}`, `_total=${total}`];
   if (seedParam !== null) parts.push(`_seed=${seedParam}`);
   for (const f of fields) parts.push(`${f.name}=${f.typeRaw}`);
   const normalized = parts.join('&');
 
-  return { page, limit, total, locale, delay, status, wrap, format, q: qSearch, qin, seedParam, fields, normalized };
+  return { page, limit, total, locale, delay, status, statusSet, method, wrap, format, q: qSearch, qin, seedParam, fields, normalized };
 }
 
 function checkPathConflicts(fields: FieldSpec[]): void {

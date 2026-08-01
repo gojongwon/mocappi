@@ -21,7 +21,7 @@ describe('라우팅', () => {
     const body = (await res.json()) as { dslTypes: unknown[]; fakerPaths: unknown[]; reserved: unknown[] };
     expect(body.dslTypes.length).toBeGreaterThan(5);
     expect(body.fakerPaths.length).toBeGreaterThan(10);
-    expect(body.reserved.length).toBe(13);
+    expect(body.reserved.length).toBe(14);
   });
 
   it('알 수 없는 경로 → 404 + 힌트', async () => {
@@ -31,8 +31,9 @@ describe('라우팅', () => {
     expect(body.hint).toContain('/api/');
   });
 
-  it('POST /api/x → 405', async () => {
-    const res = await worker.fetch(new Request(BASE + '/api/users?id=uuid', { method: 'POST' }));
+  // TRACE/CONNECT 는 Request 생성자가 막아 PURGE 로 대신 확인 (5개 메서드 + HEAD 외는 405)
+  it('PURGE /api/x → 405', async () => {
+    const res = await worker.fetch(new Request(BASE + '/api/users?id=uuid', { method: 'PURGE' }));
     expect(res.status).toBe(405);
   });
 });

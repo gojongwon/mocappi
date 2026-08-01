@@ -1,5 +1,5 @@
 /**
- * 라우터: GET / (GUI), GET /api/:resource, /schema/* (types·infer·ts·save·saved)
+ * 라우터: GET / (GUI), GET|POST|PUT|PATCH|DELETE /api/:resource, /schema/* (types·infer·ts·save·saved)
  * 의존성 없이 URL.pathname 분기.
  */
 import guiHtml from './gui.generated.html';
@@ -26,7 +26,7 @@ export interface Env {
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, HEAD, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Max-Age': '86400',
 };
@@ -135,6 +135,8 @@ function json(body: unknown, status = 200): Response {
 // (데이터는 쿼리로만 결정 — 부모 id 별로 다른 데이터가 필요하면 _seed=123 을 쓰세요).
 const RESOURCE_RE = /^\/api\/([A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+){0,7})\/?$/;
 
+const ALLOWED_METHODS = new Set(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE']);
+
 export default {
   async fetch(request: Request, env: Env = {}): Promise<Response> {
     const url = new URL(request.url);
@@ -184,7 +186,10 @@ export default {
         const resource = params.get('_res') || 'item';
         params.delete('_res');
         const q = parseQuery(params);
-        return new Response(generateTsTypes(q.fields, resource, q.wrap, lang), {
+        // ponytail: 쓰기 메서드는 단건 응답이라 _wrap=one 과 같은 타입.
+        // DELETE(204 무본문)도 단건 타입이 나오지만, 타입을 안 쓰는 쪽이라 분기를 두지 않는다.
+        const wrap = q.method && q.method !== 'GET' ? 'one' : q.wrap;
+        return new Response(generateTsTypes(q.fields, resource, wrap, lang), {
           headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', ...CORS_HEADERS },
         });
       } catch (e) {
@@ -335,8 +340,8 @@ export default {
 
     const m = url.pathname.match(RESOURCE_RE);
     if (m) {
-      if (request.method !== 'GET' && request.method !== 'HEAD') {
-        return json({ error: 'Method not allowed', hint: pick(lang, 'v1 은 GET 만 지원합니다. 쓰기 API 는 v2 후보.', 'v1 supports GET only. Write APIs are a v2 candidate.') }, 405);
+      if (!ALLOWED_METHODS.has(request.method)) {
+        return json({ error: 'Method not allowed', hint: pick(lang, `허용 메서드: ${[...ALLOWED_METHODS].join(', ')}`, `Allowed methods: ${[...ALLOWED_METHODS].join(', ')}`) }, 405);
       }
       try {
         // _s=<id> 면 저장된 스키마를 불러와 요청 파라미터와 병합 (요청이 우선)
@@ -351,13 +356,24 @@ export default {
           params = mergeQuery(rec.query, params);
         }
         const q = parseQuery(params);
+        // 응답 모양을 정하는 메서드 — _method 가 있으면 그게 진실, 없으면 실제 verb.
+        // (_method 덕분에 브라우저 주소창의 평범한 GET 으로도 POST 응답을 확인할 수 있다)
+        const method = q.method ?? (request.method === 'HEAD' ? 'GET' : request.method);
+        const sleep = () => (q.delay > 0 ? new Promise((r) => setTimeout(r, q.delay)) : Promise.resolve());
+
+        if (method === 'DELETE') {
+          await sleep();
+          return new Response(null, { status: q.statusSet ? q.status : 204, headers: { 'cache-control': 'no-store', ...CORS_HEADERS } });
+        }
         if (q.format !== 'json') {
-          if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
+          await sleep();
           return streamResponse(q);
         }
-        const body = generateResponse(q); // 생성 먼저 — _delay/_status 가 달라도 데이터는 동일
-        if (q.delay > 0) await new Promise((r) => setTimeout(r, q.delay));
-        return json(body, q.status);
+        // 생성 먼저 — _delay/_status/_method 가 달라도 데이터는 동일.
+        // 쓰기 메서드는 방금 만들어진/고쳐진 한 건을 돌려준다 = 목록의 0번 아이템
+        const body = method === 'GET' ? generateResponse(q) : generateItem(baseSeedOf(q), 0, q);
+        await sleep();
+        return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200);
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);

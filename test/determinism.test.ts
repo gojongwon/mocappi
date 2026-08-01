@@ -41,6 +41,12 @@ describe('결정론', () => {
     expect(JSON.stringify(c)).toBe(JSON.stringify(a.data));
   });
 
+  it('_method 만 다른 URL → 데이터 동일 (시드 제외)', () => {
+    const a = run(`${BASE}&_total=50`);
+    const b = run(`${BASE}&_total=50&_method=post`);
+    expect(JSON.stringify(a.data)).toBe(JSON.stringify(b.data));
+  });
+
   it('예약 파라미터 기본값 명시 여부와 무관하게 동일 시드', () => {
     const a = runRaw(`${BASE}`);
     const b = runRaw(`${BASE}&_locale=ko&_total=100&_page=1&_limit=10`);
