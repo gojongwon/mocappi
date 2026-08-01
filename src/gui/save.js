@@ -1,4 +1,4 @@
-import { $, addRow, emit, fieldsEl, on } from './dom.js';
+import { $, addRow, emit, fieldsEl, on, openModal } from './dom.js';
 import { LANG, t } from './i18n.js';
 import { parseAliasParam } from './pure.js';
 import { shared } from './shared.js';
@@ -119,7 +119,7 @@ export function openSave() {
   $('#saveWsRequired').style.display = kvReady && !shared.ws ? 'block' : 'none';
   $('#saveName').style.display = wsReady ? '' : 'none';
   $('#saveApply').style.display = wsReady ? '' : 'none';
-  $('#saveModal').style.display = 'flex';
+  openModal('saveModal');
   if (wsReady) $('#saveName').focus();
 }
 

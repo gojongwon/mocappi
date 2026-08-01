@@ -12,8 +12,6 @@ export function randWs() {
   return s.slice(0, 12);
 }
 
-function sidOf(id) { return shared.ws ? shared.ws + '.' + id : id; }
-
 export function syncWsUi() {
   const btn = $('#wsBtn');
   const inWs = !!shared.ws;

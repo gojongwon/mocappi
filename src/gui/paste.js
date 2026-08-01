@@ -1,14 +1,14 @@
-import { $, addRow, emit, fieldsEl } from './dom.js';
+import { $, addRow, closeModal, emit, fieldsEl, openModal } from './dom.js';
 import { LANG, t } from './i18n.js';
 import { shared } from './shared.js';
 
 // ---- JSON 붙여넣기 → 추론 ----
 export function openPaste() {
   $('#pasteError').textContent = '';
-  $('#pasteModal').style.display = 'flex';
+  openModal('pasteModal');
   $('#pasteInput').focus();
 }
-export function closePaste() { $('#pasteModal').style.display = 'none'; }
+export function closePaste() { closeModal('pasteModal'); }
 
 export async function applyPaste() {
   const raw = $('#pasteInput').value.trim();

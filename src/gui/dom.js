@@ -9,6 +9,10 @@ export const fieldsEl = $('#fields');
 // dispatchEvent 는 동기다: 발신 지점에서 수신자가 끝까지 돌고 나서 다음 줄로 간다.
 export const emit = (name) => document.dispatchEvent(new CustomEvent(name));
 export const on = (name, fn) => document.addEventListener(name, fn);
+
+// 모달 표시 — display 를 감시하는 MutationObserver 가 배경 스크롤 잠금을 따라간다 (main.js)
+export const openModal = (id) => { $('#' + id).style.display = 'flex'; };
+export const closeModal = (id) => { $('#' + id).style.display = 'none'; };
 // ---- 필드 행 ----
 // 인자가 없어 직접 수정할 일이 없는 타입 — 입력 잠금 (▾ 로 교체, ✕ 로 삭제는 가능)
 const ARGLESS_TYPES = ['uuid', 'index'];
@@ -75,7 +79,7 @@ export async function copyText(t, btn, done) {
 
 // 아이콘 복사 버튼 (lucide copy/check)
 export const ICON_COPY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
-export const ICON_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#23a55a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const ICON_CHECK ='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#23a55a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 
 export async function copyIcon(t, btn) {
   await writeClipboard(t);

@@ -1,5 +1,5 @@
 import { acClose, acKeydown, acRender, initAutocomplete } from './autocomplete.js';
-import { $, ICON_COPY, addRow, applyLock, copyIcon, copyText, emit, hardenInputs } from './dom.js';
+import { $, ICON_COPY, addRow, applyLock, closeModal, copyIcon, copyText, emit, hardenInputs, openModal } from './dom.js';
 import { LANG, applyEn, t } from './i18n.js';
 import { applyPaste, closePaste, openPaste } from './paste.js';
 import './preview.js'; // schema:changed 구독자 — 부수효과만, export 없음
@@ -26,6 +26,8 @@ async function copyTsTypes(btn) {
   }
 }
 // ---- 이벤트 ----
+// Escape·배경 클릭으로 닫히는 모달. 새 소식·피드백은 여기 없다 — 지금 동작 그대로 유지
+const DISMISSABLE = ['pasteModal', 'helpModal', 'saveModal', 'wsModal'];
 document.addEventListener('input', (e) => {
   if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select')) {
     if (e.target.matches('.fname, .fval')) e.target.title = e.target.value;
@@ -59,10 +61,10 @@ document.addEventListener('dblclick', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target && e.target.id === 'wsJoin') { joinWs(); return; }
   if (acKeydown(e)) return;
-  if (e.key === 'Escape') { closePaste(); $('#helpModal').style.display = 'none'; $('#saveModal').style.display = 'none'; $('#wsModal').style.display = 'none'; }
+  if (e.key === 'Escape') DISMISSABLE.forEach(closeModal);
 });
 // ---- 모달 배경 스크롤 잠금 (iOS 는 overflow:hidden 만으론 안 됨 → body fixed) ----
-const MODAL_IDS = ['pasteModal', 'helpModal', 'saveModal', 'wsModal', 'newsModal', 'fbModal'];
+const MODAL_IDS = [...DISMISSABLE, 'newsModal', 'fbModal'];
 let scrollLockY = 0;
 function syncScrollLock() {
   const anyOpen = MODAL_IDS.some((id) => { const el = $('#' + id); return el && el.style.display === 'flex'; });
@@ -106,11 +108,7 @@ document.addEventListener('click', (e) => {
   const btn = e.target.closest ? e.target.closest('button, a') : null;
   if (!btn) {
     // 모달 오버레이(배경) 클릭 → 닫기
-    const oid = e.target.id;
-    if (oid === 'pasteModal') closePaste();
-    else if (oid === 'helpModal') $('#helpModal').style.display = 'none';
-    else if (oid === 'wsModal') $('#wsModal').style.display = 'none';
-    else if (oid === 'saveModal') $('#saveModal').style.display = 'none';
+    if (DISMISSABLE.includes(e.target.id)) closeModal(e.target.id);
     return;
   }
   if (btn.classList.contains('del')) { btn.closest('.frow').remove(); emit('schema:changed'); return; }
@@ -123,16 +121,16 @@ document.addEventListener('click', (e) => {
     case 'pasteCancel': closePaste(); break;
     case 'pasteApply': applyPaste(); break;
     case 'helpBtn': case 'helpLink': case 'welcomeHelp':
-      e.preventDefault(); $('#helpModal').style.display = 'flex'; break;
-    case 'helpClose': $('#helpModal').style.display = 'none'; break;
-    case 'newsBtn': $('#newsModal').style.display = 'flex'; break;
-    case 'newsClose': $('#newsModal').style.display = 'none'; break;
+      e.preventDefault(); openModal('helpModal'); break;
+    case 'helpClose': closeModal('helpModal'); break;
+    case 'newsBtn': openModal('newsModal'); break;
+    case 'newsClose': closeModal('newsModal'); break;
     case 'fbBtn':
       $('#fbStatus').textContent = '';
-      $('#fbModal').style.display = 'flex';
+      openModal('fbModal');
       $('#fbText').focus();
       break;
-    case 'fbClose': $('#fbModal').style.display = 'none'; break;
+    case 'fbClose': closeModal('fbModal'); break;
     case 'fbSend': {
       const msg = $('#fbText').value.trim();
       const st = $('#fbStatus');
@@ -144,7 +142,7 @@ document.addEventListener('click', (e) => {
           if (r.ok) {
             st.style.color = 'var(--ok)'; st.textContent = b.hint || t('전달됐어요 — 고맙습니다!', 'Delivered — thank you!');
             $('#fbText').value = '';
-            setTimeout(() => { $('#fbModal').style.display = 'none'; }, 1200);
+            setTimeout(() => closeModal('fbModal'), 1200);
           } else {
             st.style.color = 'var(--danger)'; st.textContent = b.hint || t('전송에 실패했어요.', 'Failed to send.');
           }
@@ -157,15 +155,15 @@ document.addEventListener('click', (e) => {
     case 'tsBtn': copyTsTypes(btn); break;
     case 'respCopyBtn': copyIcon(shared.lastPreviewText, btn); break;
     case 'saveBtn': openSave(); break;
-    case 'wsBtn': syncWsUi(); $('#wsModal').style.display = 'flex'; break;
-    case 'wsClose': $('#wsModal').style.display = 'none'; break;
+    case 'wsBtn': syncWsUi(); openModal('wsModal'); break;
+    case 'wsClose': closeModal('wsModal'); break;
     case 'wsNew': switchWs(randWs()); break;
     case 'wsPublic': switchWs(null); break;
     case 'wsShare': copyText(location.href, btn, t('복사됨 ✓', 'Copied ✓')); break;
     case 'wsJoinBtn': joinWs(); break;
     case 'saveWsCreate': switchWs(randWs()); openSave(); break; // 새 워크스페이스 → 저장 이어서
-    case 'saveWsJoin': $('#saveModal').style.display = 'none'; syncWsUi(); $('#wsModal').style.display = 'flex'; break;
-    case 'saveCancel': $('#saveModal').style.display = 'none'; break;
+    case 'saveWsJoin': closeModal('saveModal'); syncWsUi(); openModal('wsModal'); break;
+    case 'saveCancel': closeModal('saveModal'); break;
     case 'saveApply': applySave(); break;
     case 'shortCopy': copyIcon($('#shortUrlBox').dataset.url || '', btn); break;
     case 'shortLineCopy': copyIcon($('#shortLine').dataset.url || '', btn); break;
