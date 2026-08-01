@@ -21,7 +21,7 @@ describe('라우팅', () => {
     const body = (await res.json()) as { dslTypes: unknown[]; fakerPaths: unknown[]; reserved: unknown[] };
     expect(body.dslTypes.length).toBeGreaterThan(5);
     expect(body.fakerPaths.length).toBeGreaterThan(10);
-    expect(body.reserved.length).toBe(14);
+    expect(body.reserved.length).toBe(15);
   });
 
   it('알 수 없는 경로 → 404 + 힌트', async () => {
@@ -76,11 +76,12 @@ describe('/api/:resource', () => {
     expect(Array.isArray(body)).toBe(true);
   });
 
+  // 4xx/5xx 는 실패 바디로 대체되므로(test/fail-body.test.ts), "코드만 바뀜" 성질은 3xx 로 확인한다
   it('_status 강제 — 상태코드만 바뀌고 본문 데이터는 동일', async () => {
     const a = await get('/api/users?id=uuid&_total=5');
-    const b = await get('/api/users?id=uuid&_total=5&_status=500');
+    const b = await get('/api/users?id=uuid&_total=5&_status=302');
     expect(a.status).toBe(200);
-    expect(b.status).toBe(500);
+    expect(b.status).toBe(302);
     expect(await b.text()).toBe(await a.text());
   });
 

@@ -47,7 +47,7 @@ describe('/schema/types 라벨 언어', () => {
       fakerPaths: Array<{ value: string; label: string }>;
       dslTypes: unknown[];
     };
-    expect(body.reserved.length).toBe(14);
+    expect(body.reserved.length).toBe(15);
     const fullName = body.fakerPaths.find((f) => f.value === 'person.fullName');
     expect(fullName?.label).toBe('Full name');
     expect(JSON.stringify(body.fakerPaths.map((f) => f.value))).not.toMatch(/[가-힣]/);

@@ -50,6 +50,31 @@ function dslBody(info: DslErrorInfo, lang: 'ko' | 'en'): Omit<DslErrorInfo, 'hin
   return lang === 'en' && hintEn ? { ...rest, hint: hintEn } : rest;
 }
 
+// _status>=400 일 때 성공 데이터 대신 나가는 기본 실패 바디.
+// 키가 {error, status, message} 라 DSL 에러({error, field, hint})와 한눈에 구분된다 —
+// 앞은 "사용자가 주문한 목 실패", 뒤는 "mocappi 가 URL 을 못 읽음".
+const FAIL_REASONS: Record<number, [string, string, string]> = {
+  400: ['Bad Request', '요청이 올바르지 않습니다.', 'The request is malformed.'],
+  401: ['Unauthorized', '인증이 필요합니다.', 'Authentication is required.'],
+  403: ['Forbidden', '권한이 없습니다.', 'You do not have permission.'],
+  404: ['Not Found', '요청한 리소스를 찾을 수 없습니다.', 'The requested resource was not found.'],
+  409: ['Conflict', '이미 존재하는 리소스입니다.', 'The resource already exists.'],
+  422: ['Unprocessable Entity', '입력값 검증에 실패했습니다.', 'Validation failed.'],
+  429: ['Too Many Requests', '요청이 너무 많습니다.', 'Too many requests.'],
+  500: ['Internal Server Error', '서버 오류가 발생했습니다.', 'An internal server error occurred.'],
+  502: ['Bad Gateway', '게이트웨이 오류입니다.', 'Bad gateway.'],
+  503: ['Service Unavailable', '서비스를 사용할 수 없습니다.', 'The service is unavailable.'],
+};
+
+function failBody(status: number, lang: 'ko' | 'en'): Record<string, unknown> {
+  const r = FAIL_REASONS[status];
+  return {
+    error: r ? r[0] : 'Error',
+    status,
+    message: r ? pick(lang, r[1], r[2]) : pick(lang, '요청을 처리하지 못했습니다.', 'The request could not be processed.'),
+  };
+}
+
 const noKv = (lang: 'ko' | 'en') => ({
   error: 'Storage not configured',
   hint: pick(
@@ -361,6 +386,11 @@ export default {
         const method = q.method ?? (request.method === 'HEAD' ? 'GET' : request.method);
         const sleep = () => (q.delay > 0 ? new Promise((r) => setTimeout(r, q.delay)) : Promise.resolve());
 
+        // 실패 응답이 최우선 — 메서드·_format 과 무관하게 에러 바디를 낸다 (실제 API 도 그렇다)
+        if (q.status >= 400) {
+          await sleep();
+          return json(q.body ?? failBody(q.status, lang), q.status);
+        }
         if (method === 'DELETE') {
           await sleep();
           return new Response(null, { status: q.statusSet ? q.status : 204, headers: { 'cache-control': 'no-store', ...CORS_HEADERS } });

@@ -38,16 +38,19 @@ export interface ParsedQuery {
   seedParam: string | null;
   /** name 기준 정렬 완료 상태 */
   fields: FieldSpec[];
-  /** baseSeed 계산용 정규화 문자열 (_page/_limit/_delay/_status/_method/_wrap/_format 제외, 정렬됨) */
+  /** _body — 실패(_status>=400) 응답으로 그대로 내보낼 JSON. null 이면 기본 실패 바디 (시드 제외) */
+  body: unknown | null;
+  /** baseSeed 계산용 정규화 문자열 (_page/_limit/_delay/_status/_method/_body/_wrap/_format 제외, 정렬됨) */
   normalized: string;
 }
 
-const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_method', '_wrap', '_format', '_q', '_qin', '_alias'];
+const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_method', '_body', '_wrap', '_format', '_q', '_qin', '_alias'];
 /** _alias 로 별칭을 걸 수 있는 대상 (자기 자신 제외 — _s 는 라우트 레벨이라 제외) */
 const ALIASABLE = RESERVED_NAMES.filter((n) => n !== '_alias');
 const ALIAS_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
 const MAX_LIMIT = 1000;
 const MAX_DELAY = 5000;
+const MAX_BODY_LEN = 2000;
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 const MAX_ARRAY_LEN = 100;
 const DEFAULT_ARRAY_LEN = 3;
@@ -142,6 +145,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   let status = 200;
   let statusSet = false;
   let method: ParsedQuery['method'] = null;
+  let body: unknown | null = null;
   let wrap: 'envelope' | 'none' | 'one' = 'envelope';
   let format: 'json' | 'ndjson' | 'csv' = 'json';
   let qSearch: string | null = null;
@@ -198,6 +202,28 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
               `_method must be one of ${METHODS.join(' | ')} (case-insensitive).`);
           }
           method = up as ParsedQuery['method'];
+          break;
+        }
+        case '_body': {
+          if (value.length > MAX_BODY_LEN) {
+            fail('Invalid reserved parameter', key, value.slice(0, 40) + '…',
+              `_body 는 최대 ${MAX_BODY_LEN}자입니다. 더 큰 응답이 필요하면 필드 DSL 로 만드세요.`,
+              `_body is limited to ${MAX_BODY_LEN} characters. For larger responses, build them with the field DSL.`);
+          }
+          // store.ts 의 canonicalQuery 가 값을 재인코딩 없이 '&' 로 이어붙이므로,
+          // 값 안의 리터럴 '&' 는 프리셋 저장(_s=) 시 조용히 쿼리를 쪼갠다. 미리 막는다.
+          if (value.includes('&')) {
+            fail('Invalid reserved parameter', key, value,
+              "_body 안에는 '&' 를 쓸 수 없습니다 (프리셋 저장 시 쿼리가 쪼개집니다). JSON 문자열에서는 \\u0026 로 쓰세요.",
+              "_body cannot contain '&' (it would split the query when saved as a preset). Use \\u0026 inside JSON strings.");
+          }
+          try {
+            body = JSON.parse(value);
+          } catch {
+            fail('Invalid reserved parameter', key, value,
+              '_body 는 올바른 JSON 이어야 합니다. 예: _body={"code":"E_AUTH"}',
+              '_body must be valid JSON, e.g. _body={"code":"E_AUTH"}');
+          }
           break;
         }
         case '_wrap':
@@ -318,14 +344,22 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
     }
   }
 
-  // baseSeed 용 정규화 문자열 — _page/_limit/_delay/_status/_method/_wrap 제외.
+  // _body 는 실패 응답 전용 — 성공 상태코드와 같이 쓰면 아무 효과가 없다.
+  // 조용히 무시하면 "왜 안 먹지" 로 이어지므로 _qin↔_q 처럼 400 으로 막는다.
+  if (seenReserved.has('_body') && status < 400) {
+    fail('Invalid reserved parameter', '_body', String(status),
+      '_body 는 실패 응답 바디입니다. _status 를 400 이상으로 지정하세요. 예: _status=401&_body={"code":"E_AUTH"}',
+      '_body is the failure response body. Set _status to 400 or above, e.g. _status=401&_body={"code":"E_AUTH"}');
+  }
+
+  // baseSeed 용 정규화 문자열 — _page/_limit/_delay/_status/_method/_body/_wrap 제외.
   // 기본값을 명시한 URL 과 생략한 URL 이 같은 시드를 갖도록 유효값 기준으로 만든다.
   const parts = [`_locale=${locale}`, `_total=${total}`];
   if (seedParam !== null) parts.push(`_seed=${seedParam}`);
   for (const f of fields) parts.push(`${f.name}=${f.typeRaw}`);
   const normalized = parts.join('&');
 
-  return { page, limit, total, locale, delay, status, statusSet, method, wrap, format, q: qSearch, qin, seedParam, fields, normalized };
+  return { page, limit, total, locale, delay, status, statusSet, method, body, wrap, format, q: qSearch, qin, seedParam, fields, normalized };
 }
 
 function checkPathConflicts(fields: FieldSpec[]): void {

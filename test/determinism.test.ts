@@ -41,10 +41,14 @@ describe('결정론', () => {
     expect(JSON.stringify(c)).toBe(JSON.stringify(a.data));
   });
 
-  it('_method 만 다른 URL → 데이터 동일 (시드 제외)', () => {
+  it('_method/_body 만 다른 URL → 데이터 동일 (시드 제외)', () => {
     const a = run(`${BASE}&_total=50`);
     const b = run(`${BASE}&_total=50&_method=post`);
     expect(JSON.stringify(a.data)).toBe(JSON.stringify(b.data));
+    // _body 는 _status>=400 과만 쓸 수 있어 normalized 비교로 확인
+    const n1 = parseQuery(new URLSearchParams(`${BASE}&_total=50`)).normalized;
+    const n2 = parseQuery(new URLSearchParams(`${BASE}&_total=50&_method=delete&_status=404&_body={"a":1}`)).normalized;
+    expect(n1).toBe(n2);
   });
 
   it('예약 파라미터 기본값 명시 여부와 무관하게 동일 시드', () => {
