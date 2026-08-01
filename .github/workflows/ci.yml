@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      # pretest 가 GUI 빌드(src/gui/* → src/gui.generated.html)를 먼저 돌린다
+      - run: npm test
+
+      # 무료 플랜 워커 한도 3MB (gzip). 지금은 ~356KB — 여유가 사라지면 여기서 먼저 걸린다
+      - name: 번들 크기
+        run: |
+          # wc -c 는 플랫폼에 따라 공백을 덧붙인다 — 숫자만 남긴다
+          SIZE=$(npm run --silent size | tail -1 | tr -d '[:space:]')
+          echo "gzip: $SIZE bytes"
+          echo "### 번들 gzip: $(( SIZE / 1024 )) KB / 3072 KB" >> "$GITHUB_STEP_SUMMARY"
+          [ "$SIZE" -lt 3145728 ] || { echo "3MB 한도 초과"; exit 1; }
