@@ -2,8 +2,8 @@ import { $, addRow, emit, fieldsEl } from './dom.js';
 import { buildQuery as buildQueryPure, enc, encPath, parseAliasParam } from './pure.js';
 import { shared } from './shared.js';
 
-export const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
-export const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat' };
+export const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _method: 'get', _body: '', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
+export const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _method: '#oMethod', _body: '#oBody', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat' };
 
 // ---- 옵션 키 별칭 (인라인 편집 → _alias 자동 조립) ----
 const ALIAS_OK_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -118,8 +118,21 @@ export function shortApiUrl(state) {
 /** 고급 옵션 중 하나라도 기본값이 아닌가 — 이 값들의 입력칸을 OPT_INPUTS 가 들고 있어 여기가 제자리 */
 export function advActive() {
   return $('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
+    $('#oBody').value.trim() !== '' ||
     $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '' ||
     $('#oFormat').value !== 'json';
+}
+
+/** 메서드 선택 — 숨은 #oMethod 가 실제 상태, 버튼은 표시일 뿐 (OPT_INPUTS 가 .value 를 요구) */
+export function setMethod(m) {
+  $('#oMethod').value = m;
+  emit('schema:changed'); // 하이라이트는 구독자(preview.update)가 paintMethod 로 맞춘다
+}
+
+/** #oMethod 값에 맞춰 버튼 하이라이트. 상태를 복원하는 곳이 4군데라 schema:changed 한 곳에서만 부른다 */
+export function paintMethod() {
+  const cur = $('#oMethod').value;
+  for (const b of document.querySelectorAll('.methods button')) b.classList.toggle('on', b.dataset.method === cur);
 }
 
 // ---- GUI 상태 ↔ 주소창 (현재 URL 이 곧 GUI 상태) ----

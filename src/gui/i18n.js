@@ -29,6 +29,7 @@ const EN = {
   optQin: 'Search in',
   optDelay: 'Delay ms',
   optStatus: 'Status code',
+  optBody: 'Failure body',
   optWrap: 'Shape',
   optSeed: 'Seed',
   optFormat: 'Format',
@@ -50,7 +51,8 @@ const EN = {
   phQ: 'substring match on values',
   phQin: 'limit to (e.g. name,city)',
   phSeed: 'e.g. 123 (a detail API id)',
-  advSummary: 'Advanced — delay · status · shape · seed · format',
+  phBody: 'JSON returned when the status code is 400+ (e.g. {"code":"E_AUTH","message":"Token expired"})',
+  advSummary: 'Advanced — delay · status · failure body · shape · seed · format',
   pasteJson: '{ } Paste JSON',
   pasteJsonSub: 'Paste a real API response and the schema builds itself',
   // URL 패널
@@ -66,7 +68,7 @@ const EN = {
   copyResp: 'Copy full response',
   // 코너 버튼
   newsBtnTitle: 'See recent updates',
-  newsLabel: "v0.27 · What's new",
+  newsLabel: "v0.28 · What's new",
   fbBtnTitle: 'Send feedback to the developer',
   feedback: 'Feedback',
   // 모달
@@ -105,6 +107,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
+    <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL: POST answers 201 + a single item, DELETE answers 204. Any status code at 400+ returns a failure body, and the <b>Failure body</b> field under Advanced returns your own JSON verbatim</li>
     <li><span class="v">v0.27</span>English support — switch with the EN/KO button in the header, auto-detected from your browser. API error hints follow <code>Accept-Language</code> too</li>
     <li><span class="v">v0.26</span>Masking types <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — redacted PII like real services show ("김*준", "010-****-5678")</li>
     <li><span class="v">v0.25</span>New name — Mock API Builder → <b>mocappi</b>, with a lightning badge on the logo ⚡ Now at <code>mocappi.gojongwon.workers.dev</code>; features and saved data unchanged</li>

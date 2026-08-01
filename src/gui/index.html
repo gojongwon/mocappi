@@ -87,10 +87,11 @@
     </div>
 
     <details class="opts-adv" id="optsAdv">
-      <summary data-i18n="advSummary">고급 — 지연 · 상태코드 · 응답 모양 · 고정 시드 · 형식</summary>
+      <summary data-i18n="advSummary">고급 — 지연 · 상태코드 · 실패 바디 · 응답 모양 · 고정 시드 · 형식</summary>
       <div class="opts">
         <div><label><span data-i18n="optDelay">지연 ms</span> <input class="okey" data-for="_delay" value="_delay" spellcheck="false" data-i18n-title="okeyDelay" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: delay)"></label><input id="oDelay" type="number" min="0" max="5000" value="0"></div>
         <div><label><span data-i18n="optStatus">상태코드</span> <input class="okey" data-for="_status" value="_status" spellcheck="false" data-i18n-title="okeyStatus" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
+        <div class="opt-wide"><label><span data-i18n="optBody">실패 바디</span></label><textarea id="oBody" rows="2" spellcheck="false" data-i18n-ph="phBody" placeholder='상태코드 400 이상일 때 나갈 JSON (예: {"code":"E_AUTH","message":"토큰 만료"})'></textarea></div>
         <div><label><span data-i18n="optWrap">모양</span> <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
         <select id="oWrap"><option value="envelope">envelope</option><option value="none" data-i18n="wrapNone">배열만</option><option value="one" data-i18n="wrapOne">단일 객체</option></select>
       </div>
@@ -115,6 +116,14 @@
 
   <section class="panel right">
     <h2 data-i18n="generatedUrl">생성된 URL</h2>
+    <div class="methods">
+      <button data-method="get" class="on">GET</button>
+      <button data-method="post">POST</button>
+      <button data-method="put">PUT</button>
+      <button data-method="patch">PATCH</button>
+      <button data-method="delete">DELETE</button>
+      <input id="oMethod" type="hidden" value="get">
+    </div>
     <div class="urlwrap">
       <div class="urlbox" id="urlBox"></div>
       <button class="box-copy" id="copyBtn" data-i18n-title="copyUrl" title="URL 복사"></button>
@@ -137,7 +146,7 @@
 </main>
 
 <div class="corner">
-  <button id="newsBtn" data-i18n-title="newsBtnTitle" title="최근 업데이트 보기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span data-i18n="newsLabel">v0.27 · 새 소식</span></button>
+  <button id="newsBtn" data-i18n-title="newsBtnTitle" title="최근 업데이트 보기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span data-i18n="newsLabel">v0.28 · 새 소식</span></button>
   <button id="fbBtn" data-i18n-title="fbBtnTitle" title="개발자에게 의견 보내기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span data-i18n="feedback">피드백</span></button>
 </div>
 
@@ -145,6 +154,7 @@
   <div class="card" style="width:560px">
     <h3 data-i18n="whatsNew">새 소식</h3>
     <ul class="news-list" data-en-block="newsList">
+      <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 POST 는 201 + 단건, DELETE 는 204 로 응답합니다. 상태코드를 400 이상으로 두면 실패 바디가 나가고, 고급의 <b>실패 바디</b> 칸에 JSON 을 적으면 그대로 돌려줍니다</li>
       <li><span class="v">v0.27</span>영어 지원 — 헤더 EN/KO 버튼으로 전환, 브라우저 언어 자동 감지. API 에러 힌트도 <code>Accept-Language</code> 를 따라갑니다</li>
       <li><span class="v">v0.26</span>마스킹 타입 <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — 실서비스처럼 가려진 개인정보 ("김*준", "010-****-5678")</li>
       <li><span class="v">v0.25</span>이름이 바뀌었어요 — Mock API Builder → <b>모카삐 (mocappi)</b>. 로고에 번개 배지도 달았습니다 ⚡ 주소는 <code>mocappi.gojongwon.workers.dev</code>, 기능과 저장물은 그대로예요</li>

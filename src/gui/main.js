@@ -7,7 +7,7 @@ import { enc } from './pure.js';
 import { applySave, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
 import { enhanceSelects } from './select.js';
 import { shared } from './shared.js';
-import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyPreset, buildQuery, loadFromAddressBar, readState, setOptKeys } from './url-state.js';
+import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyPreset, buildQuery, loadFromAddressBar, readState, setMethod, setOptKeys } from './url-state.js';
 import { joinWs, randWs, switchWs, syncWsUi } from './workspace.js';
 
 if (LANG === 'en') applyEn();
@@ -30,7 +30,7 @@ async function copyTsTypes(btn) {
 // Escape·배경 클릭으로 닫히는 모달. 새 소식·피드백은 여기 없다 — 지금 동작 그대로 유지
 const DISMISSABLE = ['pasteModal', 'helpModal', 'saveModal', 'wsModal'];
 document.addEventListener('input', (e) => {
-  if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select')) {
+  if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select, .opts textarea')) {
     if (e.target.matches('.fname, .fval')) e.target.title = e.target.value;
     if (e.target.matches('.fval')) acRender(e.target);
     emit('schema:changed');
@@ -115,6 +115,7 @@ document.addEventListener('click', (e) => {
   }
   if (btn.classList.contains('del')) { btn.closest('.frow').remove(); emit('schema:changed'); return; }
   if (btn.dataset && btn.dataset.preset) { applyPreset(btn.dataset.preset); return; }
+  if (btn.dataset && btn.dataset.method) { setMethod(btn.dataset.method); return; }
   switch (btn.id) {
     // 언어 토글 — 해시만 바꾸고 리로드 (스키마 상태는 location.search 에 있어 안전)
     case 'langBtn': location.hash = LANG === 'en' ? '#ko' : '#en'; location.reload(); break;

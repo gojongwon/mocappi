@@ -61,6 +61,14 @@ describe('buildQuery — 스키마 상태 → 쿼리스트링', () => {
   it('빈 상태는 빈 문자열', () => {
     expect(buildQuery({ res: 'u', fields: [], opts: {} }, {})).toBe('');
   });
+
+  // _method 는 기본값(get)이면 readState 가 안 싣는다 — GET URL 이 예전과 바이트 동일해야 하므로
+  it('_method/_body 를 싣는다 — JSON 은 퍼센트 인코딩', () => {
+    const q = buildQuery({ res: 'u', fields: [['id', 'uuid']], opts: { _method: 'post' } }, {});
+    expect(q).toBe('id=uuid&_method=post');
+    const f = buildQuery({ res: 'u', fields: [['id', 'uuid']], opts: { _status: '401', _body: '{"code":"E_AUTH"}' } }, {});
+    expect(f).toBe('id=uuid&_status=401&_body=%7B%22code%22:%22E_AUTH%22%7D'); // enc 는 ':' 를 살려둔다
+  });
 });
 
 describe('parseAliasParam — _alias 파싱', () => {

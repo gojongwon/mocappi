@@ -96,4 +96,15 @@ describe('이벤트 배선', () => {
   it('아무도 구독하지 않는 이벤트는 조용히 무시된다', () => {
     expect(() => emit('nobody:listens')).not.toThrow();
   });
+
+  // 메서드 버튼은 숨은 #oMethod 를 거쳐 URL 로만 드러난다 — 배선이 끊겨도 화면은 멀쩡해 보인다
+  it('메서드 버튼 클릭 → 주소창에 _method 반영', () => {
+    const btn = { ...el(), dataset: { method: 'post' } };
+    (globalThis as unknown as { document: { dispatchEvent(e: unknown): void } }).document.dispatchEvent({
+      type: 'click',
+      target: { ...el(), closest: () => btn },
+    });
+    expect(pick('#oMethod').value).toBe('post');
+    expect(replaced.at(-1)).toContain('_method=post');
+  });
 });

@@ -40,13 +40,18 @@
   header .sub { color: var(--faint); font-size: 12.5px; margin-left: 2px; line-height: 26px; position: relative; top: 1px; }
   .presets { margin-left: auto; display: flex; gap: 6px; align-items: center; }
   .presets .plabel { color: var(--faint); font-size: 12px; margin-right: 2px; }
-  .presets button {
+  .presets button, .methods button {
     border: 1.5px solid var(--ink); background: var(--panel); border-radius: 999px;
     height: 30px; display: inline-flex; align-items: center; box-sizing: border-box;
     padding: 0 14px; cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 600;
     font-family: inherit; transition: all .1s ease;
   }
-  .presets button:hover { background: var(--accent-soft); color: var(--ink); }
+  .presets button:hover, .methods button:hover { background: var(--accent-soft); color: var(--ink); }
+
+  /* 메서드 선택 — 응답 모양을 정한다 (_method). GET 이면 URL 에 파라미터가 안 붙는다 */
+  .methods { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+  .methods button { font-family: var(--mono); font-size: 11.5px; padding: 0 12px; }
+  .methods button.on { background: var(--accent-soft); color: var(--ink); font-weight: 800; }
   #teamSel {
     max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; font-weight: 600;
     height: 30px; box-sizing: border-box;
@@ -200,7 +205,10 @@
   /* ===== 옵션 ===== */
   .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-top: 4px; }
   .opts > div { display: flex; flex-direction: column; gap: 4px; }
-  .opts input, .opts select { width: 100%; }
+  .opts input, .opts select, .opts textarea { width: 100%; }
+  /* 실패 바디는 JSON 한 줄이 길어 그리드 한 행을 통째로 쓴다 */
+  .opts .opt-wide { grid-column: 1 / -1; }
+  .opts textarea { font-family: var(--mono); font-size: 12px; resize: vertical; }
   .opts select {
     -webkit-appearance: none; appearance: none; padding-right: 30px; cursor: pointer;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2317171a' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
