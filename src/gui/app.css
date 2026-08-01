@@ -5,6 +5,8 @@
     --text: #17171a; --muted: #4b4b52; --faint: #85858e;
     --accent: #ffd400; --accent-hover: #ffdf3d; --accent-text: #17171a; --accent-soft: #fff6c8;
     --danger: #e5322d; --ok: #1f9e5e;
+    /* 메서드 색 — 채웠을 때 흰 글씨가 4.5:1 을 넘도록 --ok/--danger 보다 어둡게 잡았다 */
+    --m-get: #137a4b; --m-put: #1d5fd0; --m-patch: #b45309; --m-delete: #c62622;
     --warn-bg: #fff6c8; --warn-border: #17171a; --warn-text: #4b4b52;
     --code-bg: #f2f2ee; --box-bg: #fbfbf9;
     --radius: 10px; --radius-s: 8px; --bw: 1.5px;
@@ -40,18 +42,31 @@
   header .sub { color: var(--faint); font-size: 12.5px; margin-left: 2px; line-height: 26px; position: relative; top: 1px; }
   .presets { margin-left: auto; display: flex; gap: 6px; align-items: center; }
   .presets .plabel { color: var(--faint); font-size: 12px; margin-right: 2px; }
-  .presets button, .methods button {
+  .presets button, .methods button, .body-presets button {
     border: 1.5px solid var(--ink); background: var(--panel); border-radius: 999px;
     height: 30px; display: inline-flex; align-items: center; box-sizing: border-box;
     padding: 0 14px; cursor: pointer; font-size: 12.5px; color: var(--muted); font-weight: 600;
     font-family: inherit; transition: all .1s ease;
   }
-  .presets button:hover, .methods button:hover { background: var(--accent-soft); color: var(--ink); }
+  .presets button:hover, .methods button:hover, .body-presets button:hover { background: var(--accent-soft); color: var(--ink); }
 
-  /* 메서드 선택 — 응답 모양을 정한다 (_method). GET 이면 URL 에 파라미터가 안 붙는다 */
+  /* 메서드 선택 — 실제 요청 verb 를 정한다. URL 에는 안 붙는다.
+     색은 버튼마다 --m 하나로 갈아끼우고, 선택되면 그 색으로 채운다 (.helpbtn 과 같은 하드 그림자) */
   .methods { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
-  .methods button { font-family: var(--mono); font-size: 11.5px; padding: 0 12px; }
-  .methods button.on { background: var(--accent-soft); color: var(--ink); font-weight: 800; }
+  .methods button {
+    font-family: var(--mono); font-size: 11.5px; padding: 0 12px; font-weight: 700;
+    --m: var(--ink); --m-fg: #fff; color: var(--m); border-color: var(--m);
+  }
+  .methods button[data-method="get"] { --m: var(--m-get); }
+  .methods button[data-method="post"] { --m: var(--accent); --m-fg: var(--accent-text); }
+  .methods button[data-method="put"] { --m: var(--m-put); }
+  .methods button[data-method="patch"] { --m: var(--m-patch); }
+  .methods button[data-method="delete"] { --m: var(--m-delete); }
+  .methods button:hover { background: var(--code-bg); color: var(--m); } /* 공용 노란 호버를 덮는다 */
+  .methods button.on, .methods button.on:hover {
+    background: var(--m); color: var(--m-fg); border-color: var(--ink);
+    font-weight: 800; box-shadow: var(--btn-shadow);
+  }
   #teamSel {
     max-width: 180px; color: var(--muted); font-size: 12.5px; border-radius: 999px; font-weight: 600;
     height: 30px; box-sizing: border-box;
@@ -209,6 +224,35 @@
   /* 실패 바디는 JSON 한 줄이 길어 그리드 한 행을 통째로 쓴다 */
   .opts .opt-wide { grid-column: 1 / -1; }
   .opts textarea { font-family: var(--mono); font-size: 12px; resize: vertical; }
+  .body-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .body-presets button { height: 26px; padding: 0 10px; font-size: 11.5px; }
+
+  /* ---- JSON 편집기 — 투명 글자 textarea 를 하이라이트된 pre 위에 겹친다 ----
+     textarea 는 글자에 색을 못 넣는다. 테두리·배경·포커스링은 래퍼가 갖고,
+     자식 둘은 아래 공유 블록으로 글자 배치를 완전히 동일하게 맞춘다.
+     resize 를 끈 이유: textarea 만 늘어나면 뒤의 pre 와 높이가 어긋난다. */
+  .code-edit {
+    position: relative; background: var(--ink); border: 1.5px solid var(--ink);
+    border-radius: var(--radius-s); overflow: hidden;
+  }
+  .code-edit:focus-within { outline: 2.5px solid var(--accent); outline-offset: 1px; }
+  /* 두 겹의 글자 배치가 완전히 같아야 캐럿이 글자 위에 얹힌다.
+     scrollbar-gutter 까지 맞추는 이유: 한쪽에만 스크롤바가 생기면 내용 폭이 달라져
+     줄바꿈 위치가 어긋난다 */
+  .code-edit > pre, .code-edit > textarea {
+    margin: 0; border: none; border-radius: 0; padding: 8px 10px; width: 100%;
+    font-family: var(--mono); font-size: 12px; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-all;
+    overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable;
+    max-height: 240px;
+  }
+  .code-edit > pre { position: absolute; inset: 0; pointer-events: none; color: #8f8f9a; background: none; }
+  .code-edit > textarea {
+    position: relative; display: block; resize: none; min-height: 84px;
+    background: transparent; color: transparent; caret-color: var(--accent);
+  }
+  .code-edit > textarea:focus { outline: none; } /* 포커스링은 래퍼가 그린다 */
+  .code-edit > textarea::placeholder { color: #6a6a74; } /* 투명 글자와 별개로 자기 색을 갖는다 */
   .opts select {
     -webkit-appearance: none; appearance: none; padding-right: 30px; cursor: pointer;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2317171a' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");

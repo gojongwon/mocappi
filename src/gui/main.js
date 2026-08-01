@@ -7,7 +7,7 @@ import { enc } from './pure.js';
 import { applySave, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
 import { enhanceSelects } from './select.js';
 import { shared } from './shared.js';
-import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyPreset, buildQuery, loadFromAddressBar, readState, setMethod, setOptKeys } from './url-state.js';
+import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyFailPreset, applyPreset, buildQuery, loadFromAddressBar, readState, setMethod, setOptKeys } from './url-state.js';
 import { joinWs, randWs, switchWs, syncWsUi } from './workspace.js';
 
 if (LANG === 'en') applyEn();
@@ -116,6 +116,7 @@ document.addEventListener('click', (e) => {
   if (btn.classList.contains('del')) { btn.closest('.frow').remove(); emit('schema:changed'); return; }
   if (btn.dataset && btn.dataset.preset) { applyPreset(btn.dataset.preset); return; }
   if (btn.dataset && btn.dataset.method) { setMethod(btn.dataset.method); return; }
+  if (btn.dataset && btn.dataset.fail) { applyFailPreset(btn.dataset.fail); return; }
   switch (btn.id) {
     // 언어 토글 — 해시만 바꾸고 리로드 (스키마 상태는 location.search 에 있어 안전)
     case 'langBtn': location.hash = LANG === 'en' ? '#ko' : '#en'; location.reload(); break;
@@ -172,6 +173,17 @@ document.addEventListener('click', (e) => {
     case 'shortLineCopy': copyIcon($('#shortLine').dataset.url || '', btn); break;
   }
 });
+
+// 실패 바디 편집기 — 위임으로 못 받는 두 이벤트만 직접 건다.
+// scroll 은 버블링이 없고, paste 는 붙여넣은 뒤에야 .value 가 차서 다음 틱에 정렬한다.
+{
+  const ta = $('#oBody');
+  ta.addEventListener('scroll', () => { $('#oBodyHl').scrollTop = ta.scrollTop; });
+  ta.addEventListener('paste', () => setTimeout(() => {
+    try { ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); } catch {}
+    emit('schema:changed');
+  }, 0));
+}
 
 // ---- 초기화 ----
 (async () => {

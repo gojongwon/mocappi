@@ -3,7 +3,7 @@ import { LANG, t } from './i18n.js';
 import { highlightJson } from './pure.js';
 import { renderCsv, renderNdjson } from './render.js';
 import { shared } from './shared.js';
-import { advActive, apiUrl, paintMethod, readState, shortApiUrl, syncAddressBar } from './url-state.js';
+import { advActive, apiUrl, paintBody, paintMethod, readState, shortApiUrl, syncAddressBar } from './url-state.js';
 
 // ---- 미리보기 (디바운스 300ms) ----
 // 이 모듈은 아무것도 export 하지 않는다 — schema:changed 를 구독할 뿐이라
@@ -15,6 +15,7 @@ on('schema:changed', update);
 function update() {
   const state = readState();
   paintMethod();
+  paintBody();
   // 입력 중에는 절대 닫지 않는다 — 자동으로는 열기만.
   // (닫힘은 프리셋 전환·URL 로드 같은 문맥 전환 시점에만 advActive 기준으로)
   if (advActive()) $('#optsAdv').open = true;

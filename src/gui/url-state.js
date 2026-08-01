@@ -1,5 +1,6 @@
 import { $, addRow, emit, fieldsEl } from './dom.js';
-import { buildQuery as buildQueryPure, enc, encPath, parseAliasParam } from './pure.js';
+import { t } from './i18n.js';
+import { buildQuery as buildQueryPure, enc, encPath, highlightJson, minifyJson, parseAliasParam } from './pure.js';
 import { shared } from './shared.js';
 
 export const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _method: 'get', _body: '', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
@@ -79,7 +80,8 @@ export function readState() {
   }
   const opts = {};
   for (const [k, sel] of Object.entries(OPT_INPUTS)) {
-    const v = String($(sel).value).trim();
+    let v = String($(sel).value).trim();
+    if (k === '_body') v = minifyJson(v); // 입력칸은 정렬형, URL 은 압축형
     if (v !== '' && v !== OPT_DEFAULTS[k]) opts[k] = v;
   }
   return { res: $('#resource').value.trim() || 'items', fields, opts };
@@ -141,6 +143,39 @@ export function setMethod(m) {
 export function paintMethod() {
   const cur = $('#oMethod').value;
   for (const b of document.querySelectorAll('.methods button')) b.classList.toggle('on', b.dataset.method === cur);
+}
+
+// 흔한 실패 3종 — 프론트 에러 핸들링이 보통 나누는 분기 그대로.
+// 메시지는 사용자에게 보이므로 ko/en 쌍 (CLAUDE.md 규칙 2)
+const FAIL_PRESETS = {
+  401: { code: 'E_UNAUTHORIZED', ko: '토큰이 만료되었습니다', en: 'Your token has expired' },
+  404: { code: 'E_NOT_FOUND', ko: '대상을 찾을 수 없습니다', en: 'The requested resource was not found' },
+  500: { code: 'E_INTERNAL', ko: '잠시 후 다시 시도해주세요', en: 'Please try again in a moment' },
+};
+
+export function applyFailPreset(status) {
+  const p = FAIL_PRESETS[status];
+  if (!p) return;
+  $('#oStatus').value = status; // _body 는 _status>=400 일 때만 유효해서 같이 넣는다
+  $('#oBody').value = JSON.stringify({ code: p.code, message: t(p.ko, p.en) }, null, 2);
+  emit('schema:changed');
+}
+
+/**
+ * 실패 바디 정렬 + 오버레이 하이라이트.
+ * 정렬은 포커스가 없을 때만 — 타이핑 중에 값을 갈아끼우면 캐럿이 끝으로 튄다.
+ * (붙여넣기는 포커스가 있으므로 main.js 의 paste 리스너가 따로 정렬한다)
+ * highlightJson 이 & < > 를 이스케이프하므로 innerHTML 로 안전하다.
+ */
+export function paintBody() {
+  const ta = $('#oBody');
+  if (document.activeElement !== ta) {
+    try { ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); } catch { /* 깨진 JSON 은 그대로 둔다 */ }
+  }
+  $('#oBodyHl').innerHTML = highlightJson(ta.value) + '\n'; // pre 가 끝 줄바꿈을 삼키는 것 보정
+  // 내용만큼 자라게 — 짧을 땐 스크롤바가 아예 안 생겨 두 겹이 확실히 맞는다 (상한은 CSS max-height)
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
 }
 
 // ---- GUI 상태 ↔ 주소창 (현재 URL 이 곧 GUI 상태) ----

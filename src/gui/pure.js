@@ -67,6 +67,15 @@ export function parseWsInput(raw, base) {
   return /^[a-z0-9]{6,24}$/.test(raw) ? raw : null;
 }
 
+/**
+ * 화면엔 정렬형, URL 엔 압축형 — 같은 JSON 의 두 렌더링일 뿐이다.
+ * (정렬형을 그대로 실으면 URL 에 %0A%20%20 이 잔뜩 낀다)
+ * 파싱이 안 되면 사용자가 친 그대로 둔다 — 서버가 400 으로 알려주는 게 낫다.
+ */
+export function minifyJson(s) {
+  try { return JSON.stringify(JSON.parse(s)); } catch { return s; }
+}
+
 // ---- JSON 구문 하이라이팅 ----
 export function highlightJson(text) {
   const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

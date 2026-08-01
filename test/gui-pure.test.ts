@@ -4,7 +4,7 @@
  * 터진다. 그래서 DOM 없이 검증 가능한 것은 pure.js 로 모아두고, 여기서만 테스트한다.
  */
 import { describe, expect, it } from 'vitest';
-import { buildQuery, enc, encPath, highlightJson, parseAliasParam, parseCsv, parseWsInput } from '../src/gui/pure.js';
+import { buildQuery, enc, encPath, highlightJson, minifyJson, parseAliasParam, parseCsv, parseWsInput } from '../src/gui/pure.js';
 
 describe('enc — 읽기 좋은 URL', () => {
   it('DSL 문법 문자는 되살린다', () => {
@@ -62,12 +62,28 @@ describe('buildQuery — 스키마 상태 → 쿼리스트링', () => {
     expect(buildQuery({ res: 'u', fields: [], opts: {} }, {})).toBe('');
   });
 
-  // _method 는 기본값(get)이면 readState 가 안 싣는다 — GET URL 이 예전과 바이트 동일해야 하므로
+  // _method 는 기본값(get)이면 readState 가 안 싣는다 — GET URL 이 예전과 바이트 동일해야 하므로.
+  // (API URL 에서 _method 를 빼는 것은 url-state.apiQuery 의 몫 — buildQuery 자체는 그대로 싣는다)
   it('_method/_body 를 싣는다 — JSON 은 퍼센트 인코딩', () => {
     const q = buildQuery({ res: 'u', fields: [['id', 'uuid']], opts: { _method: 'post' } }, {});
     expect(q).toBe('id=uuid&_method=post');
     const f = buildQuery({ res: 'u', fields: [['id', 'uuid']], opts: { _status: '401', _body: '{"code":"E_AUTH"}' } }, {});
     expect(f).toBe('id=uuid&_status=401&_body=%7B%22code%22:%22E_AUTH%22%7D'); // enc 는 ':' 를 살려둔다
+  });
+});
+
+describe('minifyJson — 화면은 정렬형, URL 은 압축형', () => {
+  it('정렬된 JSON 을 한 줄로 — URL 에 %0A%20%20 이 안 끼게', () => {
+    expect(minifyJson('{\n  "code": "E_AUTH",\n  "n": 1\n}')).toBe('{"code":"E_AUTH","n":1}');
+  });
+
+  it('깨진 JSON 은 원본 그대로 — 서버가 400 으로 알려주는 게 낫다', () => {
+    expect(minifyJson('{nope}')).toBe('{nope}');
+    expect(minifyJson('')).toBe('');
+  });
+
+  it('객체가 아니어도 통과 (배열·문자열)', () => {
+    expect(minifyJson('[ 1, 2 ]')).toBe('[1,2]');
   });
 });
 
