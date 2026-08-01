@@ -88,8 +88,16 @@ export function readState() {
 /** 화면의 별칭 입력칸을 읽어 순수 buildQuery 에 넘기는 래퍼 — 호출부는 별칭을 몰라도 된다 */
 export const buildQuery = (state) => buildQueryPure(state, optAliases());
 
+/**
+ * API URL 은 메서드 중립이다 — 메서드는 쿼리가 아니라 실제 요청 verb 로 간다.
+ * (_method 는 손으로 URL 을 쓸 때를 위해 서버에 남아 있지만 GUI 는 쓰지 않는다)
+ * 주소창(syncAddressBar)에는 계속 실린다 — 그쪽은 GUI 상태이지 API 호출이 아니라서.
+ */
+const apiState = (s) => { const { _method, ...opts } = s.opts; return { ...s, opts }; };
+export const apiQuery = (state) => buildQuery(apiState(state));
+
 export function apiUrl(state) {
-  return location.origin + '/api/' + encPath(state.res) + '?' + buildQuery(state);
+  return location.origin + '/api/' + encPath(state.res) + '?' + apiQuery(state);
 }
 
 /**
@@ -100,7 +108,7 @@ export function apiUrl(state) {
 export function shortApiUrl(state) {
   if (!shared.loadedPreset) return null;
   const saved = new URLSearchParams(shared.loadedPreset.query);
-  const cur = new URLSearchParams(buildQuery(state));
+  const cur = new URLSearchParams(apiQuery(state));
   for (const [k] of saved) {
     if (!k.startsWith('_') && !cur.has(k)) return null; // 필드 삭제됨
   }

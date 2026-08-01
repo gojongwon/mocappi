@@ -39,7 +39,9 @@ function update() {
   }
   syncAddressBar(state);
   clearTimeout(timer);
-  timer = setTimeout(() => preview(url), 300);
+  // 고른 메서드로 진짜 요청한다 — URL 에 _method 를 실어 GET 으로 흉내내지 않는다
+  const method = (state.opts._method || 'get').toUpperCase();
+  timer = setTimeout(() => preview(url, method), 300);
 }
 
 let loadingTimer = null;
@@ -48,7 +50,7 @@ function setLoading(busy) {
   $('#preview').style.opacity = busy ? '.55' : '';
 }
 
-async function preview(url) {
+async function preview(url, method) {
   const seq = ++reqSeq;
   const t0 = performance.now();
   // 빠른 응답(<250ms)은 로딩 표시 없이 조용히 교체 — 깜빡임 방지.
@@ -56,7 +58,7 @@ async function preview(url) {
   clearTimeout(loadingTimer);
   loadingTimer = setTimeout(() => setLoading(true), 250);
   try {
-    const res = await fetch(url, { headers: { 'Accept-Language': LANG } });
+    const res = await fetch(url, { method, headers: { 'Accept-Language': LANG } });
     const text = await res.text();
     if (seq !== reqSeq) return; // 오래된 응답 무시
     clearTimeout(loadingTimer);

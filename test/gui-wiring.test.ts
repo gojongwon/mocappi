@@ -24,6 +24,7 @@ const pick = (sel: string) => {
 };
 
 const fetched: string[] = [];
+const calls: Array<{ url: string; method: string }> = [];
 const replaced: string[] = [];
 const listeners = new Map<string, Array<(e: unknown) => void>>();
 
@@ -45,8 +46,9 @@ vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {} }));
 vi.stubGlobal('history', { replaceState: (_a: unknown, _b: unknown, url: string) => replaced.push(url) });
 vi.stubGlobal('performance', { now: () => 0 });
 vi.stubGlobal('MutationObserver', class { observe() {} });
-vi.stubGlobal('fetch', async (url: string) => {
+vi.stubGlobal('fetch', async (url: string, init?: { method?: string }) => {
   fetched.push(url);
+  calls.push({ url, method: init?.method ?? 'GET' });
   return {
     ok: true, status: 200, headers: { get: () => 'application/json' },
     json: async () => ({ fakerPaths: [], dslTypes: [], items: [] }),
@@ -97,14 +99,20 @@ describe('이벤트 배선', () => {
     expect(() => emit('nobody:listens')).not.toThrow();
   });
 
-  // 메서드 버튼은 숨은 #oMethod 를 거쳐 URL 로만 드러난다 — 배선이 끊겨도 화면은 멀쩡해 보인다
-  it('메서드 버튼 클릭 → 주소창에 _method 반영', () => {
+  // 메서드 버튼은 숨은 #oMethod 를 거쳐 드러난다 — 배선이 끊겨도 화면은 멀쩡해 보인다.
+  // 이번 변경의 계약 3개를 한 번에: 주소창엔 남고, API URL 엔 없고, 진짜 그 verb 로 나간다
+  it('메서드 버튼 클릭 → 주소창엔 _method, API 요청엔 진짜 POST', async () => {
     const btn = { ...el(), dataset: { method: 'post' } };
     (globalThis as unknown as { document: { dispatchEvent(e: unknown): void } }).document.dispatchEvent({
       type: 'click',
       target: { ...el(), closest: () => btn },
     });
     expect(pick('#oMethod').value).toBe('post');
-    expect(replaced.at(-1)).toContain('_method=post');
+    expect(replaced.at(-1)).toContain('_method=post'); // 주소창 = GUI 상태
+
+    await new Promise((r) => setTimeout(r, 360)); // 미리보기 디바운스 300ms
+    const api = calls.filter((c) => c.url.includes('/api/')).at(-1)!;
+    expect(api.method).toBe('POST');
+    expect(api.url).not.toContain('_method'); // API URL 은 메서드 중립
   });
 });

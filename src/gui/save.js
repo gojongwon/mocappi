@@ -3,7 +3,7 @@ import { LANG, t } from './i18n.js';
 import { parseAliasParam } from './pure.js';
 import { shared } from './shared.js';
 // buildQuery 는 url-state 의 래퍼 — 화면의 별칭 입력칸을 함께 읽는다 (pure 쪽은 별칭을 인자로 받음)
-import { OPT_DEFAULTS, OPT_INPUTS, advActive, buildQuery, readState, setOptKeys } from './url-state.js';
+import { OPT_DEFAULTS, OPT_INPUTS, advActive, apiQuery, buildQuery, readState, setOptKeys } from './url-state.js';
 
 // ---- 팀 스키마 저장/불러오기 ----
 // KV 미설정이면: 저장 버튼은 보이되 클릭 시 활성화 안내, 팀 프리셋 목록만 숨김
@@ -131,7 +131,8 @@ export async function applySave() {
     const res = await fetch('/schema/save', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'Accept-Language': LANG },
-      body: JSON.stringify({ name, res: state.res, query: buildQuery(state), ws: shared.ws || undefined }),
+      // apiQuery — 저장본은 스키마다. 메서드는 호출 시점의 선택이라 담지 않는다
+      body: JSON.stringify({ name, res: state.res, query: apiQuery(state), ws: shared.ws || undefined }),
     });
     const body = await res.json();
     if (!res.ok) {
