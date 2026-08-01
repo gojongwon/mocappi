@@ -5,6 +5,7 @@ import { applyPaste, closePaste, openPaste } from './paste.js';
 import './preview.js'; // schema:changed 구독자 — 부수효과만, export 없음
 import { enc } from './pure.js';
 import { applySave, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
+import { enhanceSelects } from './select.js';
 import { shared } from './shared.js';
 import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyPreset, buildQuery, loadFromAddressBar, readState, setOptKeys } from './url-state.js';
 import { joinWs, randWs, switchWs, syncWsUi } from './workspace.js';
@@ -88,6 +89,7 @@ function syncScrollLock() {
 syncTeamSelVisibility();
 renderTeamOptions();
 hardenInputs();
+enhanceSelects();
 
 const modalObserver = new MutationObserver(syncScrollLock);
 for (const id of MODAL_IDS) {

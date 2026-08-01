@@ -394,6 +394,13 @@
   .ac-item.sel, .ac-item:hover { background: var(--accent-soft); }
   .ac-item .v { font-family: var(--mono); font-size: 12.5px; }
   .ac-item .l { color: var(--faint); font-size: 12px; margin-left: auto; white-space: nowrap; }
+  /* select 대체 드롭다운 — <optgroup> 라벨과 안내용 disabled 항목 */
+  .ac-group {
+    padding: 8px 12px 3px; font-size: 11px; font-weight: 700; color: var(--faint);
+    letter-spacing: .02em;
+  }
+  .ac-item[aria-disabled] { color: var(--faint); cursor: default; }
+  .ac-item[aria-disabled]:hover { background: none; }
 
   /* ---- 모바일 (640px 이하) ---- */
   @media (max-width: 640px) {
