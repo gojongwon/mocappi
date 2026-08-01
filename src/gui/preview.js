@@ -1,21 +1,18 @@
-import { $ } from './dom.js';
+import { $, on } from './dom.js';
 import { LANG, t } from './i18n.js';
 import { highlightJson } from './pure.js';
 import { renderCsv, renderNdjson } from './render.js';
-import { shortApiUrl } from './save.js';
 import { shared } from './shared.js';
-import { apiUrl, readState, syncAddressBar } from './url-state.js';
+import { advActive, apiUrl, readState, shortApiUrl, syncAddressBar } from './url-state.js';
 
 // ---- 미리보기 (디바운스 300ms) ----
+// 이 모듈은 아무것도 export 하지 않는다 — schema:changed 를 구독할 뿐이라
+// 어떤 모듈도 여기를 import 할 필요가 없다. 그래서 순환이 생기지 않는다.
 let timer = null; let reqSeq = 0;
-/** 고급 옵션 중 하나라도 기본값이 아닌가 */
-export function advActive() {
-  return $('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
-    $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '' ||
-    $('#oFormat').value !== 'json';
-}
 
-export function update() {
+on('schema:changed', update);
+
+function update() {
   const state = readState();
   // 입력 중에는 절대 닫지 않는다 — 자동으로는 열기만.
   // (닫힘은 프리셋 전환·URL 로드 같은 문맥 전환 시점에만 advActive 기준으로)
@@ -45,9 +42,9 @@ export function update() {
 }
 
 let loadingTimer = null;
-export function setLoading(on) {
-  $('#statusLine').style.opacity = on ? '.4' : '';
-  $('#preview').style.opacity = on ? '.55' : '';
+function setLoading(busy) {
+  $('#statusLine').style.opacity = busy ? '.4' : '';
+  $('#preview').style.opacity = busy ? '.55' : '';
 }
 
 async function preview(url) {

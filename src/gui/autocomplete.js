@@ -1,6 +1,5 @@
-import { applyLock } from './dom.js';
+import { applyLock, emit } from './dom.js';
 import { LANG } from './i18n.js';
-import { update } from './preview.js';
 
 let typeOptions = null; // /schema/types 응답 — 단일 소스
 
@@ -64,7 +63,7 @@ function acApply(i) {
   const row = acInput.closest('.frow');
   acClose();
   applyLock(row);
-  update();
+  emit('schema:changed');
 }
 
 /**

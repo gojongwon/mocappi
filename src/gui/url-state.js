@@ -1,5 +1,4 @@
-import { $, addRow, fieldsEl } from './dom.js';
-import { advActive, update } from './preview.js';
+import { $, addRow, emit, fieldsEl } from './dom.js';
 import { buildQuery as buildQueryPure, enc, encPath, parseAliasParam } from './pure.js';
 import { shared } from './shared.js';
 
@@ -93,6 +92,36 @@ export function apiUrl(state) {
   return location.origin + '/api/' + encPath(state.res) + '?' + buildQuery(state);
 }
 
+/**
+ * 짧은 URL 계산 — 저장본과 현재 상태를 비교해:
+ * 예약 옵션/필드 값 변경·추가는 _s 뒤 오버라이드로 표현,
+ * 저장본 필드의 삭제·이름변경은 표현 불가 → null (숨김)
+ */
+export function shortApiUrl(state) {
+  if (!shared.loadedPreset) return null;
+  const saved = new URLSearchParams(shared.loadedPreset.query);
+  const cur = new URLSearchParams(buildQuery(state));
+  for (const [k] of saved) {
+    if (!k.startsWith('_') && !cur.has(k)) return null; // 필드 삭제됨
+  }
+  const overrides = [];
+  for (const [k, v] of cur) {
+    if (saved.get(k) !== v) overrides.push(enc(k) + '=' + enc(v));
+  }
+  for (const k of Object.keys(OPT_DEFAULTS)) {
+    if (saved.has(k) && !cur.has(k)) overrides.push(k + '=' + OPT_DEFAULTS[k]); // 기본값으로 되돌림도 명시
+  }
+  return location.origin + '/api/' + encPath(state.res) +
+    '?_s=' + shared.loadedPreset.sid + (overrides.length ? '&' + overrides.join('&') : '');
+}
+
+/** 고급 옵션 중 하나라도 기본값이 아닌가 — 이 값들의 입력칸을 OPT_INPUTS 가 들고 있어 여기가 제자리 */
+export function advActive() {
+  return $('#oDelay').value !== '0' || $('#oStatus').value !== '200' ||
+    $('#oWrap').value !== 'envelope' || $('#oSeed').value.trim() !== '' ||
+    $('#oFormat').value !== 'json';
+}
+
 // ---- GUI 상태 ↔ 주소창 (현재 URL 이 곧 GUI 상태) ----
 export function syncAddressBar(state) {
   const q = (shared.ws ? '_ws=' + shared.ws + '&' : '') +
@@ -128,6 +157,6 @@ export function applyPreset(name) {
   setOptKeys(null); // 내장 프리셋은 기본 키 사용
   for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = (p.opts && p.opts[k]) || OPT_DEFAULTS[k];
   $('#optsAdv').open = advActive();
-  update();
+  emit('schema:changed');
 }
 

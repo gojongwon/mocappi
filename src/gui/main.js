@@ -1,12 +1,12 @@
 import { acClose, acKeydown, acRender, initAutocomplete } from './autocomplete.js';
-import { $, ICON_COPY, addRow, applyLock, copyIcon, copyText, hardenInputs } from './dom.js';
+import { $, ICON_COPY, addRow, applyLock, copyIcon, copyText, emit, hardenInputs } from './dom.js';
 import { LANG, applyEn, t } from './i18n.js';
 import { applyPaste, closePaste, openPaste } from './paste.js';
-import { advActive, update } from './preview.js';
+import './preview.js'; // schema:changed 구독자 — 부수효과만, export 없음
 import { enc } from './pure.js';
 import { applySave, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
 import { shared } from './shared.js';
-import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, apiUrl, applyPreset, buildQuery, loadFromAddressBar, readState, setOptKeys } from './url-state.js';
+import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyPreset, buildQuery, loadFromAddressBar, readState, setOptKeys } from './url-state.js';
 import { joinWs, randWs, switchWs, syncWsUi } from './workspace.js';
 
 if (LANG === 'en') applyEn();
@@ -30,7 +30,7 @@ document.addEventListener('input', (e) => {
   if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select')) {
     if (e.target.matches('.fname, .fval')) e.target.title = e.target.value;
     if (e.target.matches('.fval')) acRender(e.target);
-    update();
+    emit('schema:changed');
   }
 });
 // 모바일: 키보드만 내린 상태(포커스 유지)에서 재탭하면 focus 이벤트가 없어
@@ -113,7 +113,7 @@ document.addEventListener('click', (e) => {
     else if (oid === 'saveModal') $('#saveModal').style.display = 'none';
     return;
   }
-  if (btn.classList.contains('del')) { btn.closest('.frow').remove(); update(); return; }
+  if (btn.classList.contains('del')) { btn.closest('.frow').remove(); emit('schema:changed'); return; }
   if (btn.dataset && btn.dataset.preset) { applyPreset(btn.dataset.preset); return; }
   switch (btn.id) {
     // 언어 토글 — 해시만 바꾸고 리로드 (스키마 상태는 location.search 에 있어 안전)
@@ -195,5 +195,5 @@ document.addEventListener('click', (e) => {
     $('#optsAdv').open = advActive();
     $('#welcome').style.display = 'block';
   }
-  update();
+  emit('schema:changed');
 })();

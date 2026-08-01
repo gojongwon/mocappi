@@ -37,10 +37,33 @@ build/gui.mjs   esbuild 로 gui/* 를 HTML 한 덩어리로 인라인
 |---|---|
 | `index.html` | head 메타·JSON-LD + 마크업. `/*__CSS__*/`·`//__JS__` 두 마커에 빌드가 끼워 넣는다 |
 | `app.css` | 전체 스타일 (모바일은 640px 이하 미디어 쿼리) |
-| `pure.js` | **DOM·전역을 안 건드리는 함수만.** 테스트되는 유일한 GUI 코드 |
+| `pure.js` | **DOM·전역을 안 건드리는 함수만.** Node 에서 그대로 테스트 가능 |
 | `shared.js` | 모듈 경계를 넘는 가변 상태 4개 |
 | `main.js` | 이벤트 위임·모달 스크롤락·초기화. 진입점 |
 | `i18n.js` `dom.js` `url-state.js` `preview.js` `render.js` `save.js` `workspace.js` `paste.js` `autocomplete.js` | 이름대로 |
+
+**의존 그래프는 DAG 다. 순환을 다시 만들지 말 것.**
+
+```
+i18n  pure  shared            (잎 — 아무것도 import 안 함)
+  └ dom                       ($, addRow, 클립보드, emit/on)
+      ├ url-state  render  workspace  autocomplete  paste
+      │     └ preview  save
+      └ main                  (진입점 — 아무도 여기를 import 하지 않는다)
+```
+
+**모듈 A 가 B 의 함수를 부르고 싶은데 B 가 이미 A 를 import 한다면, 이벤트를 쓴다.**
+`dom.js` 의 `emit(name)` / `on(name, fn)` — `document` 위의 `CustomEvent` 다.
+`dispatchEvent` 는 **동기**라 직접 호출과 실행 순서·타이밍이 같다.
+
+| 이벤트 | 발신 | 수신 |
+|---|---|---|
+| `schema:changed` | 스키마·옵션을 바꾼 모든 곳 (10곳) | `preview.js` — 미리보기 + 주소창 갱신 |
+| `ws:changed` | `workspace.switchWs` | `save.refreshTeam` — 프리셋 목록 새로고침 |
+| `team:ready` | `save.refreshTeam` (저장소 응답 확인) | `workspace.syncWsUi` — 워크스페이스 버튼 상태 |
+
+`preview.js` 는 **export 가 하나도 없다.** 순수 구독자라서다 — 이게 깨지면 순환이 돌아온 것.
+구독을 빠뜨려도 조용히 통과하므로 `test/gui-wiring.test.ts` 가 세 이벤트를 전부 확인한다.
 
 **GUI 를 고칠 때 여는 파일은 `src/gui/` 안의 것 하나다.** `src/gui.generated.html` 은 빌드 산출물 —
 편집하면 다음 빌드에 사라지고, 훅이 막는다.

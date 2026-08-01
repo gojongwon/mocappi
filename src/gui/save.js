@@ -1,11 +1,9 @@
-import { $, addRow, fieldsEl } from './dom.js';
+import { $, addRow, emit, fieldsEl, on } from './dom.js';
 import { LANG, t } from './i18n.js';
-import { advActive, update } from './preview.js';
-import { enc, encPath, parseAliasParam } from './pure.js';
+import { parseAliasParam } from './pure.js';
 import { shared } from './shared.js';
 // buildQuery 는 url-state 의 래퍼 — 화면의 별칭 입력칸을 함께 읽는다 (pure 쪽은 별칭을 인자로 받음)
-import { OPT_DEFAULTS, OPT_INPUTS, buildQuery, readState, setOptKeys } from './url-state.js';
-import { syncWsUi } from './workspace.js';
+import { OPT_DEFAULTS, OPT_INPUTS, advActive, buildQuery, readState, setOptKeys } from './url-state.js';
 
 // ---- 팀 스키마 저장/불러오기 ----
 // KV 미설정이면: 저장 버튼은 보이되 클릭 시 활성화 안내, 팀 프리셋 목록만 숨김
@@ -52,6 +50,8 @@ export function syncTeamSelVisibility() {
 }
 if (presetMql.addEventListener) presetMql.addEventListener('change', () => { renderTeamOptions(); syncTeamSelVisibility(); });
 
+on('ws:changed', refreshTeam);
+
 export async function refreshTeam() {
   try {
     const res = await fetch('/schema/saved' + (shared.ws ? '?ws=' + shared.ws : ''), { headers: { 'Accept-Language': LANG } });
@@ -59,14 +59,14 @@ export async function refreshTeam() {
     const body = await res.json();
     teamAvailable = true;
     $('#wsBtn').style.display = '';
-    syncWsUi();
+    emit('team:ready'); // workspace 가 받아 syncWsUi — dispatchEvent 는 동기라 순서 그대로
     teamItems = body.items;
     syncTeamSelVisibility();
     renderTeamOptions();
   } catch {}
 }
 
-export function applyQueryString(res, query) {
+function applyQueryString(res, query) {
   $('#resource').value = res;
   fieldsEl.innerHTML = '';
   for (const [k, sel] of Object.entries(OPT_INPUTS)) $(sel).value = OPT_DEFAULTS[k];
@@ -82,11 +82,8 @@ export function applyQueryString(res, query) {
   }
   if (!fieldsEl.children.length) addRow();
   $('#optsAdv').open = advActive();
-  update();
+  emit('schema:changed');
 }
-
-// 현재 불러온/저장한 프리셋 — 짧은 URL 표시의 근거
-
 
 export async function loadTeamPreset(sid) {
   try {
@@ -110,30 +107,7 @@ export function unloadTeamPreset() {
   shared.preloadSnapshot = null;
   $('#teamSel').classList.remove('active');
   if (snap) applyQueryString(snap.res, snap.query);
-  else update();
-}
-
-/**
- * 짧은 URL 계산 — 저장본과 현재 상태를 비교해:
- * 예약 옵션/필드 값 변경·추가는 _s 뒤 오버라이드로 표현,
- * 저장본 필드의 삭제·이름변경은 표현 불가 → null (숨김)
- */
-export function shortApiUrl(state) {
-  if (!shared.loadedPreset) return null;
-  const saved = new URLSearchParams(shared.loadedPreset.query);
-  const cur = new URLSearchParams(buildQuery(state));
-  for (const [k] of saved) {
-    if (!k.startsWith('_') && !cur.has(k)) return null; // 필드 삭제됨
-  }
-  const overrides = [];
-  for (const [k, v] of cur) {
-    if (saved.get(k) !== v) overrides.push(enc(k) + '=' + enc(v));
-  }
-  for (const k of Object.keys(OPT_DEFAULTS)) {
-    if (saved.has(k) && !cur.has(k)) overrides.push(k + '=' + OPT_DEFAULTS[k]); // 기본값으로 되돌림도 명시
-  }
-  return location.origin + '/api/' + encPath(state.res) +
-    '?_s=' + shared.loadedPreset.sid + (overrides.length ? '&' + overrides.join('&') : '');
+  else emit('schema:changed');
 }
 
 export function openSave() {
@@ -176,7 +150,7 @@ export async function applySave() {
     $('#saveResult').style.display = 'block';
     shared.loadedPreset = { sid: body.sid, res: body.res, query: body.query, name: body.name }; // 이후 URL 박스에도 짧은 URL 상시 표시
     refreshTeam();
-    update();
+    emit('schema:changed');
   } catch (e) {
     $('#saveError').textContent = t('요청 실패: ', 'Request failed: ') + e;
   }

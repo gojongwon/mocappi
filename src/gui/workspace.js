@@ -1,8 +1,6 @@
-import { $ } from './dom.js';
+import { $, emit, on } from './dom.js';
 import { t } from './i18n.js';
-import { update } from './preview.js';
 import { parseWsInput } from './pure.js';
-import { refreshTeam } from './save.js';
 import { shared } from './shared.js';
 
 // ---- 워크스페이스 (링크를 아는 사람만 접근하는 저장 공간) ----
@@ -31,12 +29,15 @@ export function syncWsUi() {
   $('#wsNew').style.color = inWs ? 'var(--ink)' : 'var(--accent-text)';
 }
 
+// 저장소가 살아있다고 확인되면(save.refreshTeam) 워크스페이스 UI 를 상태에 맞춘다
+on('team:ready', syncWsUi);
+
 export function switchWs(ws) {
   shared.ws = ws;
   shared.loadedPreset = null; shared.preloadSnapshot = null;
   syncWsUi();
-  refreshTeam();
-  update();
+  emit('ws:changed'); // save 가 받아 목록 새로고침
+  emit('schema:changed');
 }
 
 export function joinWs() {

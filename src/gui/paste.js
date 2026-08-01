@@ -1,6 +1,5 @@
-import { $, addRow, fieldsEl } from './dom.js';
+import { $, addRow, emit, fieldsEl } from './dom.js';
 import { LANG, t } from './i18n.js';
-import { update } from './preview.js';
 import { shared } from './shared.js';
 
 // ---- JSON 붙여넣기 → 추론 ----
@@ -47,6 +46,6 @@ export async function applyPaste() {
     note.style.display = 'none';
   }
   closePaste();
-  update();
+  emit('schema:changed');
 }
 

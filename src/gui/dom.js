@@ -2,6 +2,13 @@ import { t } from './i18n.js';
 
 export const $ = (s) => document.querySelector(s);
 export const fieldsEl = $('#fields');
+
+// ---- 최소 이벤트 버스 ----
+// 모듈 간 순환을 만들지 않으려고 직접 호출 대신 쓴다. 여기 있는 이유는 dom.js 가
+// i18n 만 의존하면서 모든 모듈이 이미 import 하는 유일한 자리라서 — 새 간선이 0이다.
+// dispatchEvent 는 동기다: 발신 지점에서 수신자가 끝까지 돌고 나서 다음 줄로 간다.
+export const emit = (name) => document.dispatchEvent(new CustomEvent(name));
+export const on = (name, fn) => document.addEventListener(name, fn);
 // ---- 필드 행 ----
 // 인자가 없어 직접 수정할 일이 없는 타입 — 입력 잠금 (▾ 로 교체, ✕ 로 삭제는 가능)
 const ARGLESS_TYPES = ['uuid', 'index'];
