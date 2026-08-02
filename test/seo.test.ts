@@ -37,6 +37,8 @@ describe('SEO', () => {
     expect(html).toContain('twitter:card');
     // data: URI 로 되돌리면 Googlebot-Image 가 아이콘을 못 가져간다
     expect(html).toContain('rel="icon" type="image/svg+xml" href="/favicon.svg"');
+    // 구글이 사이트 이름을 정할 때 보는 1순위 신호
+    expect(html).toContain('"@type":"WebSite"');
   });
 });
 
