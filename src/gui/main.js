@@ -116,6 +116,8 @@ document.addEventListener('click', (e) => {
   if (btn.classList.contains('del')) { btn.closest('.frow').remove(); emit('schema:changed'); return; }
   if (btn.dataset && btn.dataset.preset) { applyPreset(btn.dataset.preset); return; }
   if (btn.dataset && btn.dataset.method) { setMethod(btn.dataset.method); return; }
+  // 모달 코너 ✕ — 6개 모달의 닫기가 전부 closeModal 하나라 분기도 하나면 된다
+  if (btn.dataset && btn.dataset.close) { closeModal(btn.dataset.close); return; }
   switch (btn.id) {
     // 언어 토글 — 해시만 바꾸고 리로드 (스키마 상태는 location.search 에 있어 안전)
     case 'langBtn': location.hash = LANG === 'en' ? '#ko' : '#en'; location.reload(); break;

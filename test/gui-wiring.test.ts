@@ -149,6 +149,19 @@ describe('이벤트 배선', () => {
     expect(acceptGhost()).toBe(false);
   });
 
+  // 모달 6개의 닫기가 전부 closeModal 하나라 코너 ✕ 도 data-close 분기 하나로 덮는다
+  it('모달 코너 ✕ 클릭 → 해당 모달만 닫힌다', () => {
+    pick('#newsModal').style.display = 'flex';
+    pick('#helpModal').style.display = 'flex';
+    const btn = { ...el(), dataset: { close: 'newsModal' } };
+    (globalThis as unknown as { document: { dispatchEvent(e: unknown): void } }).document.dispatchEvent({
+      type: 'click',
+      target: { ...el(), closest: () => btn },
+    });
+    expect(pick('#newsModal').style.display).toBe('none');
+    expect(pick('#helpModal').style.display).toBe('flex');
+  });
+
   it('아무도 구독하지 않는 이벤트는 조용히 무시된다', () => {
     expect(() => emit('nobody:listens')).not.toThrow();
   });

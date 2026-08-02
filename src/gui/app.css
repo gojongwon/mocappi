@@ -401,6 +401,8 @@
     resize: vertical; line-height: 1.6;
   }
   #pasteError { color: var(--danger); font-size: 12.5px; min-height: 1.2em; margin: 6px 0 4px; }
+  /* 코너 닫기 아이콘 — 데스크톱은 텍스트 버튼을 쓰므로 640px 이하에서만 켠다 */
+  .modal-x { display: none; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
   .modal-actions button {
     border: 1.5px solid var(--ink); border-radius: var(--radius-s); padding: 8px 18px; cursor: pointer;
@@ -510,6 +512,18 @@
     #pasteModal .card, #helpModal .card, #saveModal .card, #wsModal .card, #newsModal .card, #fbModal .card {
       width: calc(100vw - 24px) !important; padding: 16px; max-height: 88vh; overflow-y: auto;
     }
+    /* 닫기는 코너 아이콘으로 — 세로 스택에서 닫기가 화면 폭 한 줄을 통째로 먹는다.
+       카드 자체가 스크롤하므로(위 max-height) absolute 면 긴 모달에서 아이콘이 같이
+       스크롤돼 사라진다 → sticky 로 스크롤포트 상단에 붙인다. 배경을 채워 밑을 가린다 */
+    .modal-x {
+      display: block; position: sticky; top: -4px; z-index: 1;
+      margin: -6px -6px -22px auto; /* auto = 우측 정렬, 음수 bottom 으로 제목이 옆에 오게 */
+      border: none; background: var(--panel); color: var(--muted);
+      font-size: 18px; line-height: 1; padding: 6px 8px; cursor: pointer;
+    }
+    .modal-x + h3 { padding-right: 34px; } /* 제목이 아이콘 밑으로 파고들지 않게 */
+    /* 닫기만 있던 행은 통째로 — 버튼만 숨기면 .modal-actions 의 margin-top 이 남는다 */
+    .close-only, .btn-close { display: none; }
     /* 모달 버튼: 좁은 폭에서 구겨지는 대신 세로 스택 (터치 친화) */
     .modal-actions { flex-direction: column; align-items: stretch; gap: 8px; }
     .modal-actions button { width: 100%; justify-content: center; text-align: center; }

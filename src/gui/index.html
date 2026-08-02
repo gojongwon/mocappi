@@ -173,6 +173,7 @@
 
 <div id="newsModal">
   <div class="card" style="width:560px">
+    <button class="modal-x" data-close="newsModal" data-i18n-title="close" title="닫기" aria-label="닫기">✕</button>
     <h3 data-i18n="whatsNew">새 소식</h3>
     <ul class="news-list" data-en-block="newsList">
       <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 그 메서드로 <b>실제 요청</b>을 보냅니다 (URL 은 깨끗하게 유지). POST 는 201 + 단건, DELETE 는 204. 상태코드가 400 이상이면 실패 바디가 나갑니다 — 표준 4xx·5xx 는 전부 제 이름을 갖습니다 (<code>413</code> → <code>Payload Too Large</code>). 고급의 <b>실패 바디</b> 칸에서는 기본 응답이 회색으로 미리 보이고 <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 끝. 붙여넣은 JSON 은 자동 정렬 + 색상 (직접 친 건 <b>{ } 정렬</b> 버튼으로)</li>
@@ -190,7 +191,7 @@
       <li><span class="v">v0.14</span><code>_limit</code> 최대 1000 + NDJSON/CSV 스트리밍 (생성 10배 가속)</li>
       <li><span class="v">v0.11~13</span>고급 타입(nullable·가중치 enum·pattern), JSON 붙여넣기가 이를 자동 감지, 실존 불가가 보장되는 이메일·전화</li>
     </ul>
-    <div class="modal-actions">
+    <div class="modal-actions close-only">
       <button id="newsClose" data-i18n="close" style="background:var(--accent);color:var(--accent-text)">닫기</button>
     </div>
   </div>
@@ -198,19 +199,21 @@
 
 <div id="fbModal">
   <div class="card" style="width:520px">
+    <button class="modal-x" data-close="fbModal" data-i18n-title="close" title="닫기" aria-label="닫기">✕</button>
     <h3 data-i18n="feedback">피드백</h3>
     <p data-en-block="fbIntro">불편한 점, 갖고 싶은 기능 — 무엇이든 좋아요. 익명으로 개발자에게 전달됩니다.</p>
     <textarea id="fbText" data-i18n-ph="phFeedback" placeholder="예: CSV 에 BOM 이 있으면 좋겠어요 (엑셀 한글 깨짐)" maxlength="1000" spellcheck="false"></textarea>
     <div id="fbStatus"></div>
     <div class="modal-actions">
       <button id="fbSend" data-i18n="send" style="background:var(--accent);color:var(--accent-text)">보내기</button>
-      <button id="fbClose" data-i18n="close" style="background:var(--bg);color:var(--muted)">닫기</button>
+      <button id="fbClose" class="btn-close" data-i18n="close" style="background:var(--bg);color:var(--muted)">닫기</button>
     </div>
   </div>
 </div>
 
 <div id="helpModal">
   <div class="card">
+    <button class="modal-x" data-close="helpModal" data-i18n-title="close" title="닫기" aria-label="닫기">✕</button>
     <h3 data-i18n="howToUse">사용법</h3>
     <div class="help-body" data-en-block="helpBody">
       <h4><span class="n">1</span>시작은 둘 중 하나</h4>
@@ -285,7 +288,7 @@ customer.address.city = location.city</pre>
          리소스 경로는 <code>/api/v2/users/123/orders</code> 처럼 여러 단계도 됩니다 — 경로는 장식이고 데이터는 쿼리로 결정되며,
          상세 응답은 <code>_wrap=one&_seed=123</code> 조합으로 만듭니다.</p>
     </div>
-    <div class="modal-actions">
+    <div class="modal-actions close-only">
       <button id="helpClose" data-i18n="close" style="background:var(--accent);color:var(--accent-text)">닫기</button>
     </div>
   </div>
@@ -293,6 +296,7 @@ customer.address.city = location.city</pre>
 
 <div id="wsModal">
   <div class="card" style="width:520px">
+    <button class="modal-x" data-close="wsModal" data-i18n-title="close" title="닫기" aria-label="닫기">✕</button>
     <h3 data-i18n="workspace">워크스페이스</h3>
     <p data-en-block="wsIntro">프리셋 저장·공유는 <b>워크스페이스 단위</b>로 이뤄지고, <b>링크를 아는 사람만</b> 접근할 수 있습니다.</p>
     <div class="wsid" id="wsCurrent"></div>
@@ -308,7 +312,7 @@ customer.address.city = location.city</pre>
     <div id="wsJoinError" style="color:var(--danger);font-size:12.5px;min-height:1.2em;margin-top:4px"></div>
     <p data-en-block="wsNote" style="margin-top:12px;font-size:12px;color:var(--faint)">
       링크를 잃어버리면 워크스페이스를 다시 찾을 수 없어요 — 팀 문서에 보관하세요. 저장물은 180일 미사용 시 만료됩니다.</p>
-    <div class="modal-actions">
+    <div class="modal-actions close-only">
       <button id="wsClose" data-i18n="close" style="background:var(--bg);color:var(--muted)">닫기</button>
     </div>
   </div>
@@ -316,6 +320,7 @@ customer.address.city = location.city</pre>
 
 <div id="saveModal">
   <div class="card">
+    <button class="modal-x" data-close="saveModal" data-i18n-title="close" title="닫기" aria-label="닫기">✕</button>
     <h3 data-i18n="saveAsPreset">프리셋으로 저장</h3>
     <p data-en-block="saveIntro">워크스페이스의 프리셋 목록에 추가되고 짧은 URL 이 생깁니다.<br>
        내용을 고쳐 다시 저장하면 새 URL — 기존 URL 은 그대로 유지돼요.</p>
@@ -345,7 +350,7 @@ npm run deploy</pre>
       </div>
     </div>
     <div class="modal-actions">
-      <button id="saveCancel" data-i18n="close" style="background:var(--bg);color:var(--muted)">닫기</button>
+      <button id="saveCancel" class="btn-close" data-i18n="close" style="background:var(--bg);color:var(--muted)">닫기</button>
       <button id="saveApply" data-i18n="save" style="background:var(--accent);color:var(--accent-text)">저장</button>
     </div>
   </div>
@@ -353,13 +358,14 @@ npm run deploy</pre>
 
 <div id="pasteModal">
   <div class="card">
+    <button class="modal-x" data-close="pasteModal" data-i18n-title="close" title="닫기" aria-label="닫기">✕</button>
     <h3 data-i18n="pasteTitle">JSON 붙여넣기</h3>
     <p data-en-block="pasteIntro">실제 API 응답이나 예시 객체를 붙여넣으면 필드와 타입을 자동으로 추론합니다.
        <code style="font-family:var(--mono);font-size:12px">{"data": [...]}</code> 같은 envelope 도 알아서 벗겨냅니다.</p>
     <textarea id="pasteInput" data-i18n-ph="phPaste" spellcheck="false" placeholder='{"id": "a1b2...", "name": "김민준", "age": 34, "tags": ["a", "b"]}'></textarea>
     <div id="pasteError"></div>
     <div class="modal-actions">
-      <button id="pasteCancel" data-i18n="cancel">취소</button>
+      <button id="pasteCancel" class="btn-close" data-i18n="cancel">취소</button>
       <button id="pasteApply" data-i18n="pasteApply">추론해서 채우기</button>
     </div>
   </div>
