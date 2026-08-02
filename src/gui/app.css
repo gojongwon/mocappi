@@ -25,8 +25,8 @@
   /* 스크롤바 */
   pre#preview::-webkit-scrollbar { width: 10px; }
   pre#preview::-webkit-scrollbar-thumb { background: #3a3a40; border-radius: 6px; border: 3px solid #17171a; }
-  .help-body::-webkit-scrollbar, .ac::-webkit-scrollbar { width: 8px; }
-  .help-body::-webkit-scrollbar-thumb, .ac::-webkit-scrollbar-thumb { background: #cfcfc8; border-radius: 4px; }
+  .help-body::-webkit-scrollbar, .news-list::-webkit-scrollbar, .ac::-webkit-scrollbar { width: 8px; }
+  .help-body::-webkit-scrollbar-thumb, .news-list::-webkit-scrollbar-thumb, .ac::-webkit-scrollbar-thumb { background: #cfcfc8; border-radius: 4px; }
 
   /* ===== 헤더 ===== */
   header {
@@ -85,7 +85,10 @@
   }
   .corner button svg { flex: none; width: 15px; height: 15px; }
   .corner button:hover { background: var(--accent); color: var(--accent-text); }
-  .news-list { margin: 8px 0 0; padding: 0; list-style: none; font-size: 13px; line-height: 1.75; }
+  /* 버전이 쌓이면 카드가 화면 밖으로 자란다 — 목록만 스크롤시키고 제목·닫기는 붙여둔다
+     (.help-body 와 같은 처방. 모바일에선 카드 자체가 스크롤하므로 아래 미디어쿼리에서 해제) */
+  .news-list { margin: 8px 0 0; padding: 0 8px 0 0; list-style: none; font-size: 13px; line-height: 1.75;
+    max-height: 68vh; overflow-y: auto; }
   .news-list li { padding: 7px 0; border-bottom: 1px dashed rgba(23,23,26,.18); }
   .news-list li:last-child { border-bottom: none; }
   .news-list .v {
@@ -510,7 +513,7 @@
     /* 모달 버튼: 좁은 폭에서 구겨지는 대신 세로 스택 (터치 친화) */
     .modal-actions { flex-direction: column; align-items: stretch; gap: 8px; }
     .modal-actions button { width: 100%; justify-content: center; text-align: center; }
-    .help-body { max-height: none; padding-right: 0; }
+    .help-body, .news-list { max-height: none; padding-right: 0; }
     /* 표 → 카드형 세로 배치 (가로 스크롤 제거) */
     .help-body table, .help-body tbody { display: block; width: 100%; }
     .help-body tr {
