@@ -7,7 +7,7 @@ import { enc } from './pure.js';
 import { applySave, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
 import { enhanceSelects } from './select.js';
 import { shared } from './shared.js';
-import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyFailPreset, applyPreset, buildQuery, formatBody, loadDefaultBody, loadFromAddressBar, readState, setMethod, setOptKeys } from './url-state.js';
+import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, advActive, apiUrl, applyFailPreset, applyPreset, buildQuery, formatBody, loadFromAddressBar, readState, setMethod, setOptKeys } from './url-state.js';
 import { joinWs, randWs, switchWs, syncWsUi } from './workspace.js';
 
 if (LANG === 'en') applyEn();
@@ -121,13 +121,6 @@ document.addEventListener('click', (e) => {
     // 언어 토글 — 해시만 바꾸고 리로드 (스키마 상태는 location.search 에 있어 안전)
     case 'langBtn': location.hash = LANG === 'en' ? '#ko' : '#en'; location.reload(); break;
     case 'addField': addRow(); break;
-    case 'oBodyDefault': {
-      if (!loadDefaultBody()) { // 200번대면 미리보기가 성공 데이터다
-        btn.textContent = t('상태코드 400+', 'Needs status 400+');
-        setTimeout(() => (btn.textContent = t('기본값 불러오기', 'Load default')), 1500);
-      }
-      break;
-    }
     case 'oBodyFmt': {
       // 자동 정렬은 포커스가 없을 때만 돌아 손으로 친 JSON 은 안 걸린다 — 그 자리를 메우는 버튼
       const ok = formatBody();

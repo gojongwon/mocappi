@@ -33,8 +33,6 @@ const EN = {
   failPreset401: '401 Unauthorized',
   failPreset404: '404 Not found',
   failPreset500: '500 Server error',
-  failPresetDefault: 'Load default',
-  failPresetDefaultTitle: 'Copy the default failure response now shown in the preview into this box — then edit it',
   methodDefault: 'default',
   fmtBody: '{ } Format',
   fmtBodyTitle: 'Re-indent the current JSON with 2 spaces — pasting formats automatically, hand-typed JSON needs this button',
