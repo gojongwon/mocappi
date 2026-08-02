@@ -98,13 +98,14 @@
             <button data-fail="401" data-i18n="failPreset401">401 인증 만료</button>
             <button data-fail="404" data-i18n="failPreset404">404 없음</button>
             <button data-fail="500" data-i18n="failPreset500">500 서버 오류</button>
-            <button id="oBodyFmt" data-i18n="fmtBody" data-i18n-title="fmtBodyTitle" title="지금 내용을 2칸 들여쓰기로 정렬 — 붙여넣기는 자동, 직접 친 JSON 은 이 버튼으로">{ } 정렬</button>
+            <button id="oBodyDefault" data-i18n="failPresetDefault" data-i18n-title="failPresetDefaultTitle" title="지금 미리보기에 뜬 기본 실패 응답을 입력칸으로 — 고쳐 쓰면 됩니다">기본값 불러오기</button>
           </div>
           <!-- 투명 글자 textarea + 뒤에 깔린 하이라이트 pre. 둘의 글자 배치가 1px 도 어긋나면
                캐럿이 글자에서 벗어나므로 폰트·패딩·줄높이·줄바꿈 규칙을 CSS 에서 공유한다 -->
           <div class="code-edit">
             <pre id="oBodyHl" aria-hidden="true"></pre>
-            <textarea id="oBody" rows="4" spellcheck="false" data-i18n-ph="phBody" placeholder='상태코드 400 이상일 때 나갈 JSON (예: {"code":"E_AUTH","message":"토큰 만료"})'></textarea>
+            <textarea id="oBody" rows="4" spellcheck="false" data-i18n-ph="phBody" placeholder='비워두면 {"error":…, "status":…, "message":…} 기본 응답이 나갑니다. 직접 쓰려면 여기에 JSON 을 (상태코드 400 이상일 때만)'></textarea>
+            <button id="oBodyFmt" data-i18n="fmtBody" data-i18n-title="fmtBodyTitle" title="지금 내용을 2칸 들여쓰기로 정렬 — 붙여넣기는 자동, 직접 친 JSON 은 이 버튼으로">{ } 정렬</button>
           </div>
         </div>
         <div><label><span data-i18n="optWrap">모양</span> <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
@@ -133,10 +134,14 @@
     <h2 data-i18n="generatedUrl">생성된 URL</h2>
     <div class="methods">
       <button data-method="get" class="on">GET</button>
-      <button data-method="post">POST</button>
-      <button data-method="put">PUT</button>
-      <button data-method="patch">PATCH</button>
-      <button data-method="delete">DELETE</button>
+      <span class="mlabel" data-i18n="methodDefault">기본</span>
+      <!-- 나머지 넷은 묶어서 오른쪽으로 — POST 에 margin-left:auto 만 주면 좁은 폭에서 흩어진다 -->
+      <span class="m-rest">
+        <button data-method="post">POST</button>
+        <button data-method="put">PUT</button>
+        <button data-method="patch">PATCH</button>
+        <button data-method="delete">DELETE</button>
+      </span>
       <input id="oMethod" type="hidden" value="get">
     </div>
     <div class="urlwrap">

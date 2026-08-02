@@ -58,6 +58,7 @@ vi.stubGlobal('fetch', async (url: string, init?: { method?: string }) => {
 
 // 스텁이 선 뒤에 모듈 그래프를 평가해야 한다 — 정적 import 는 호이스팅돼서 못 쓴다
 await import('../src/gui/main.js');
+const { shared } = await import('../src/gui/shared.js');
 await new Promise((r) => setTimeout(r, 20)); // 초기화 IIFE 의 await 통과 대기
 
 // tsconfig 의 lib 에 DOM 이 없다 (워커용) — 스텁은 globalThis 를 통해 집는다
@@ -104,6 +105,27 @@ describe('이벤트 배선', () => {
       target: { ...el(), closest: () => btn },
     });
     expect(pick('#oBody').value).toBe('{\n  "code": "E_AUTH"\n}');
+  });
+
+  // 서버 실패 문구를 GUI 에 복사하지 않으려고 미리보기 텍스트를 그대로 옮긴다 — 그 배선 확인
+  it('기본값 불러오기 → 미리보기 응답이 실패 바디로, 200번대면 무시', () => {
+    const click = () => {
+      const btn = { ...el(), id: 'oBodyDefault' };
+      (globalThis as unknown as { document: { dispatchEvent(e: unknown): void } }).document.dispatchEvent({
+        type: 'click',
+        target: { ...el(), closest: () => btn },
+      });
+    };
+    // 미리보기 응답을 직접 심는다 — 디바운스 타이밍이 아니라 '옮기는 배선' 을 보는 테스트다
+    shared.lastPreviewText = '{\n  "error": "Not Found",\n  "status": 404\n}';
+    pick('#oBody').value = '';
+    pick('#oStatus').value = '200';
+    click();
+    expect(pick('#oBody').value).toBe(''); // 성공 응답을 실패 바디로 옮길 이유가 없다
+
+    pick('#oStatus').value = '404';
+    click();
+    expect(pick('#oBody').value).toBe(shared.lastPreviewText);
   });
 
   it('아무도 구독하지 않는 이벤트는 조용히 무시된다', () => {

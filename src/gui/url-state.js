@@ -161,6 +161,19 @@ export function applyFailPreset(status) {
   emit('schema:changed');
 }
 
+/**
+ * 미리보기에 뜬 기본 실패 응답을 입력칸으로 옮긴다 — 거기서부터 고쳐 쓰라고.
+ * 서버의 실패 바디 문구(FAIL_REASONS, 코드 10종 × ko/en)를 GUI 에 복사하지 않으려고
+ * "지금 화면에 보이는 것" 을 그대로 쓴다. 상태코드·언어에 자동으로 맞고 사본이 안 생긴다.
+ * 200번대면 미리보기가 성공 데이터라 의미가 없다 → false, 호출부가 알린다.
+ */
+export function loadDefaultBody() {
+  if (Number($('#oStatus').value) < 400) return false;
+  $('#oBody').value = shared.lastPreviewText;
+  emit('schema:changed');
+  return true;
+}
+
 /** 실패 바디를 화면용으로 정렬. 깨진 JSON 이면 손대지 않고 false — 호출부가 오류를 알린다 */
 export function formatBody() {
   const ta = $('#oBody');
