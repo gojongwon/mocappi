@@ -1,6 +1,6 @@
 {
   "name": "mocappi",
-  "version": "0.28.9",
+  "version": "0.28.10",
   "description": "",
   "scripts": {
     "dev": "wrangler dev",

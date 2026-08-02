@@ -94,17 +94,18 @@
         <div><label><span data-i18n="optStatus">상태코드</span> <input class="okey" data-for="_status" value="_status" spellcheck="false" data-i18n-title="okeyStatus" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: status)"></label><input id="oStatus" type="number" min="100" max="599" value="200"></div>
         <div class="opt-wide">
           <label><span data-i18n="optBody">실패 바디</span></label>
-          <div class="body-presets">
-            <button data-fail="401" data-i18n="failPreset401">401 인증 만료</button>
-            <button data-fail="404" data-i18n="failPreset404">404 없음</button>
-            <button data-fail="500" data-i18n="failPreset500">500 서버 오류</button>
-          </div>
           <!-- 투명 글자 textarea + 뒤에 깔린 하이라이트 pre. 둘의 글자 배치가 1px 도 어긋나면
-               캐럿이 글자에서 벗어나므로 폰트·패딩·줄높이·줄바꿈 규칙을 CSS 에서 공유한다 -->
+               캐럿이 글자에서 벗어나므로 폰트·패딩·줄높이·줄바꿈 규칙을 CSS 에서 공유한다.
+               버튼은 툴바로 뺐다 — textarea 글자는 절대배치 요소를 피해 흐를 수 없어 겹치면 가려진다 -->
           <div class="code-edit">
-            <pre id="oBodyHl" aria-hidden="true"></pre>
-            <textarea id="oBody" rows="4" spellcheck="false" data-i18n-ph="phBody" placeholder='비워두면 {"error":…, "status":…, "message":…} 기본 응답이 나갑니다. 직접 쓰려면 여기에 JSON 을 (상태코드 400 이상일 때만)'></textarea>
-            <button id="oBodyFmt" data-i18n="fmtBody" data-i18n-title="fmtBodyTitle" title="지금 내용을 2칸 들여쓰기로 정렬 — 붙여넣기는 자동, 직접 친 JSON 은 이 버튼으로">{ } 정렬</button>
+            <div class="ce-bar">
+              <span class="ce-hint" id="oBodyHint" hidden data-i18n="bodyGhostHint">Tab ⇥ 기본값 채우기</span>
+              <button id="oBodyFmt" data-i18n="fmtBody" data-i18n-title="fmtBodyTitle" title="지금 내용을 2칸 들여쓰기로 정렬 — 붙여넣기는 자동, 직접 친 JSON 은 이 버튼으로">{ } 정렬</button>
+            </div>
+            <div class="ce-body">
+              <pre id="oBodyHl" aria-hidden="true"></pre>
+              <textarea id="oBody" rows="4" spellcheck="false"></textarea>
+            </div>
           </div>
         </div>
         <div><label><span data-i18n="optWrap">모양</span> <input class="okey" data-for="_wrap" value="_wrap" spellcheck="false" data-i18n-title="okeyGeneric" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요"></label>
@@ -173,7 +174,7 @@
   <div class="card" style="width:560px">
     <h3 data-i18n="whatsNew">새 소식</h3>
     <ul class="news-list" data-en-block="newsList">
-      <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 그 메서드로 <b>실제 요청</b>을 보냅니다 (URL 은 깨끗하게 유지). POST 는 201 + 단건, DELETE 는 204. 상태코드가 400 이상이면 실패 바디가 나가고, 고급의 <b>실패 바디</b> 칸에서 401·404·500 프리셋을 고르거나 JSON 을 붙여넣으면 자동 정렬 + 색상으로 보여줍니다 (직접 친 JSON 은 <b>{ } 정렬</b> 버튼으로)</li>
+      <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 그 메서드로 <b>실제 요청</b>을 보냅니다 (URL 은 깨끗하게 유지). POST 는 201 + 단건, DELETE 는 204. 상태코드가 400 이상이면 실패 바디가 나가고, 고급의 <b>실패 바디</b> 칸에서 기본 응답이 회색으로 미리 보이고 <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 끝. 붙여넣은 JSON 은 자동 정렬 + 색상 (직접 친 건 <b>{ } 정렬</b> 버튼으로)</li>
       <li><span class="v">v0.27</span>영어 지원 — 헤더 EN/KO 버튼으로 전환, 브라우저 언어 자동 감지. API 에러 힌트도 <code>Accept-Language</code> 를 따라갑니다</li>
       <li><span class="v">v0.26</span>마스킹 타입 <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — 실서비스처럼 가려진 개인정보 ("김*준", "010-****-5678")</li>
       <li><span class="v">v0.25</span>이름이 바뀌었어요 — Mock API Builder → <b>모카삐 (mocappi)</b>. 로고에 번개 배지도 달았습니다 ⚡ 주소는 <code>mocappi.gojongwon.workers.dev</code>, 기능과 저장물은 그대로예요</li>

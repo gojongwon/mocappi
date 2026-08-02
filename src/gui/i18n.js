@@ -30,9 +30,7 @@ const EN = {
   optDelay: 'Delay ms',
   optStatus: 'Status code',
   optBody: 'Failure body',
-  failPreset401: '401 Unauthorized',
-  failPreset404: '404 Not found',
-  failPreset500: '500 Server error',
+  bodyGhostHint: 'Tab ⇥ to fill the default',
   methodDefault: 'default',
   fmtBody: '{ } Format',
   fmtBodyTitle: 'Re-indent the current JSON with 2 spaces — pasting formats automatically, hand-typed JSON needs this button',
@@ -57,7 +55,6 @@ const EN = {
   phQ: 'substring match on values',
   phQin: 'limit to (e.g. name,city)',
   phSeed: 'e.g. 123 (a detail API id)',
-  phBody: 'Leave empty and {"error":…, "status":…, "message":…} is returned. To write your own, put JSON here (status 400+ only)',
   advSummary: 'Advanced — delay · status · failure body · shape · seed · format',
   pasteJson: '{ } Paste JSON',
   pasteJsonSub: 'Paste a real API response and the schema builds itself',
@@ -113,7 +110,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
-    <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body, and the <b>Failure body</b> field under Advanced has 401/404/500 presets plus auto-formatting and syntax colors when you paste JSON (hand-typed JSON: hit <b>{ } Format</b>)</li>
+    <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body, and the <b>Failure body</b> field under Advanced previews the default response in grey and <b>Tab</b> fills it in for you to edit. Pasted JSON is auto-formatted and colored (hand-typed: hit <b>{ } Format</b>)</li>
     <li><span class="v">v0.27</span>English support — switch with the EN/KO button in the header, auto-detected from your browser. API error hints follow <code>Accept-Language</code> too</li>
     <li><span class="v">v0.26</span>Masking types <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — redacted PII like real services show ("김*준", "010-****-5678")</li>
     <li><span class="v">v0.25</span>New name — Mock API Builder → <b>mocappi</b>, with a lightning badge on the logo ⚡ Now at <code>mocappi.gojongwon.workers.dev</code>; features and saved data unchanged</li>

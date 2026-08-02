@@ -58,6 +58,8 @@ vi.stubGlobal('fetch', async (url: string, init?: { method?: string }) => {
 
 // 스텁이 선 뒤에 모듈 그래프를 평가해야 한다 — 정적 import 는 호이스팅돼서 못 쓴다
 await import('../src/gui/main.js');
+const { shared } = await import('../src/gui/shared.js');
+const { acceptGhost, paintBody } = await import('../src/gui/url-state.js');
 await new Promise((r) => setTimeout(r, 20)); // 초기화 IIFE 의 await 통과 대기
 
 // tsconfig 의 lib 에 DOM 이 없다 (워커용) — 스텁은 globalThis 를 통해 집는다
@@ -104,6 +106,31 @@ describe('이벤트 배선', () => {
       target: { ...el(), closest: () => btn },
     });
     expect(pick('#oBody').value).toBe('{\n  "code": "E_AUTH"\n}');
+  });
+
+  // 고스트는 미리보기 응답에서 오고 Tab 이 확정한다. keydown 배선 자체는 스텁의
+  // addEventListener 가 no-op 이라 못 덮으므로, 값이 정해지는 쪽(paintBody→acceptGhost)만 본다
+  it('빈 칸 + 400 이상 → 고스트를 Tab 으로 확정, 200번대면 고스트 없음', () => {
+    shared.lastPreviewText = '{\n  "error": "Not Found",\n  "status": 404\n}';
+    pick('#oBody').value = '';
+
+    pick('#oStatus').value = '200';
+    paintBody();
+    expect(acceptGhost()).toBe(false); // 미리보기가 성공 데이터다
+    expect(pick('#oBody').value).toBe('');
+
+    pick('#oStatus').value = '404';
+    paintBody();
+    expect(acceptGhost()).toBe(true);
+    expect(pick('#oBody').value).toBe(shared.lastPreviewText);
+  });
+
+  it('미리보기가 JSON 이 아니면(요청 실패) 고스트를 만들지 않는다', () => {
+    shared.lastPreviewText = 'TypeError: Failed to fetch';
+    pick('#oBody').value = '';
+    pick('#oStatus').value = '500';
+    paintBody();
+    expect(acceptGhost()).toBe(false);
   });
 
   it('아무도 구독하지 않는 이벤트는 조용히 무시된다', () => {

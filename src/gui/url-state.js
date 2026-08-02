@@ -145,20 +145,22 @@ export function paintMethod() {
   for (const b of document.querySelectorAll('.methods button')) b.classList.toggle('on', b.dataset.method === cur);
 }
 
-// 흔한 실패 3종 — 프론트 에러 핸들링이 보통 나누는 분기 그대로.
-// 메시지는 사용자에게 보이므로 ko/en 쌍 (CLAUDE.md 규칙 2)
-const FAIL_PRESETS = {
-  401: { code: 'E_UNAUTHORIZED', ko: '토큰이 만료되었습니다', en: 'Your token has expired' },
-  404: { code: 'E_NOT_FOUND', ko: '대상을 찾을 수 없습니다', en: 'The requested resource was not found' },
-  500: { code: 'E_INTERNAL', ko: '잠시 후 다시 시도해주세요', en: 'Please try again in a moment' },
-};
+// 빈 칸일 때 미리 보여줄 기본 실패 응답. paintBody 가 갱신하고 Tab(acceptGhost)이 소비한다.
+// 서버의 FAIL_REASONS(코드 10종 × ko/en)를 GUI 에 복사하지 않으려고, 미리보기가 방금 받아둔
+// 응답을 그대로 쓴다 — 상태코드·언어에 자동으로 맞고 사본이 안 생긴다.
+let ghost = null;
 
-export function applyFailPreset(status) {
-  const p = FAIL_PRESETS[status];
-  if (!p) return;
-  $('#oStatus').value = status; // _body 는 _status>=400 일 때만 유효해서 같이 넣는다
-  $('#oBody').value = JSON.stringify({ code: p.code, message: t(p.ko, p.en) }, null, 2);
+function ghostBody() {
+  if (Number($('#oStatus').value) < 400) return null; // 미리보기가 성공 데이터다
+  return prettyJson(shared.lastPreviewText); // 요청이 실패했으면 String(e) → null
+}
+
+/** 고스트를 실제 값으로 확정. 고스트가 없으면 false — 호출부가 Tab 을 그대로 흘려보낸다 */
+export function acceptGhost() {
+  if (ghost === null) return false;
+  $('#oBody').value = ghost;
   emit('schema:changed');
+  return true;
 }
 
 /** 실패 바디를 화면용으로 정렬. 깨진 JSON 이면 손대지 않고 false — 호출부가 오류를 알린다 */
@@ -178,11 +180,22 @@ export function formatBody() {
  */
 export function paintBody() {
   const ta = $('#oBody');
+  const hl = $('#oBodyHl');
   if (document.activeElement !== ta) formatBody();
-  $('#oBodyHl').innerHTML = highlightJson(ta.value) + '\n'; // pre 가 끝 줄바꿈을 삼키는 것 보정
-  // 내용만큼 자라게 — 짧을 땐 스크롤바가 아예 안 생겨 두 겹이 확실히 맞는다 (상한은 CSS max-height)
+  // 빈 칸이면 오버레이가 안내를 통째로 맡는다 — placeholder 를 같이 쓰면 두 겹으로 겹친다
+  const empty = ta.value === '';
+  ghost = empty ? ghostBody() : null;
+  const shown = empty
+    ? (ghost ?? t('상태코드를 400 이상으로 두면 기본 실패 응답이 여기 미리 보입니다',
+                  'Set the status to 400+ and the default failure response previews here'))
+    : ta.value;
+  hl.classList.toggle('ghost', empty);
+  hl.innerHTML = highlightJson(shown) + '\n'; // pre 가 끝 줄바꿈을 삼키는 것 보정
+  $('#oBodyHint').hidden = ghost === null;
+  // 내용만큼 자라게 — 짧을 땐 스크롤바가 아예 안 생겨 두 겹이 확실히 맞는다 (상한은 CSS max-height).
+  // 고스트는 textarea 가 비어 있어도 여러 줄이라 pre 쪽 높이도 같이 본다
   ta.style.height = 'auto';
-  ta.style.height = ta.scrollHeight + 'px';
+  ta.style.height = Math.max(ta.scrollHeight, hl.scrollHeight) + 'px';
 }
 
 // ---- GUI 상태 ↔ 주소창 (현재 URL 이 곧 GUI 상태) ----
