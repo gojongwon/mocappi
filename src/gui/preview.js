@@ -83,6 +83,7 @@ async function preview(url, method) {
       if (isJson) $('#preview').innerHTML = highlightJson(body);
       else $('#preview').textContent = body;
     }
+    paintBody(); // 실패 바디 고스트는 이 응답에서 나온다 — 도착했으니 다시 칠한다
   } catch (e) {
     if (seq !== reqSeq) return;
     clearTimeout(loadingTimer);
@@ -90,6 +91,7 @@ async function preview(url, method) {
     $('#statusLine').innerHTML = '<span class="err">' + t('요청 실패', 'Request failed') + '</span>';
     shared.lastPreviewText = String(e);
     $('#preview').textContent = String(e);
+    paintBody(); // 실패한 응답은 JSON 이 아니라 고스트가 사라진다
   }
 }
 

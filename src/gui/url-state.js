@@ -151,8 +151,14 @@ export function paintMethod() {
 let ghost = null;
 
 function ghostBody() {
-  if (Number($('#oStatus').value) < 400) return null; // 미리보기가 성공 데이터다
-  return prettyJson(shared.lastPreviewText); // 요청이 실패했으면 String(e) → null
+  const status = Number($('#oStatus').value);
+  if (status < 400) return null; // 미리보기가 성공 데이터다
+  const g = prettyJson(shared.lastPreviewText); // 요청이 실패했으면 String(e) → null
+  if (g === null) return null;
+  // 기본 실패 바디는 자기 상태코드를 담고 있다. 안 맞으면 아직 이전 응답이 남아 있는 것 —
+  // 미리보기가 300ms 디바운스라 _status 를 막 바꾼 직후가 그렇다. 그때는 안 보여준다.
+  try { if (JSON.parse(g).status !== status) return null; } catch { return null; }
+  return g;
 }
 
 /** 고스트를 실제 값으로 확정. 고스트가 없으면 false — 호출부가 Tab 을 그대로 흘려보낸다 */

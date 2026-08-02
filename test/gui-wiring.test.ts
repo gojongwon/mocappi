@@ -125,6 +125,22 @@ describe('이벤트 배선', () => {
     expect(pick('#oBody').value).toBe(shared.lastPreviewText);
   });
 
+  it('미리보기가 아직 이전 상태코드의 응답이면 고스트를 만들지 않는다', () => {
+    shared.lastPreviewText = '{\n  "error": "Not Found",\n  "status": 404\n}';
+    pick('#oBody').value = '';
+    pick('#oStatus').value = '500'; // 방금 바꿨고 미리보기(300ms 디바운스)는 아직 404 응답
+    paintBody();
+    expect(acceptGhost()).toBe(false);
+  });
+
+  it('성공 응답(envelope)은 고스트가 되지 않는다', () => {
+    shared.lastPreviewText = '{\n  "data": [],\n  "page": 1\n}';
+    pick('#oBody').value = '';
+    pick('#oStatus').value = '404';
+    paintBody();
+    expect(acceptGhost()).toBe(false);
+  });
+
   it('미리보기가 JSON 이 아니면(요청 실패) 고스트를 만들지 않는다', () => {
     shared.lastPreviewText = 'TypeError: Failed to fetch';
     pick('#oBody').value = '';
