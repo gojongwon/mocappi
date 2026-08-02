@@ -21,6 +21,13 @@ describe('SEO', () => {
     expect([...buf.slice(0, 4)]).toStrictEqual([0x89, 0x50, 0x4e, 0x47]); // PNG 시그니처
   });
 
+  it('favicon.svg 는 크롤 가능한 SVG', async () => {
+    const res = await worker.fetch(new Request('https://x/favicon.svg'));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('image/svg+xml');
+    expect(await res.text()).toContain('<svg');
+  });
+
   it('GUI head 에 description·OG·canonical·JSON-LD', async () => {
     const html = await (await worker.fetch(new Request('https://x/'))).text();
     expect(html).toContain('name="description"');
@@ -28,6 +35,8 @@ describe('SEO', () => {
     expect(html).toContain('rel="canonical"');
     expect(html).toContain('application/ld+json');
     expect(html).toContain('twitter:card');
+    // data: URI 로 되돌리면 Googlebot-Image 가 아이콘을 못 가져간다
+    expect(html).toContain('rel="icon" type="image/svg+xml" href="/favicon.svg"');
   });
 });
 

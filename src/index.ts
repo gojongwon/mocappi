@@ -11,6 +11,7 @@ import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateW
 import { d1Store, type D1Like } from './d1';
 import { DslError, typeDocsFor, type DslErrorInfo } from './registry';
 import { OG_PNG_B64 } from './og';
+import { ICON_SVG } from './icon';
 
 export interface Env {
   /** D1 바인딩 (권장) — KV 대비 쓰기 한도 100배. 있으면 KV 보다 우선 사용 */
@@ -197,6 +198,11 @@ export default {
       const bin = Uint8Array.from(atob(OG_PNG_B64), (c) => c.charCodeAt(0));
       return new Response(bin, {
         headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=604800' },
+      });
+    }
+    if (url.pathname === '/favicon.svg') {
+      return new Response(ICON_SVG, {
+        headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=604800' },
       });
     }
 
