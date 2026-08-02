@@ -48,6 +48,10 @@ export function hardenInputs(root) {
     el.setAttribute('data-bwignore', 'true');           // Bitwarden
     el.setAttribute('data-protonpass-ignore', 'true');  // Proton Pass
     el.setAttribute('data-form-type', 'other');         // Dashlane 등
+    // 위 속성들을 다 무시하는 확장이 있다. 관리자는 text/email/tel/password 를 노리고
+    // search 는 건너뛰므로, 타입을 바꾸면 확장 종류를 안 가린다.
+    // text↔search 는 value 모드가 같아 값이 보존된다 (addRow 가 값 설정 뒤에 부른다).
+    if (el.tagName === 'INPUT' && (el.type === 'text' || !el.hasAttribute('type'))) el.type = 'search';
   }
 }
 

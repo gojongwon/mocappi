@@ -185,6 +185,10 @@
     border: 1.5px solid var(--ink); border-radius: var(--radius-s); padding: 7px 10px;
   }
   input:focus, select:focus, textarea:focus { outline: 2.5px solid var(--accent); outline-offset: 1px; }
+  /* type=search 는 비밀번호 관리자 회피용일 뿐 — 검색칸 기본 모양을 전부 되돌린다 (dom.hardenInputs) */
+  input[type="search"] { -webkit-appearance: none; appearance: none; }
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; display: none; }
   .resource-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
   .resource-row .prefix { font-family: var(--mono); color: var(--faint); font-size: 13px; }
   .resource-row input { width: 150px; font-family: var(--mono); }

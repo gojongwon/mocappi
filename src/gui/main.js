@@ -60,6 +60,9 @@ document.addEventListener('dblclick', (e) => {
   }
 });
 document.addEventListener('keydown', (e) => {
+  // WebKit 은 type=search 에서 Esc 로 값을 지운다 (hardenInputs 가 타입을 바꾼 대가).
+  // 기본 동작만 죽인다 — 아래 자동완성 닫기·모달 닫기는 그대로 돈다
+  if (e.key === 'Escape' && e.target && e.target.type === 'search') e.preventDefault();
   if (e.key === 'Enter' && e.target && e.target.id === 'wsJoin') { joinWs(); return; }
   if (acKeydown(e)) return;
   if (e.key === 'Escape') DISMISSABLE.forEach(closeModal);
