@@ -164,7 +164,9 @@
     display: grid; grid-template-columns: minmax(400px, 1fr) minmax(380px, 1fr);
     gap: 22px; padding: 22px 28px 44px; max-width: 1360px; margin: 0 auto;
   }
-  @media (max-width: 880px) { main { grid-template-columns: 1fr; } }
+  /* minmax(0,·) 가 핵심 — 1fr 은 minmax(auto,1fr) 이라 패널의 min-content 가 트랙 폭이 된다.
+     패널 안 어딘가가 안 줄어들면 그대로 페이지가 넓어져 가로 스크롤이 생긴다 (안전망) */
+  @media (max-width: 880px) { main { grid-template-columns: minmax(0, 1fr); } }
   .panel {
     background: var(--panel); border: var(--bw) solid var(--ink); border-radius: var(--radius);
     padding: 24px; box-shadow: var(--shadow);
@@ -223,7 +225,9 @@
 
   /* ===== 옵션 ===== */
   .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; margin-top: 4px; }
-  .opts > div { display: flex; flex-direction: column; gap: 4px; }
+  /* min-width:0 — 입력칸은 기본 20자(≈170px)의 내재 폭을 갖는다. 이게 그리드 아이템의
+     최소 크기가 되면 2열 × 170px 가 360px 화면을 밀어낸다 (.frow 가 이미 같은 처방) */
+  .opts > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .opts input, .opts select, .opts textarea { width: 100%; }
   /* 실패 바디는 JSON 한 줄이 길어 그리드 한 행을 통째로 쓴다 */
   .opts .opt-wide { grid-column: 1 / -1; }
