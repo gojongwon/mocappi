@@ -134,9 +134,10 @@
     <h2 data-i18n="generatedUrl">생성된 URL</h2>
     <div class="methods">
       <button data-method="get" class="on">GET</button>
-      <span class="mlabel" data-i18n="methodDefault">기본</span>
-      <!-- 나머지 넷은 묶어서 오른쪽으로 — POST 에 margin-left:auto 만 주면 좁은 폭에서 흩어진다 -->
+      <!-- 기본값 GET 과 쓰기 메서드 넷을 구분선으로 가른다. 구분선을 그룹 안 첫 자식으로 둬야
+           줄바꿈돼도 그룹 왼쪽 경계에 붙어 있는다 -->
       <span class="m-rest">
+        <span class="hdiv"></span>
         <button data-method="post">POST</button>
         <button data-method="put">PUT</button>
         <button data-method="patch">PATCH</button>

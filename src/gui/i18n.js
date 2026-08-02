@@ -31,7 +31,6 @@ const EN = {
   optStatus: 'Status code',
   optBody: 'Failure body',
   bodyGhostHint: 'Tab ⇥ to fill the default',
-  methodDefault: 'default',
   fmtBody: '{ } Format',
   fmtBodyTitle: 'Re-indent the current JSON with 2 spaces — pasting formats automatically, hand-typed JSON needs this button',
   optWrap: 'Shape',
