@@ -10,26 +10,41 @@ const Q = 'name=person.fullName&age=int:20~60';
 const get = (path: string) => worker.fetch(new Request(BASE + path));
 
 describe('_status>=400 — 기본 실패 바디', () => {
-  it('알려진 코드 → {error, status, message}', async () => {
+  it('표준 코드 → {error=reason phrase, status, message}', async () => {
     const res = await get(`/api/users?${Q}&_status=404`);
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({
       error: 'Not Found',
       status: 404,
-      message: '요청한 리소스를 찾을 수 없습니다.',
+      message: '요청을 처리하지 못했습니다.',
     });
+  });
+
+  // 흔한 10개만 이름이 붙던 구멍이 없어졌다 — 표준 4xx/5xx 는 전부 제 이름을 갖는다
+  it('덜 흔한 표준 코드도 제 이름을 갖는다', async () => {
+    for (const [status, error] of [[413, 'Payload Too Large'], [451, 'Unavailable For Legal Reasons'], [507, 'Insufficient Storage']] as const) {
+      const body = (await (await get(`/api/users?${Q}&_status=${status}`)).json()) as { error: string };
+      expect(body.error, String(status)).toBe(error);
+    }
+  });
+
+  it('message 는 4xx/5xx 두 문장으로 갈린다', async () => {
+    const c = (await (await get(`/api/users?${Q}&_status=404`)).json()) as { message: string };
+    const s = (await (await get(`/api/users?${Q}&_status=503`)).json()) as { message: string };
+    expect(c.message).toBe('요청을 처리하지 못했습니다.');
+    expect(s.message).toBe('서버에서 오류가 발생했습니다.');
   });
 
   it('Accept-Language: en → 영어 message', async () => {
     const res = await worker.fetch(new Request(BASE + `/api/users?${Q}&_status=401`, { headers: { 'Accept-Language': 'en' } }));
     const body = (await res.json()) as { error: string; message: string };
-    expect(body.error).toBe('Unauthorized');
-    expect(body.message).toBe('Authentication is required.');
+    expect(body.error).toBe('Unauthorized'); // 이름은 언어 무관
+    expect(body.message).toBe('The request could not be processed.');
   });
 
-  it('표에 없는 코드 → 범용 실패 바디', async () => {
-    const body = (await (await get(`/api/users?${Q}&_status=418`)).json()) as { error: string; status: number };
-    expect(body).toEqual({ error: 'Error', status: 418, message: '요청을 처리하지 못했습니다.' });
+  it('비표준 코드만 Error 로 폴백', async () => {
+    const body = (await (await get(`/api/users?${Q}&_status=599`)).json()) as { error: string; status: number };
+    expect(body).toEqual({ error: 'Error', status: 599, message: '서버에서 오류가 발생했습니다.' });
   });
 
   it('3xx 는 실패가 아니다 — 데이터 그대로', async () => {

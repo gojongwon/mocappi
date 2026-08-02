@@ -54,25 +54,32 @@ function dslBody(info: DslErrorInfo, lang: 'ko' | 'en'): Omit<DslErrorInfo, 'hin
 // _status>=400 일 때 성공 데이터 대신 나가는 기본 실패 바디.
 // 키가 {error, status, message} 라 DSL 에러({error, field, hint})와 한눈에 구분된다 —
 // 앞은 "사용자가 주문한 목 실패", 뒤는 "mocappi 가 URL 을 못 읽음".
-const FAIL_REASONS: Record<number, [string, string, string]> = {
-  400: ['Bad Request', '요청이 올바르지 않습니다.', 'The request is malformed.'],
-  401: ['Unauthorized', '인증이 필요합니다.', 'Authentication is required.'],
-  403: ['Forbidden', '권한이 없습니다.', 'You do not have permission.'],
-  404: ['Not Found', '요청한 리소스를 찾을 수 없습니다.', 'The requested resource was not found.'],
-  409: ['Conflict', '이미 존재하는 리소스입니다.', 'The resource already exists.'],
-  422: ['Unprocessable Entity', '입력값 검증에 실패했습니다.', 'Validation failed.'],
-  429: ['Too Many Requests', '요청이 너무 많습니다.', 'Too many requests.'],
-  500: ['Internal Server Error', '서버 오류가 발생했습니다.', 'An internal server error occurred.'],
-  502: ['Bad Gateway', '게이트웨이 오류입니다.', 'Bad gateway.'],
-  503: ['Service Unavailable', '서비스를 사용할 수 없습니다.', 'The service is unavailable.'],
+// 표준 reason phrase — 런타임이 안 준다 (new Response(null,{status:404}).statusText 는 '').
+// 코드별 맞춤 문장 대신 이 이름 하나로 모든 표준 4xx/5xx 를 덮는다: 번역이 필요 없고
+// (이름은 언어 무관), 흔한 10개만 예쁘고 나머지는 'Error' 이던 구멍이 사라진다.
+const REASON: Record<number, string> = {
+  400: 'Bad Request', 401: 'Unauthorized', 402: 'Payment Required', 403: 'Forbidden',
+  404: 'Not Found', 405: 'Method Not Allowed', 406: 'Not Acceptable',
+  407: 'Proxy Authentication Required', 408: 'Request Timeout', 409: 'Conflict',
+  410: 'Gone', 411: 'Length Required', 412: 'Precondition Failed', 413: 'Payload Too Large',
+  414: 'URI Too Long', 415: 'Unsupported Media Type', 416: 'Range Not Satisfiable',
+  417: 'Expectation Failed', 418: "I'm a Teapot", 421: 'Misdirected Request',
+  422: 'Unprocessable Entity', 423: 'Locked', 424: 'Failed Dependency', 425: 'Too Early',
+  426: 'Upgrade Required', 428: 'Precondition Required', 429: 'Too Many Requests',
+  431: 'Request Header Fields Too Large', 451: 'Unavailable For Legal Reasons',
+  500: 'Internal Server Error', 501: 'Not Implemented', 502: 'Bad Gateway',
+  503: 'Service Unavailable', 504: 'Gateway Timeout', 505: 'HTTP Version Not Supported',
+  506: 'Variant Also Negotiates', 507: 'Insufficient Storage', 508: 'Loop Detected',
+  509: 'Bandwidth Limit Exceeded', 510: 'Not Extended', 511: 'Network Authentication Required',
 };
 
 function failBody(status: number, lang: 'ko' | 'en'): Record<string, unknown> {
-  const r = FAIL_REASONS[status];
   return {
-    error: r ? r[0] : 'Error',
+    error: REASON[status] ?? 'Error', // 비표준 코드(예: 599)만 폴백
     status,
-    message: r ? pick(lang, r[1], r[2]) : pick(lang, '요청을 처리하지 못했습니다.', 'The request could not be processed.'),
+    message: status >= 500
+      ? pick(lang, '서버에서 오류가 발생했습니다.', 'The server encountered an error.')
+      : pick(lang, '요청을 처리하지 못했습니다.', 'The request could not be processed.'),
   };
 }
 

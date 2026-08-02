@@ -52,7 +52,7 @@ GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해
 
 ```
 /api/orders?id=uuid&_status=500
-→ 500 { "error": "Internal Server Error", "status": 500, "message": "서버 오류가 발생했습니다." }
+→ 500 { "error": "Internal Server Error", "status": 500, "message": "서버에서 오류가 발생했습니다." }
 ```
 
 **5. envelope 없이 배열만 + 영어 데이터**
@@ -91,8 +91,18 @@ curl -X POST /api/users?name=person.fullName      # 201 + 단건
 
 ## 실패 응답
 
-`_status` 가 400 이상이면 데이터 대신 실패 바디가 나간다. 직접 정의하려면 `_body`
-(JSON 원문, 최대 2000자, `_status` ≥ 400 일 때만):
+`_status` 가 400 이상이면 데이터 대신 실패 바디가 나간다.
+
+```
+/api/users?name=person.fullName&_status=404
+→ 404 { "error": "Not Found", "status": 404, "message": "요청을 처리하지 못했습니다." }
+```
+
+`error` 는 **모든 표준 4xx/5xx** 의 reason phrase 다 (`413` → `Payload Too Large`,
+`451` → `Unavailable For Legal Reasons`, …). 비표준 코드만 `Error` 로 떨어진다.
+`message` 는 클래스당 한 문장 — 4xx 는 "요청을 처리하지 못했습니다", 5xx 는 "서버에서 오류가 발생했습니다".
+
+직접 정의하려면 `_body` (JSON 원문, 최대 2000자, `_status` ≥ 400 일 때만):
 
 ```
 /api/users?name=person.fullName&_status=401&_body={"code":"E_AUTH","message":"토큰 만료"}

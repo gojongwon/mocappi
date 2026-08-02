@@ -100,8 +100,12 @@ browser GET can preview a POST response:
 
 ```
 /api/users?name=person.fullName&_status=404
-→ 404 { "error": "Not Found", "status": 404, "message": "The requested resource was not found." }
+→ 404 { "error": "Not Found", "status": 404, "message": "The request could not be processed." }
 ```
+
+`error` is the standard reason phrase for **every** standard 4xx/5xx code (`413` → `Payload Too Large`,
+`451` → `Unavailable For Legal Reasons`, …); non-standard codes fall back to `Error`.
+`message` is one sentence per class — 4xx "could not be processed", 5xx "server encountered an error".
 
 Use `_body` for your own error shape (raw JSON, max 2000 chars, only with `_status` ≥ 400):
 
