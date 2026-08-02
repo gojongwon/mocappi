@@ -30,9 +30,12 @@ export function applyLock(row) {
 }
 
 /**
- * OS/브라우저 자동완성 바(iOS 열쇠·지갑·주소 등) 억제 힌트.
- * 목업 도구의 입력은 개인정보 필드가 아닌데 브라우저가 추측으로 AutoFill 바를 띄운다.
- * (OS 가 최종 결정권을 가지므로 100% 보장은 아님 — 표준 억제 수단 총동원)
+ * OS/브라우저 자동완성 바(iOS 열쇠·지갑·주소 등)와 비밀번호 관리자 확장 억제 힌트.
+ * 목업 도구의 입력은 개인정보 필드가 아닌데, 필드 행이 텍스트 입력 두 개가 나란한 모양이라
+ * 관리자 확장이 아이디/비밀번호 쌍으로 오인해 열쇠 아이콘을 박는다.
+ *
+ * 한계: 사이트가 끌 수 있는 건 각 확장이 스스로 지원하는 무시 속성뿐이다.
+ * 그런 수단이 없는 확장(일부 국내 브라우저 내장 관리자 등)은 확장 설정에서만 끌 수 있다.
  */
 export function hardenInputs(root) {
   for (const el of (root || document).querySelectorAll('input, textarea, select')) {
@@ -40,9 +43,11 @@ export function hardenInputs(root) {
     el.setAttribute('autocorrect', 'off');
     el.setAttribute('autocapitalize', 'off');
     if (!el.hasAttribute('spellcheck')) el.setAttribute('spellcheck', 'false');
-    el.setAttribute('data-1p-ignore', '');      // 1Password
-    el.setAttribute('data-lpignore', 'true');   // LastPass
-    el.setAttribute('data-form-type', 'other'); // Dashlane 등
+    el.setAttribute('data-1p-ignore', '');              // 1Password
+    el.setAttribute('data-lpignore', 'true');           // LastPass
+    el.setAttribute('data-bwignore', 'true');           // Bitwarden
+    el.setAttribute('data-protonpass-ignore', 'true');  // Proton Pass
+    el.setAttribute('data-form-type', 'other');         // Dashlane 등
   }
 }
 
