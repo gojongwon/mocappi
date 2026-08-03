@@ -214,10 +214,25 @@ customer.address.city = location.city</pre>
        response <b>previews in grey</b> and <b>Tab</b> fills it in for you to edit.
        Pasted JSON is formatted automatically; hand-typed JSON is tidied by the <b>{ } Format</b> button.</p>
 
+    <h4><span class="n">8</span>Done building — export it</h4>
+    <p>The <b>Export</b> menu next to the URL copies the current schema in five shapes.</p>
+    <table>
+      <tr><td><code>curl</code></td><td>A command to paste straight into a terminal</td></tr>
+      <tr><td><code>fetch (JS)</code></td><td><code>await fetch(url)</code> + <code>res.json()</code></td></tr>
+      <tr><td><code>Python requests</code></td><td><code>requests.get(url).json()</code></td></tr>
+      <tr><td><code>TS types</code></td><td>A TypeScript interface for this schema + a <code>fetch</code> helper</td></tr>
+      <tr><td><code>OpenAPI</code></td><td>An OpenAPI 3.1 document — import into Postman/Insomnia, generate a client</td></tr>
+    </table>
+    <p>The three call snippets are <b>not the same as copying the URL</b>. The URL carries no method
+       (see 6 — the GUI sends the real verb, not the URL), so picking POST is not reproducible from the
+       URL alone. The snippet includes <code>-X POST</code>.</p>
+
     <h4><span class="n">✓</span>Good to know</h4>
-    <p>The same URL <b>always returns the same data</b> — after a refresh, or tomorrow. Safe for snapshot tests.<br>
+    <p>The same URL <b>always returns the same data</b> — after a refresh, or tomorrow. Safe for snapshot tests.
+       Since the bytes are identical, responses are cached for 5 minutes — calling the same URL again is faster
+       (requests with <code>_delay</code> and failure responses are excluded).<br>
        Need a different dataset? Append <code>_seed=anything</code>.<br>
-       Share a finished schema with your team via <b>Save</b> — you get a short <code>?_s=ID</code> URL that other parameters can override (e.g. <code>?_s=aB3xK9&amp;_page=2</code>). The <b>Copy TS types</b> button generates a TypeScript interface for the current schema on the spot.<br>
+       Share a finished schema with your team via <b>Save</b> — you get a short <code>?_s=ID</code> URL that other parameters can override (e.g. <code>?_s=aB3xK9&amp;_page=2</code>).<br>
        If a URL is wrong, the 400 response explains what is wrong and why.<br>
        Resource paths can have multiple segments like <code>/api/v2/users/123/orders</code> — the path is decoration, the query defines the data,
        and detail responses come from the <code>_wrap=one&amp;_seed=123</code> combo.</p>
