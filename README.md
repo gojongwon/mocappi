@@ -251,9 +251,25 @@ Without either binding everything else works; only the save UI is disabled.
 
 - Set usage alerts (free tier: 100K req/day, 1K KV writes/day). Move to Workers Paid ($5/mo) if traffic grows.
 
+## Export
+
+The **Export** menu next to the URL copies the current schema in five shapes.
+
+| Item | What you get |
+|---|---|
+| `curl` | `curl -X POST 'https://…'` — paste and run |
+| `fetch (JS)` | `await fetch(url)` + `res.json()` |
+| `Python requests` | `requests.get(url).json()` |
+| `TS types` | see below |
+| `OpenAPI` | see below |
+
+**Call snippets differ from copying the URL.** The URL is method-neutral (the GUI sends the real
+verb, not `_method`), so picking POST is not reproducible from the URL alone — the snippet carries
+`-X POST`. `DELETE` returns 204 with no body, so its snippet prints the status instead of parsing one.
+
 ## TypeScript types
 
-The **TS 타입 복사** button (or `GET /schema/ts?<schema>&_res=<resource>`) generates an interface for the current schema, a generic `Paginated<T>` envelope, and a `fetchMock<T>` helper. `enum:a|b|c` becomes the literal union `'a' | 'b' | 'c'`.
+**Export → TS types** (or `GET /schema/ts?<schema>&_res=<resource>`) generates an interface for the current schema, a generic `Paginated<T>` envelope, and a `fetchMock<T>` helper. `enum:a|b|c` becomes the literal union `'a' | 'b' | 'c'`.
 
 ```ts
 const res = await fetchMock<User>(url);
@@ -262,7 +278,7 @@ res.data[0].name; // autocompleted & type-checked
 
 ## OpenAPI
 
-Not using TypeScript? The **OpenAPI 복사** button (or `GET /schema/openapi?<schema>&_res=<resource>`)
+Not using TypeScript? **Export → OpenAPI** (or `GET /schema/openapi?<schema>&_res=<resource>`)
 exports the same schema as an OpenAPI 3.1 document — import it into Postman/Insomnia, or feed it to
 `openapi-generator` for a client in any language.
 

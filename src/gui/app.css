@@ -327,13 +327,23 @@
   }
   #shortLine button:hover { background: var(--panel); color: var(--ink); }
   .url-actions { display: flex; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
-  .url-actions button {
+  .url-actions button, .url-actions select {
     border: 1.5px solid var(--ink); border-radius: var(--radius-s); padding: 8px 15px; cursor: pointer;
     font-size: 13px; font-weight: 700; font-family: inherit; transition: all .1s ease;
     background: var(--panel); color: var(--ink); box-shadow: var(--btn-shadow);
   }
   .url-actions button:hover { background: var(--accent-soft); }
-  #tsBtn, #saveBtn { background: var(--panel); color: var(--ink); }
+  /* select 는 브라우저 기본 화살표·높이를 쓰면 옆 버튼과 안 맞는다 — 화살표를 직접 그린다.
+     hover 는 background-color 만 바꾼다: 단축 속성을 쓰면 화살표(background-image)가 지워진다 */
+  .url-actions select {
+    appearance: none; padding-right: 30px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+    background-position: calc(100% - 16px) calc(50% + 1px), calc(100% - 11px) calc(50% + 1px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+  .url-actions select:hover { background-color: var(--accent-soft); }
+  #saveBtn { background: var(--panel); color: var(--ink); }
 
   /* ===== 미리보기 ===== */
   .preview-wrap { position: relative; }

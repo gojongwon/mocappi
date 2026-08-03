@@ -14,6 +14,37 @@ export function encPath(res) {
   return res.split('/').filter(Boolean).map(encodeURIComponent).join('/');
 }
 
+// ---- 호출 스니펫 (내보내기 드롭다운) ----
+//
+// URL 만 복사하면 메서드가 빠진다 — apiUrl 은 _method 를 일부러 뺀 메서드 중립 URL 이고
+// (url-state.js), GUI 는 실제 verb 로 요청을 보낸다. 스니펫은 그 메서드까지 담는다.
+
+/** 셸 홑따옴표 인용 — enc 가 ' 를 안 건드리므로 (const:it's) 직접 막아야 한다 */
+const shq = (s) => "'" + s.replace(/'/g, "'\\''") + "'";
+/** JS·Python 문자열 리터럴 */
+const strq = (s) => "'" + s.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
+
+export function snippet(kind, url, method = 'GET') {
+  const m = method.toUpperCase();
+  // DELETE 는 204 무본문 — .json() 을 붙이면 붙여넣은 스니펫이 그대로 터진다
+  const noBody = m === 'DELETE';
+
+  if (kind === 'curl') {
+    return 'curl ' + (m === 'GET' ? '' : '-X ' + m + ' ') + shq(url);
+  }
+  if (kind === 'fetch') {
+    const opts = m === 'GET' ? '' : ', { method: ' + strq(m) + ' }';
+    return noBody
+      ? `const res = await fetch(${strq(url)}${opts});\nconsole.log(res.status); // 204`
+      : `const res = await fetch(${strq(url)}${opts});\nconst data = await res.json();`;
+  }
+  // python — requests
+  const fn = 'requests.' + m.toLowerCase();
+  return noBody
+    ? `import requests\n\nres = ${fn}(${strq(url)})\nprint(res.status_code)  # 204`
+    : `import requests\n\ndata = ${fn}(${strq(url)}).json()`;
+}
+
 /**
  * 스키마 상태 → 쿼리스트링.
  * alias 는 { 예약어: 별칭 } — 화면의 옵션 키 입력칸에서 읽어 넘긴다 (url-state.js 의 래퍼).

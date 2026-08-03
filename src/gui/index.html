@@ -155,8 +155,14 @@
       <button id="shortLineCopy" data-i18n-title="copyShortUrl" title="짧은 URL 복사"></button>
     </div>
     <div class="url-actions">
-      <button id="tsBtn" data-i18n="copyTs" data-i18n-title="tsBtnTitle" title="현재 스키마의 TypeScript 인터페이스 + 제네릭 fetch 헬퍼를 복사">TS 타입 복사</button>
-      <button id="openapiBtn" data-i18n="copyOpenapi" data-i18n-title="openapiBtnTitle" title="현재 스키마의 OpenAPI 3.1 문서를 복사 — Postman·Insomnia 임포트, 클라이언트 코드 생성에">OpenAPI 복사</button>
+      <select id="copySel" data-i18n-title="copySelTitle" title="현재 스키마를 복사 — 호출 스니펫(curl·fetch·Python) 또는 타입/스펙 문서">
+        <option value="" data-i18n="exportLabel">내보내기</option>
+        <option value="curl">curl</option>
+        <option value="fetch">fetch (JS)</option>
+        <option value="python">Python requests</option>
+        <option value="ts" data-i18n="copyTs">TS 타입</option>
+        <option value="openapi">OpenAPI</option>
+      </select>
       <button id="saveBtn" data-i18n="saveAsPreset" data-i18n-title="saveBtnTitle" title="현재 스키마를 워크스페이스 프리셋으로 저장 — 짧은 URL(_s=ID)이 생깁니다">프리셋으로 저장</button>
     </div>
     <div class="status-line" id="statusLine">&nbsp;</div>
@@ -179,7 +185,7 @@
       <h3 data-i18n="whatsNew">새 소식</h3>
     </div>
     <ul class="news-list" data-en-block="newsList">
-      <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 그 메서드로 <b>실제 요청</b>을 보냅니다 (URL 은 깨끗하게 유지). POST 는 201 + 단건, DELETE 는 204. 상태코드가 400 이상이면 실패 바디가 나갑니다 — 표준 4xx·5xx 는 전부 제 이름을 갖습니다 (<code>413</code> → <code>Payload Too Large</code>). 고급의 <b>실패 바디</b> 칸에서는 기본 응답이 회색으로 미리 보이고 <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 끝. 붙여넣은 JSON 은 자동 정렬 + 색상 (직접 친 건 <b>{ } 정렬</b> 버튼으로). <b>OpenAPI 복사</b> 버튼도 생겼어요 — 3.1 문서를 그대로 Postman·Insomnia 에 넣거나 원하는 언어의 클라이언트 코드를 뽑을 수 있습니다. 응답은 이제 5분간 캐시돼서 같은 URL 을 다시 부르면 훨씬 빠릅니다 (데이터는 어차피 같으니까요)</li>
+      <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 그 메서드로 <b>실제 요청</b>을 보냅니다 (URL 은 깨끗하게 유지). POST 는 201 + 단건, DELETE 는 204. 상태코드가 400 이상이면 실패 바디가 나갑니다 — 표준 4xx·5xx 는 전부 제 이름을 갖습니다 (<code>413</code> → <code>Payload Too Large</code>). 고급의 <b>실패 바디</b> 칸에서는 기본 응답이 회색으로 미리 보이고 <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 끝. 붙여넣은 JSON 은 자동 정렬 + 색상 (직접 친 건 <b>{ } 정렬</b> 버튼으로). URL 옆 <b>내보내기</b> 메뉴가 생겼어요 — <code>curl</code>·<code>fetch</code>·<code>Python requests</code> 호출 스니펫과 <b>TS 타입</b>·<b>OpenAPI 3.1</b> 문서를 골라 복사합니다. 스니펫은 URL 과 달리 <b>메서드까지</b> 담고, OpenAPI 는 Postman·Insomnia 에 그대로 넣거나 원하는 언어의 클라이언트 코드를 뽑는 데 씁니다. 응답은 이제 5분간 캐시돼서 같은 URL 을 다시 부르면 훨씬 빠릅니다 (데이터는 어차피 같으니까요)</li>
       <li><span class="v">v0.27</span>영어 지원 — 헤더 EN/KO 버튼으로 전환, 브라우저 언어 자동 감지. API 에러 힌트도 <code>Accept-Language</code> 를 따라갑니다</li>
       <li><span class="v">v0.26</span>마스킹 타입 <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — 실서비스처럼 가려진 개인정보 ("김*준", "010-****-5678")</li>
       <li><span class="v">v0.25</span>이름이 바뀌었어요 — Mock API Builder → <b>모카삐 (mocappi)</b>. 로고에 번개 배지도 달았습니다 ⚡ 주소는 <code>mocappi.gojongwon.workers.dev</code>, 기능과 저장물은 그대로예요</li>

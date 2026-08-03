@@ -17,7 +17,7 @@ interface Input { value: string }
 declare const document: {
   documentElement: { innerHTML: string };
   querySelector(s: string): Input | null;
-  querySelectorAll(s: string): { length: number };
+  querySelectorAll(s: string): { length: number } & ArrayLike<{ value: string }>;
 };
 declare const history: { replaceState(a: unknown, b: string, c: string): void };
 
@@ -108,5 +108,14 @@ describe('URL ↔ GUI 상태 왕복', () => {
     const back = roundTrip({ res: 'items', fields: [], opts: {} });
     expect(back.fields).toEqual([]); // 빈 행은 이름·값이 비어 상태에는 안 잡힌다
     expect(document.querySelectorAll('#fields .frow').length).toBe(1);
+  });
+});
+
+// 주제는 url-state 지만 실제 마크업이 이미 여기 올라와 있어 얹는다 — setup 을 한 벌 더 만들 이유가 없다.
+describe('내보내기 메뉴 마크업', () => {
+  it('main.js 가 아는 다섯 형식이 옵션으로 다 있다', () => {
+    // 마크업에서 옵션이 빠지면 메뉴 항목이 조용히 사라진다. pure 테스트로는 안 잡히는 자리다.
+    const values = Array.from(document.querySelectorAll('#copySel option'), (o) => o.value);
+    expect(values).toEqual(['', 'curl', 'fetch', 'python', 'ts', 'openapi']);
   });
 });

@@ -71,7 +71,7 @@ export function addRow(name = '', value = '') {
 }
 
 // ---- 클립보드 ----
-async function writeClipboard(t) {
+export async function writeClipboard(t) {
   try { await navigator.clipboard.writeText(t); }
   catch {
     const ta = document.createElement('textarea');

@@ -4,7 +4,7 @@
  * 터진다. 그래서 DOM 없이 검증 가능한 것은 pure.js 로 모아두고, 여기서만 테스트한다.
  */
 import { describe, expect, it } from 'vitest';
-import { buildQuery, enc, encPath, highlightJson, minifyJson, parseAliasParam, parseCsv, parseWsInput, prettyJson } from '../src/gui/pure.js';
+import { buildQuery, enc, encPath, highlightJson, minifyJson, parseAliasParam, parseCsv, parseWsInput, prettyJson, snippet } from '../src/gui/pure.js';
 
 describe('enc — 읽기 좋은 URL', () => {
   it('DSL 문법 문자는 되살린다', () => {
@@ -199,5 +199,44 @@ describe('highlightJson', () => {
 
   it('음수·지수 표기도 숫자로 본다', () => {
     expect(highlightJson('[-1.5e10]')).toContain('<span class="j-num">-1.5e10</span>');
+  });
+});
+
+describe('snippet — 호출 스니펫', () => {
+  const URL = 'https://mock.test/api/users?id=uuid&name=person.fullName';
+
+  it('curl — GET 은 -X 없이, 그 외는 메서드를 담는다', () => {
+    // URL 만 복사하면 메서드가 빠진다 (apiUrl 은 메서드 중립) — 이게 스니펫의 존재 이유
+    expect(snippet('curl', URL)).toBe(`curl '${URL}'`);
+    expect(snippet('curl', URL, 'POST')).toBe(`curl -X POST '${URL}'`);
+    expect(snippet('curl', URL, 'patch')).toContain('-X PATCH');
+  });
+
+  it("curl — 값에 ' 가 있어도 셸 인용이 안 깨진다", () => {
+    // enc 가 ' 를 살려두므로 (const:it's) URL 에 그대로 들어온다
+    const u = "https://mock.test/api/x?a=const:it's";
+    expect(snippet('curl', u)).toBe(`curl 'https://mock.test/api/x?a=const:it'\\''s'`);
+  });
+
+  it('fetch — 응답 파싱까지, 메서드는 옵션으로', () => {
+    expect(snippet('fetch', URL)).toBe(`const res = await fetch('${URL}');\nconst data = await res.json();`);
+    expect(snippet('fetch', URL, 'POST')).toContain("{ method: 'POST' }");
+  });
+
+  it('python — requests.<메서드> 로 나간다', () => {
+    expect(snippet('python', URL)).toBe(`import requests\n\ndata = requests.get('${URL}').json()`);
+    expect(snippet('python', URL, 'PUT')).toContain('requests.put(');
+  });
+
+  it('DELETE 는 204 무본문 — .json() 을 붙이면 붙여넣은 스니펫이 터진다', () => {
+    expect(snippet('fetch', URL, 'DELETE')).not.toContain('.json()');
+    expect(snippet('python', URL, 'DELETE')).not.toContain('.json()');
+    expect(snippet('fetch', URL, 'DELETE')).toContain('res.status');
+    expect(snippet('python', URL, 'DELETE')).toContain('status_code');
+  });
+
+  it('JS·Python 문자열의 역슬래시·따옴표를 이스케이프한다', () => {
+    const u = "https://mock.test/api/x?a=const:a\\b'c";
+    expect(snippet('fetch', u)).toContain("'https://mock.test/api/x?a=const:a\\\\b\\'c'");
   });
 });

@@ -1,9 +1,9 @@
 import { acClose, acKeydown, acRender, initAutocomplete } from './autocomplete.js';
-import { $, ICON_COPY, addRow, applyLock, closeModal, copyIcon, copyText, emit, hardenInputs, openModal } from './dom.js';
+import { $, ICON_COPY, addRow, applyLock, closeModal, copyIcon, copyText, emit, hardenInputs, openModal, writeClipboard } from './dom.js';
 import { LANG, applyEn, t } from './i18n.js';
 import { applyPaste, closePaste, openPaste } from './paste.js';
 import './preview.js'; // schema:changed 구독자 — 부수효과만, export 없음
-import { enc } from './pure.js';
+import { enc, snippet } from './pure.js';
 import { applySave, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
 import { enhanceSelects } from './select.js';
 import { shared } from './shared.js';
@@ -14,19 +14,42 @@ if (LANG === 'en') applyEn();
 // 토글은 리로드 방식 — 해시만 바꾸므로 스키마 상태(location.search)는 건드리지 않는다
 $('#langLabel').textContent = LANG === 'en' ? 'KO' : 'EN';
 
-// ---- 스키마 내보내기 복사 (TS 타입 · OpenAPI) ----
-// 둘은 같은 쿼리를 서버에 넘겨 텍스트를 받아 복사한다 — 다른 건 경로와 되돌릴 라벨뿐이다.
-// 라벨을 함수로 받는 건 실패 후 1.5초 뒤에야 쓰이기 때문 (그 사이 언어가 바뀔 수 있다).
-async function copyExport(btn, path, label) {
+// ---- 스키마 내보내기 (#copySel) ----
+//
+// 다섯 형식이 두 갈래다. 호출 스니펫(curl·fetch·python)은 URL 만 있으면 되니 여기서 만들고,
+// 타입·스펙 문서는 같은 쿼리를 서버에 넘겨 텍스트로 받는다 — 다른 건 경로뿐이다.
+const EXPORT_PATHS = { ts: '/schema/ts', openapi: '/schema/openapi' };
+
+/**
+ * placeholder <option> 을 잠깐 다른 문구로 — 닫힌 select 가 그 자리를 그리므로 이게 피드백이다.
+ * 되돌릴 라벨을 textContent 에서 읽지 않고 t() 로 다시 만드는 이유: 1.2초 안에 또 고르면
+ * '복사됨 ✓' 를 원래 라벨로 착각해 영영 그 상태로 남는다. 드롭다운은 연달아 고르는 물건이다.
+ */
+function flashExport(ph, msg, ms) {
+  ph.textContent = msg;
+  clearTimeout(ph._t);
+  ph._t = setTimeout(() => (ph.textContent = t('내보내기', 'Export')), ms);
+}
+
+async function runExport(sel, kind) {
+  const ph = sel.options[0];
+  sel.value = ''; // 즉시 되돌린다 — 같은 항목을 다시 골라도 change 가 떠야 한다 (#teamSel 과 동일)
   const state = readState();
-  const fail = (msg) => { btn.textContent = msg; setTimeout(() => (btn.textContent = label()), 1500); };
+  const ok = () => flashExport(ph, t('복사됨 ✓', 'Copied ✓'), 1200);
+
+  if (!EXPORT_PATHS[kind]) {
+    // URL 만 복사하면 메서드가 빠진다 — apiUrl 은 메서드 중립이라 스니펫이 그걸 채운다
+    await writeClipboard(snippet(kind, apiUrl(state), state.opts._method || 'GET'));
+    return ok();
+  }
   try {
-    const res = await fetch(path + '?' + buildQuery(state) + '&_res=' + enc(state.res), { headers: { 'Accept-Language': LANG } });
+    const res = await fetch(EXPORT_PATHS[kind] + '?' + buildQuery(state) + '&_res=' + enc(state.res), { headers: { 'Accept-Language': LANG } });
     const text = await res.text();
-    if (!res.ok) return fail(t('URL 오류', 'Bad URL'));
-    copyText(text, btn, t('복사됨 ✓', 'Copied ✓'));
+    if (!res.ok) return flashExport(ph, t('URL 오류', 'Bad URL'), 1500);
+    await writeClipboard(text);
+    ok();
   } catch {
-    fail(t('요청 실패', 'Request failed'));
+    flashExport(ph, t('요청 실패', 'Request failed'), 1500);
   }
 }
 // ---- 이벤트 ----
@@ -104,6 +127,10 @@ for (const id of MODAL_IDS) {
 }
 
 document.addEventListener('change', (e) => {
+  if (e.target.id === 'copySel') {
+    if (e.target.value) runExport(e.target, e.target.value);
+    return;
+  }
   if (e.target.id === 'teamSel') {
     const v = e.target.value;
     if (v.startsWith('preset:')) { applyPreset(v.slice(7)); e.target.value = ''; }
@@ -173,8 +200,6 @@ document.addEventListener('click', (e) => {
     }
     case 'welcomeClose': $('#welcome').style.display = 'none'; break;
     case 'copyBtn': copyIcon(apiUrl(readState()), btn); break;
-    case 'tsBtn': copyExport(btn, '/schema/ts', () => t('TS 타입 복사', 'Copy TS types')); break;
-    case 'openapiBtn': copyExport(btn, '/schema/openapi', () => t('OpenAPI 복사', 'Copy OpenAPI')); break;
     case 'respCopyBtn': copyIcon(shared.lastPreviewText, btn); break;
     case 'saveBtn': openSave(); break;
     case 'wsBtn': syncWsUi(); openModal('wsModal'); break;

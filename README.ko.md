@@ -212,9 +212,25 @@ npm run deploy
 기존 KV 데이터는 자동 이전되지 않으니 프리셋이 몇 개 없으면 다시 저장하면 된다.
 저장소를 연결하지 않아도 나머지 기능은 전부 정상 동작한다 (저장 UI 만 자동으로 숨겨짐).
 
+## 내보내기
+
+URL 옆 **내보내기** 메뉴에서 현재 스키마를 다섯 가지로 복사한다.
+
+| 항목 | 나오는 것 |
+|---|---|
+| `curl` | `curl -X POST 'https://…'` — 붙여넣으면 바로 도는 명령 |
+| `fetch (JS)` | `await fetch(url)` + `res.json()` |
+| `Python requests` | `requests.get(url).json()` |
+| `TS 타입` | 아래 절 |
+| `OpenAPI` | 아래 절 |
+
+**호출 스니펫은 URL 복사와 다르다** — URL 은 메서드 중립이라 (GUI 는 URL 이 아니라 실제 verb 로
+요청을 보낸다) POST 를 골라도 URL 만으로는 재현이 안 된다. 스니펫은 `-X POST` 까지 담는다.
+`DELETE` 는 204 무본문이라 응답 파싱 없이 상태코드만 찍는다.
+
 ## TypeScript 타입
 
-GUI 의 **TS 타입 복사** 버튼(또는 `GET /schema/ts?<스키마>&_res=리소스명`)이 현재 스키마의 interface,
+**내보내기 → TS 타입**(또는 `GET /schema/ts?<스키마>&_res=리소스명`)이 현재 스키마의 interface,
 제네릭 envelope(`Paginated<T>`), fetch 헬퍼를 복사해준다. `enum:a|b|c` 은 리터럴 유니언으로 변환된다.
 
 ```ts
@@ -224,7 +240,7 @@ res.data[0].name; // 자동완성 + 타입 체크
 
 ## OpenAPI
 
-TypeScript 를 안 쓴다면 **OpenAPI 복사** 버튼(또는 `GET /schema/openapi?<스키마>&_res=리소스명`)이
+TypeScript 를 안 쓴다면 **내보내기 → OpenAPI**(또는 `GET /schema/openapi?<스키마>&_res=리소스명`)가
 같은 스키마를 OpenAPI 3.1 문서로 내보낸다. Postman·Insomnia 에 그대로 임포트하거나
 `openapi-generator` 류로 원하는 언어의 클라이언트를 뽑을 수 있다.
 

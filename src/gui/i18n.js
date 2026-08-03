@@ -62,10 +62,9 @@ const EN = {
   copyUrl: 'Copy URL',
   shortUrl: 'Short URL',
   copyShortUrl: 'Copy short URL',
-  tsBtnTitle: 'Copy a TypeScript interface + generic fetch helper for this schema',
-  copyTs: 'Copy TS types',
-  openapiBtnTitle: 'Copy an OpenAPI 3.1 document for this schema — import into Postman/Insomnia or generate a client',
-  copyOpenapi: 'Copy OpenAPI',
+  copySelTitle: 'Copy this schema — a call snippet (curl/fetch/Python) or a types/spec document',
+  exportLabel: 'Export',
+  copyTs: 'TS types',
   saveBtnTitle: 'Save this schema as a workspace preset — creates a short URL (_s=ID)',
   saveAsPreset: 'Save as preset',
   loading: 'Loading…',
@@ -111,7 +110,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
-    <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body — every standard 4xx/5xx carries its proper reason phrase (<code>413</code> → <code>Payload Too Large</code>). The <b>Failure body</b> field under Advanced previews the default response in grey and <b>Tab</b> fills it in for you to edit. Pasted JSON is auto-formatted and colored (hand-typed: hit <b>{ } Format</b>). There is a <b>Copy OpenAPI</b> button too — drop the 3.1 document straight into Postman/Insomnia, or generate a client in any language. Responses are now cached for 5 minutes, so calling the same URL again is much faster (the data is identical either way)</li>
+    <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body — every standard 4xx/5xx carries its proper reason phrase (<code>413</code> → <code>Payload Too Large</code>). The <b>Failure body</b> field under Advanced previews the default response in grey and <b>Tab</b> fills it in for you to edit. Pasted JSON is auto-formatted and colored (hand-typed: hit <b>{ } Format</b>). There is an <b>Export</b> menu next to the URL — pick a <code>curl</code>/<code>fetch</code>/<code>Python requests</code> call snippet, or a <b>TS types</b>/<b>OpenAPI 3.1</b> document. Unlike the URL, snippets carry <b>the method</b> too; the OpenAPI document drops straight into Postman/Insomnia or generates a client in any language. Responses are now cached for 5 minutes, so calling the same URL again is much faster (the data is identical either way)</li>
     <li><span class="v">v0.27</span>English support — switch with the EN/KO button in the header, auto-detected from your browser. API error hints follow <code>Accept-Language</code> too</li>
     <li><span class="v">v0.26</span>Masking types <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — redacted PII like real services show ("김*준", "010-****-5678")</li>
     <li><span class="v">v0.25</span>New name — Mock API Builder → <b>mocappi</b>, with a lightning badge on the logo ⚡ Now at <code>mocappi.gojongwon.workers.dev</code>; features and saved data unchanged</li>
