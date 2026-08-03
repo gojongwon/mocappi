@@ -311,7 +311,11 @@ customer.address.city = location.city</pre>
       <h4><span class="n">7</span>실패 응답 만들기</h4>
       <p>상태코드를 <b>400 이상</b>으로 두면 데이터 대신 실패 바디가 나갑니다.
          표준 4xx·5xx 는 전부 제 이름을 갖습니다 (<code>404</code> → <code>Not Found</code>, <code>413</code> → <code>Payload Too Large</code>).</p>
-      <pre>{ "error": "Not Found", "status": 404, "message": "요청을 처리하지 못했습니다." }</pre>
+      <pre>{
+  "error": "Not Found",
+  "status": 404,
+  "message": "요청을 처리하지 못했습니다."
+}</pre>
       <p>직접 쓰고 싶으면 고급의 <b>실패 바디</b> 칸에 JSON 을 넣으세요. 칸이 비어 있으면
          기본 응답이 <b>회색으로 미리 보이고</b>, <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 됩니다.
          붙여넣은 JSON 은 자동 정렬되고, 직접 친 건 <b>{ } 정렬</b> 버튼으로 맞춥니다.</p>

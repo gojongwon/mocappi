@@ -163,10 +163,10 @@ const EN_BLOCKS = {
 customer.address.city = location.city</pre>
     <div class="arrow">↓ responds like this</div>
     <pre>{
-"customer": {
-  "name": "김민준",
-  "address": { "city": "서울" }
-}
+  "customer": {
+    "name": "김민준",
+    "address": { "city": "서울" }
+  }
 }</pre>
 
     <h4><span class="n">4</span>Arrays — [] after the name, count with :N at the end of the value</h4>
@@ -209,7 +209,11 @@ customer.address.city = location.city</pre>
     <h4><span class="n">7</span>Building failure responses</h4>
     <p>Set the status to <b>400 or above</b> and a failure body replaces the data.
        Every standard 4xx/5xx carries its own name (<code>404</code> → <code>Not Found</code>, <code>413</code> → <code>Payload Too Large</code>).</p>
-    <pre>{ "error": "Not Found", "status": 404, "message": "The request could not be processed." }</pre>
+    <pre>{
+  "error": "Not Found",
+  "status": 404,
+  "message": "The request could not be processed."
+}</pre>
     <p>To write your own, put JSON in the <b>Failure body</b> field under Advanced. While it is empty the default
        response <b>previews in grey</b> and <b>Tab</b> fills it in for you to edit.
        Pasted JSON is formatted automatically; hand-typed JSON is tidied by the <b>{ } Format</b> button.</p>
