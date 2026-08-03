@@ -517,6 +517,11 @@
     .hdiv { display: none; }
     /* 메서드 행에선 구분선이 유일한 구분자다 (헤더처럼 여백이 대신해주지 않는다) */
     .methods .hdiv { display: block; }
+    /* 메서드 5개 한 줄 유지. 기본 패딩으로는 폭이 311px 인데 356px 화면의 가용폭이
+       304px 이라 .m-rest 가 통째로 접혔다 (m-rest 는 flex 항목 하나라 다 같이 내려간다).
+       글자 크기와 간격은 그대로 두고 패딩만 깎는다 — 281px 이 되어 하한 345px(가용 293px)
+       에서 12px 남는다. 버튼을 더 늘리면 여기가 제일 먼저 깨진다 (DELETE 가 최장 라벨). */
+    .methods button { padding: 0 9px; }
     /* 고급 요약은 한 줄 유지 — 넘치면 말줄임 (EN 나열이 길어 두 줄로 접히는 것 방지) */
     .opts-adv summary { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
