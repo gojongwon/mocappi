@@ -260,6 +260,22 @@ const res = await fetchMock<User>(url);
 res.data[0].name; // autocompleted & type-checked
 ```
 
+## OpenAPI
+
+Not using TypeScript? The **OpenAPI 복사** button (or `GET /schema/openapi?<schema>&_res=<resource>`)
+exports the same schema as an OpenAPI 3.1 document — import it into Postman/Insomnia, or feed it to
+`openapi-generator` for a client in any language.
+
+```bash
+curl 'https://mocappi.gojongwon.workers.dev/schema/openapi?_res=users&id=uuid&name=person.fullName&_total=500' > users.json
+```
+
+- Each field parameter's `default` is the DSL that produced the document, so the import calls a working URL right away.
+- `enum:paid*8|refund*2` → `enum: [paid, refund]` (weights are probabilities, not values);
+  `internet.email?0.2` → `type: [string, null]` (the 3.1 way, not `nullable: true`).
+- Every field carries a real generated value in `examples`, in the request's `_locale`.
+- Pass `_method` and the operation is emitted under that verb (POST → 201 single item, DELETE → 204).
+
 ## Development
 
 ```bash

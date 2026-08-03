@@ -6,6 +6,7 @@ import guiHtml from './gui.generated.html';
 import { parseQuery, type ParsedQuery } from './dsl';
 import { baseSeedOf, csvHeader, csvRow, generateItem, generateResponse, searchMatches } from './generate';
 import { inferSchema } from './infer';
+import { generateOpenApi } from './openapi';
 import { generateTsTypes } from './tstype';
 import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateWs, type KVNamespaceLike } from './store';
 import { d1Store, type D1Like } from './d1';
@@ -256,6 +257,22 @@ export default {
         return new Response(generateTsTypes(q.fields, resource, wrap, lang), {
           headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', ...CORS_HEADERS },
         });
+      } catch (e) {
+        if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
+        return json({ error: 'Internal error', hint: String(e) }, 500);
+      }
+    }
+
+    // 현재 스키마 → OpenAPI 3.1 문서.
+    // /schema/ts 와 입력이 같다 — 그쪽은 TypeScript 전용이고, 이쪽은 Postman·Insomnia 임포트와
+    // 언어 무관 클라이언트 코드젠으로 이어진다.
+    if (url.pathname === '/schema/openapi') {
+      try {
+        const params = new URLSearchParams(url.search);
+        const resource = params.get('_res') || 'items';
+        params.delete('_res');
+        const q = parseQuery(params);
+        return json(generateOpenApi(q, resource, url.origin, lang));
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);

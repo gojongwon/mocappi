@@ -14,16 +14,19 @@ if (LANG === 'en') applyEn();
 // 토글은 리로드 방식 — 해시만 바꾸므로 스키마 상태(location.search)는 건드리지 않는다
 $('#langLabel').textContent = LANG === 'en' ? 'KO' : 'EN';
 
-// ---- TypeScript 타입 복사 ----
-async function copyTsTypes(btn) {
+// ---- 스키마 내보내기 복사 (TS 타입 · OpenAPI) ----
+// 둘은 같은 쿼리를 서버에 넘겨 텍스트를 받아 복사한다 — 다른 건 경로와 되돌릴 라벨뿐이다.
+// 라벨을 함수로 받는 건 실패 후 1.5초 뒤에야 쓰이기 때문 (그 사이 언어가 바뀔 수 있다).
+async function copyExport(btn, path, label) {
   const state = readState();
+  const fail = (msg) => { btn.textContent = msg; setTimeout(() => (btn.textContent = label()), 1500); };
   try {
-    const res = await fetch('/schema/ts?' + buildQuery(state) + '&_res=' + enc(state.res), { headers: { 'Accept-Language': LANG } });
+    const res = await fetch(path + '?' + buildQuery(state) + '&_res=' + enc(state.res), { headers: { 'Accept-Language': LANG } });
     const text = await res.text();
-    if (!res.ok) { btn.textContent = t('URL 오류', 'Bad URL'); setTimeout(() => (btn.textContent = t('TS 타입 복사', 'Copy TS types')), 1500); return; }
+    if (!res.ok) return fail(t('URL 오류', 'Bad URL'));
     copyText(text, btn, t('복사됨 ✓', 'Copied ✓'));
   } catch {
-    btn.textContent = t('요청 실패', 'Request failed'); setTimeout(() => (btn.textContent = t('TS 타입 복사', 'Copy TS types')), 1500);
+    fail(t('요청 실패', 'Request failed'));
   }
 }
 // ---- 이벤트 ----
@@ -170,7 +173,8 @@ document.addEventListener('click', (e) => {
     }
     case 'welcomeClose': $('#welcome').style.display = 'none'; break;
     case 'copyBtn': copyIcon(apiUrl(readState()), btn); break;
-    case 'tsBtn': copyTsTypes(btn); break;
+    case 'tsBtn': copyExport(btn, '/schema/ts', () => t('TS 타입 복사', 'Copy TS types')); break;
+    case 'openapiBtn': copyExport(btn, '/schema/openapi', () => t('OpenAPI 복사', 'Copy OpenAPI')); break;
     case 'respCopyBtn': copyIcon(shared.lastPreviewText, btn); break;
     case 'saveBtn': openSave(); break;
     case 'wsBtn': syncWsUi(); openModal('wsModal'); break;

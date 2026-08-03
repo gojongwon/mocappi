@@ -7,7 +7,9 @@ import type { FieldSpec } from './dsl';
 import { splitArrayLen } from './dsl';
 import { compileType, NULLABLE_RE, type Generator } from './registry';
 
-type Tree = Map<string, Tree | FieldSpec>;
+// openapi.ts 도 같은 FieldSpec[] 을 같은 모양으로 걷는다 — 다른 건 방출 형식뿐이라
+// 트리 조립과 배열 길이 분리는 여기 것을 그대로 쓴다.
+export type Tree = Map<string, Tree | FieldSpec>;
 
 /** users → User, v2/users/123 → User (마지막 비숫자 세그먼트, 단순 복수형만 처리) */
 export function interfaceName(resource: string): string {
@@ -17,7 +19,7 @@ export function interfaceName(resource: string): string {
   return singular.charAt(0).toUpperCase() + singular.slice(1);
 }
 
-function itemTypeRawOf(f: FieldSpec): string {
+export function itemTypeRawOf(f: FieldSpec): string {
   return f.isArray ? splitArrayLen(f.typeRaw).itemType : f.typeRaw;
 }
 
@@ -60,7 +62,7 @@ function tsTypeOf(f: FieldSpec): string {
   return tsTypeOfRaw(itemTypeRawOf(f), f.gen);
 }
 
-function buildTree(fields: FieldSpec[]): Tree {
+export function buildTree(fields: FieldSpec[]): Tree {
   const root: Tree = new Map();
   for (const f of fields) {
     let cur = root;

@@ -222,6 +222,22 @@ const res = await fetchMock<User>(url);
 res.data[0].name; // 자동완성 + 타입 체크
 ```
 
+## OpenAPI
+
+TypeScript 를 안 쓴다면 **OpenAPI 복사** 버튼(또는 `GET /schema/openapi?<스키마>&_res=리소스명`)이
+같은 스키마를 OpenAPI 3.1 문서로 내보낸다. Postman·Insomnia 에 그대로 임포트하거나
+`openapi-generator` 류로 원하는 언어의 클라이언트를 뽑을 수 있다.
+
+```bash
+curl 'https://mocappi.gojongwon.workers.dev/schema/openapi?_res=users&id=uuid&name=person.fullName&_total=500' > users.json
+```
+
+- 필드 파라미터의 `default` 가 문서를 만든 URL 그대로라, 임포트 직후 바로 호출된다
+- `enum:paid*8|refund*2` → `enum: [paid, refund]` (가중치는 확률이라 뺀다),
+  `internet.email?0.2` → `type: [string, null]` (3.1 방식)
+- 필드마다 실제 생성값이 `examples` 로 들어가고, `_locale` 을 따른다
+- `_method` 를 주면 그 메서드의 오퍼레이션으로 나온다 (POST → 201 단건, DELETE → 204)
+
 ## 대용량 데이터
 
 `_limit` 은 최대 **1000**, `_format=ndjson` / `_format=csv` 는 아이템을 줄 단위로 스트리밍한다(envelope 없음) — 무한스크롤·가상 리스트·데이터 파이프라인 테스트용:
