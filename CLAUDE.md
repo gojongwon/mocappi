@@ -98,9 +98,21 @@ i18n  pure  shared            (잎 — 아무것도 import 안 함)
 **새 DSL 타입 추가** — 셋을 같이: `registry.ts` 의 생성 함수 + `TYPE_DOCS.dslTypes`(영어 짝은
 `DSL_DOCS_EN`, 순서 1:1) + `test/`. 하나라도 빠지면 `/schema/types` 와 실제가 어긋난다.
 
-**사용자에게 보이는 변경** — README.md 와 README.ko.md 를 함께, GUI 새 소식은
-`index.html` 의 `#newsModal`(한국어)과 `i18n.js` 의 `newsList`(영어)를 함께.
-헤더 배지 `newsLabel` 도 마이너 버전이 오르면 같이.
+**사용자에게 보이는 변경** — 아래 넷을 **매번 같이** 훑는다. 하나씩 빠뜨리기 쉬운데,
+빠지면 문서가 없는 게 아니라 **틀린 상태로 남는다** (없어진 버튼을 계속 가리키는 식).
+
+| 자리 | 한국어 | 영어 |
+|---|---|---|
+| README | `README.ko.md` | `README.md` |
+| GUI 새 소식 | `index.html` 의 `#newsModal` | `i18n.js` 의 `newsList` |
+| GUI 사용법 | `index.html` 의 `data-en-block="helpBody"` 마크업 | `i18n.js` 의 `EN_BLOCKS.helpBody` |
+| 헤더 배지 | `newsLabel` — 마이너 버전이 오를 때만 | 〃 |
+
+새 소식은 **마이너 버전당 `<li>` 하나**다. 패치로 기능이 늘면 새 줄을 만들지 말고
+그 버전 줄에 이어 쓴다. 사용법은 절 번호가 ko/en 1:1 이어야 한다 —
+절·표·항목 수를 세서 맞춰볼 것.
+
+UI 라벨을 바꾸거나 없앴으면 **다른 문서가 그 이름을 부르고 있는지 먼저 grep** 한다.
 
 **모바일** — 640px 이하는 헤더 1행 유지가 계속 깨져 온 지점 (커밋 히스토리 v0.23.x 참고).
 헤더에 뭔가 추가하면 360px 폭에서 워크스페이스 칩 + 한국어 라벨 조합을 확인할 것.
