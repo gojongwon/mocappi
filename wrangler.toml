@@ -37,3 +37,8 @@ simple = { limit = 10, period = 60 }
 binding = "DB"
 database_name = "mock-api"
 database_id = "f90b8b3c-1d3b-4586-b782-588dc278870e"
+
+# Workers Logs — 배포 후 상태를 볼 방법이 이것뿐이다.
+# 캐시 히트율·DSL 에러 분포·D1 폴백 여부를 대시보드에서 확인.
+[observability]
+enabled = true
