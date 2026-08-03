@@ -274,7 +274,9 @@ customer.address.city = location.city</pre>
         <tr><th>옵션</th><th>용도</th></tr>
         <tr><td><code>_total</code> / <code>_limit</code> / <code>_page</code></td><td>가상 전체 개수 / 페이지당 개수 / 페이지 번호</td></tr>
         <tr><td><code>_delay=3000</code></td><td>3초 늦게 응답 — 로딩 스피너 테스트</td></tr>
-        <tr><td><code>_status=500</code></td><td>상태코드 강제 — 에러 화면 테스트</td></tr>
+        <tr><td><code>_status=500</code></td><td>상태코드 강제 — <b>400 이상이면 데이터 대신 실패 바디</b>가 나갑니다 (아래 6번)</td></tr>
+        <tr><td><code>_method=post</code></td><td>손으로 URL 을 쓸 때 메서드 지정 — GUI 버튼을 쓰면 안 붙습니다 (아래 6번)</td></tr>
+        <tr><td><code>_body={"code":"E_AUTH"}</code></td><td>실패 응답 바디를 직접 — <code>_status</code> 가 400 이상일 때만</td></tr>
         <tr><td><code>_locale=en</code></td><td>영어 데이터 (<code>ja</code> 일본어, <code>zh</code> 중국어)</td></tr>
         <tr><td><code>_seed=v2</code></td><td>다른 데이터셋 — 시드가 같으면 데이터도 항상 같습니다</td></tr>
         <tr><td><code>_wrap=none</code></td><td>envelope 없이 배열만 (<code>one</code> 은 단일 객체 — 상세 API)</td></tr>
@@ -285,6 +287,27 @@ customer.address.city = location.city</pre>
       </table>
       <p style="font-size:12.5px;color:var(--muted)">상한: <code>_limit</code> 최대 1000 · <code>_q</code> 100자 · <code>_delay</code> 5초.
          더 많은 데이터는 <code>_page</code> 로 이어 받으세요 — 예: 5,000개는 <code>_total=5000&amp;_limit=1000</code> 으로 5페이지.</p>
+
+      <h4><span class="n">6</span>GET 말고 POST·PUT·PATCH·DELETE</h4>
+      <p>생성된 URL 위의 버튼으로 메서드를 고르면 <b>그 메서드로 실제 요청</b>을 보냅니다.
+         URL 자체는 메서드와 무관하게 깨끗합니다 — 메서드는 여러분 코드의 <code>fetch(url, { method: 'POST' })</code> 가 정합니다.</p>
+      <table>
+        <tr><th>메서드</th><th>상태</th><th>응답</th></tr>
+        <tr><td><code>GET</code></td><td>200</td><td>목록 (<code>_wrap</code> 에 따라)</td></tr>
+        <tr><td><code>POST</code></td><td>201</td><td>생성된 단건</td></tr>
+        <tr><td><code>PUT</code> / <code>PATCH</code></td><td>200</td><td>수정된 단건</td></tr>
+        <tr><td><code>DELETE</code></td><td>204</td><td>본문 없음</td></tr>
+      </table>
+      <p>돌려주는 단건은 같은 스키마 <code>GET</code> 목록의 첫 아이템과 완전히 같습니다 —
+         메서드는 모양만 바꾸고 데이터는 건드리지 않습니다. 요청 바디는 보지 않습니다.</p>
+
+      <h4><span class="n">7</span>실패 응답 만들기</h4>
+      <p>상태코드를 <b>400 이상</b>으로 두면 데이터 대신 실패 바디가 나갑니다.
+         표준 4xx·5xx 는 전부 제 이름을 갖습니다 (<code>404</code> → <code>Not Found</code>, <code>413</code> → <code>Payload Too Large</code>).</p>
+      <pre>{ "error": "Not Found", "status": 404, "message": "요청을 처리하지 못했습니다." }</pre>
+      <p>직접 쓰고 싶으면 고급의 <b>실패 바디</b> 칸에 JSON 을 넣으세요. 칸이 비어 있으면
+         기본 응답이 <b>회색으로 미리 보이고</b>, <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 됩니다.
+         붙여넣은 JSON 은 자동 정렬되고, 직접 친 건 <b>{ } 정렬</b> 버튼으로 맞춥니다.</p>
 
       <h4><span class="n">✓</span>알아두면 좋은 것</h4>
       <p>같은 URL 은 <b>항상 같은 데이터</b>를 돌려줍니다 — 새로고침해도, 내일 다시 열어도 동일합니다. 스냅샷 테스트에 안전합니다.<br>

@@ -178,7 +178,9 @@ customer.address.city = location.city</pre>
       <tr><th>Option</th><th>What it does</th></tr>
       <tr><td><code>_total</code> / <code>_limit</code> / <code>_page</code></td><td>virtual total count / items per page / page number</td></tr>
       <tr><td><code>_delay=3000</code></td><td>respond 3s late — test loading spinners</td></tr>
-      <tr><td><code>_status=500</code></td><td>force a status code — test error screens</td></tr>
+      <tr><td><code>_status=500</code></td><td>force a status code — <b>at 400+ a failure body replaces the data</b> (see 6 below)</td></tr>
+      <tr><td><code>_method=post</code></td><td>pick the method in a hand-written URL — the GUI buttons don't add it (see 6 below)</td></tr>
+      <tr><td><code>_body={"code":"E_AUTH"}</code></td><td>write the failure body yourself — only with <code>_status</code> 400+</td></tr>
       <tr><td><code>_locale=en</code></td><td>English data (<code>ja</code> Japanese, <code>zh</code> Chinese)</td></tr>
       <tr><td><code>_seed=v2</code></td><td>a different dataset — same seed always means same data</td></tr>
       <tr><td><code>_wrap=none</code></td><td>bare array, no envelope (<code>one</code> = a single object — detail APIs)</td></tr>
@@ -189,6 +191,27 @@ customer.address.city = location.city</pre>
     </table>
     <p style="font-size:12.5px;color:var(--muted)">Limits: <code>_limit</code> max 1000 · <code>_q</code> 100 chars · <code>_delay</code> 5s.
        For more data, keep paging with <code>_page</code> — e.g. 5,000 items = <code>_total=5000&amp;_limit=1000</code> over 5 pages.</p>
+
+    <h4><span class="n">6</span>Beyond GET — POST·PUT·PATCH·DELETE</h4>
+    <p>Pick a method with the buttons above the generated URL and the preview <b>sends that verb for real</b>.
+       The URL itself stays method-neutral — the method comes from your own <code>fetch(url, { method: 'POST' })</code>.</p>
+    <table>
+      <tr><th>Method</th><th>Status</th><th>Response</th></tr>
+      <tr><td><code>GET</code></td><td>200</td><td>list (per <code>_wrap</code>)</td></tr>
+      <tr><td><code>POST</code></td><td>201</td><td>the created item</td></tr>
+      <tr><td><code>PUT</code> / <code>PATCH</code></td><td>200</td><td>the updated item</td></tr>
+      <tr><td><code>DELETE</code></td><td>204</td><td>no body</td></tr>
+    </table>
+    <p>The single item you get back is identical to the first item of the matching <code>GET</code> list —
+       the method changes the shape, never the data. The request body is ignored.</p>
+
+    <h4><span class="n">7</span>Building failure responses</h4>
+    <p>Set the status to <b>400 or above</b> and a failure body replaces the data.
+       Every standard 4xx/5xx carries its own name (<code>404</code> → <code>Not Found</code>, <code>413</code> → <code>Payload Too Large</code>).</p>
+    <pre>{ "error": "Not Found", "status": 404, "message": "The request could not be processed." }</pre>
+    <p>To write your own, put JSON in the <b>Failure body</b> field under Advanced. While it is empty the default
+       response <b>previews in grey</b> and <b>Tab</b> fills it in for you to edit.
+       Pasted JSON is formatted automatically; hand-typed JSON is tidied by the <b>{ } Format</b> button.</p>
 
     <h4><span class="n">✓</span>Good to know</h4>
     <p>The same URL <b>always returns the same data</b> — after a refresh, or tomorrow. Safe for snapshot tests.<br>
