@@ -199,6 +199,12 @@ for p in 1 2 3 4 5; do curl -s "https://<worker>/api/users?...&_limit=1000&_page
 
 Note: upgrading the faker library may change generated values — pin the version while using snapshots.
 
+**Caching:** because the same URL is the same bytes, successful responses ship
+`Cache-Control: public, max-age=300` and are cached at the edge for 5 minutes (check
+`Cf-Cache-Status: HIT`). The data is identical either way, so the only difference is speed.
+Two things are never cached: requests with `_delay` (the delay is the point) and `_status>=400`
+failures. Deleting a saved preset (`_s=`) may keep serving the old response for up to 5 minutes.
+
 ## Safe contact data
 
 Mock data should never reach a real person:

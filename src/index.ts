@@ -114,6 +114,21 @@ function saveLimited(ip: string): boolean {
 }
 
 /**
+ * 결정적 응답만 엣지 캐시(wrangler.toml 의 [cache])에 태운다.
+ * 캐시 키는 경로 + 쿼리스트링 + 워커 버전 — URL 이 곧 데이터라는 약속이 그대로 캐시 키가 되고,
+ * 생성 로직을 고쳐 배포하면 버전이 달라져 옛 바이트는 저절로 버려진다.
+ *
+ * 캐시 키에 Accept-Language 는 들어가지 않는다. 여기서 제외하는 둘이 그래서 나온다:
+ *   _delay>0     HIT 는 워커를 건너뛴다 → 지연이 사라진다. 지연 자체가 목적인 요청이다
+ *   _status>=400 실패 바디가 Accept-Language 로 갈린다 → ko 응답이 en 사용자에게 나간다
+ *
+ * 300초인 이유: 순수 쿼리 URL 은 사실상 불변이지만 _s=<id> 프리셋은 삭제될 수 있다.
+ * 삭제가 최대 5분 늦게 보이는 선에서 분기 없이 한 값으로 간다.
+ */
+const cacheHeader = (q: ParsedQuery): string =>
+  q.status < 400 && q.delay === 0 ? 'public, max-age=300' : 'no-store';
+
+/**
  * _format=ndjson|csv — 아이템을 배치 단위로 생성하며 스트리밍.
  * 데이터는 JSON 응답과 완전히 동일하다 (_format 은 baseSeed 에서 제외).
  */
@@ -147,18 +162,23 @@ function streamResponse(q: ParsedQuery): Response {
     status: q.status,
     headers: {
       'content-type': q.format === 'csv' ? 'text/csv; charset=utf-8' : 'application/x-ndjson; charset=utf-8',
-      'cache-control': 'no-store',
+      'cache-control': cacheHeader(q),
       ...CORS_HEADERS,
     },
   });
 }
 
-function json(body: unknown, status = 200): Response {
+/**
+ * 기본이 no-store 인 건 실수를 구조로 막기 위해서다 — 이 함수를 쓰는 라우트 중
+ * /schema/types·/schema/ts 는 Accept-Language 로 본문이 갈리고 /schema/saved 는 가변이다.
+ * 캐시는 결정적이라고 확인한 곳에서만 세 번째 인자로 옵트인한다.
+ */
+function json(body: unknown, status = 200, cache = 'no-store'): Response {
   return new Response(JSON.stringify(body, null, 2), {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
+      'cache-control': cache,
       ...CORS_HEADERS,
     },
   });
@@ -184,8 +204,14 @@ export default {
     }
 
     if (url.pathname === '/' || url.pathname === '/index.html') {
+      // s-maxage 만 주는 이유: 엣지는 한 시간 재사용해 워커를 안 돌리되(131KB 통짜 HTML),
+      // 브라우저는 매번 다시 받아 배포 직후 새 소식/기능이 바로 보이게 한다.
       return new Response(guiHtml, {
-        headers: { 'content-type': 'text/html; charset=utf-8', ...CORS_HEADERS },
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'cache-control': 'public, max-age=0, s-maxage=3600',
+          ...CORS_HEADERS,
+        },
       });
     }
 
@@ -416,7 +442,7 @@ export default {
         // 쓰기 메서드는 방금 만들어진/고쳐진 한 건을 돌려준다 = 목록의 0번 아이템
         const body = method === 'GET' ? generateResponse(q) : generateItem(baseSeedOf(q), 0, q);
         await sleep();
-        return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200);
+        return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200, cacheHeader(q));
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);
