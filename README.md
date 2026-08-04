@@ -223,6 +223,8 @@ Storage is isolated by **workspace** — a capability-URL model with no login:
 
 Saved schemas are **content-addressed and immutable**: the ID is a hash of the content, so a shared `_s=` URL returns the same data forever. Editing and re-saving produces a new ID.
 
+Open the preset dropdown and every entry has a ✕ on the right (one confirmation step). Editing cannot happen in place (the ID is a hash of the content) — save the edited schema as a new preset and delete the old one with ✕.
+
 ### Enable team storage (once)
 
 **Recommended — D1** (free tier: 100,000 writes/day, 100× KV):

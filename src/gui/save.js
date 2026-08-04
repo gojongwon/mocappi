@@ -1,4 +1,4 @@
-import { $, addRow, emit, fieldsEl, on, openModal } from './dom.js';
+import { $, addRow, closeModal, emit, fieldsEl, on, openModal } from './dom.js';
 import { LANG, t } from './i18n.js';
 import { parseAliasParam } from './pure.js';
 import { shared } from './shared.js';
@@ -39,6 +39,9 @@ export function renderTeamOptions() {
     const o = document.createElement('option');
     o.value = it.sid;
     o.textContent = it.name + ' (/api/' + it.res + ')';
+    // 이 표시가 있는 항목만 select.js 가 팝업 행에 ✕ 를 붙인다.
+    // 공용 풀을 뺀 이유: 조회 전용이고(index.ts 가 저장을 막는다) sid 가 내용 해시라 남이 추측할 수 있다
+    if (shared.ws) o.dataset.del = it.sid;
     parent.appendChild(o);
   }
   if (shared.loadedPreset) sel.value = shared.loadedPreset.sid; // 목록 갱신 후에도 현재 프리셋 유지
@@ -108,6 +111,46 @@ export function unloadTeamPreset() {
   $('#teamSel').classList.remove('active');
   if (snap) applyQueryString(snap.res, snap.query);
   else emit('schema:changed');
+}
+
+// ---- 프리셋 삭제 ----
+//
+// ✕ 는 드롭다운 목록의 각 행에 있고(select.js 가 그린다) 확인은 #delModal 이 받는다.
+// 클릭과 실제 요청 사이에 모달이 끼므로 대상 sid 를 여기서 들고 있는다.
+let delSid = null;
+
+/** ✕ → 확인 모달. 실제 요청은 사용자가 [삭제] 를 누른 뒤 applyDeletePreset 이 한다 */
+export function askDeletePreset(sid, label) {
+  delSid = sid;
+  $('#delTarget').textContent = label;
+  $('#delError').textContent = '';
+  openModal('delModal');
+}
+
+export async function applyDeletePreset() {
+  if (!delSid) return;
+  try {
+    const res = await fetch('/schema/saved/' + delSid, { method: 'DELETE', headers: { 'Accept-Language': LANG } });
+    if (!res.ok) {
+      // 모달은 열어둔다 — 429(레이트리밋)면 서버 문구가 그대로 온다
+      const body = await res.json().catch(() => ({}));
+      $('#delError').textContent = body.hint || t('삭제하지 못했습니다. 잠시 후 다시 시도하세요.', 'Could not delete. Please try again shortly.');
+      return;
+    }
+    // 지운 게 지금 편집 중인 프리셋이어도 화면의 필드는 손대지 않는다 — content-addressed 라
+    // 같은 내용을 다시 저장하면 sid 까지 돌아오므로 그게 오클릭 복구 경로다
+    // (unloadTeamPreset 은 불러오기 전 상태로 되돌려 그 경로를 지워버린다)
+    if (shared.loadedPreset && shared.loadedPreset.sid === delSid) {
+      shared.loadedPreset = null;
+      shared.preloadSnapshot = null;
+    }
+    delSid = null;
+    closeModal('delModal');
+    refreshTeam();
+    emit('schema:changed');
+  } catch (e) {
+    $('#delError').textContent = t('요청 실패: ', 'Request failed: ') + e;
+  }
 }
 
 export function openSave() {

@@ -91,6 +91,8 @@ const EN = {
   phPaste: '{"id": "a1b2...", "name": "Kim Minjun", "age": 34, "tags": ["a", "b"]}',
   cancel: 'Cancel',
   pasteApply: 'Infer & fill',
+  delTitle: 'Delete preset',
+  del: 'Delete',
 };
 
 // 큰 블록 — data-en-block 키 → innerHTML 통째 교체 (구조·클래스·id 는 원본과 동일하게 유지)
@@ -110,7 +112,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
-    <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body — every standard 4xx/5xx carries its proper reason phrase (<code>413</code> → <code>Payload Too Large</code>). The <b>Failure body</b> field under Advanced previews the default response in grey and <b>Tab</b> fills it in for you to edit. Pasted JSON is auto-formatted and colored (hand-typed: hit <b>{ } Format</b>). There is an <b>Export</b> menu next to the URL — pick a <code>curl</code>/<code>fetch</code>/<code>Python requests</code> call snippet, or a <b>TS types</b>/<b>OpenAPI 3.1</b> document. Unlike the URL, snippets carry <b>the method</b> too; the OpenAPI document drops straight into Postman/Insomnia or generates a client in any language. Responses are now cached for 5 minutes, so calling the same URL again is much faster (the data is identical either way)</li>
+    <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body — every standard 4xx/5xx carries its proper reason phrase (<code>413</code> → <code>Payload Too Large</code>). The <b>Failure body</b> field under Advanced previews the default response in grey and <b>Tab</b> fills it in for you to edit. Pasted JSON is auto-formatted and colored (hand-typed: hit <b>{ } Format</b>). There is an <b>Export</b> menu next to the URL — pick a <code>curl</code>/<code>fetch</code>/<code>Python requests</code> call snippet, or a <b>TS types</b>/<b>OpenAPI 3.1</b> document. Unlike the URL, snippets carry <b>the method</b> too; the OpenAPI document drops straight into Postman/Insomnia or generates a client in any language. Responses are now cached for 5 minutes, so calling the same URL again is much faster (the data is identical either way). Saved presets can now be <b>deleted</b> — open the dropdown and every entry has an <b>✕</b>. The list stays open after a delete, so you can clear out several in a row</li>
     <li><span class="v">v0.27</span>English support — switch with the EN/KO button in the header, auto-detected from your browser. API error hints follow <code>Accept-Language</code> too</li>
     <li><span class="v">v0.26</span>Masking types <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — redacted PII like real services show ("김*준", "010-****-5678")</li>
     <li><span class="v">v0.25</span>New name — Mock API Builder → <b>mocappi</b>, with a lightning badge on the logo ⚡ Now at <code>mocappi.gojongwon.workers.dev</code>; features and saved data unchanged</li>
@@ -125,6 +127,8 @@ const EN_BLOCKS = {
     <li><span class="v">v0.14</span><code>_limit</code> up to 1000 + NDJSON/CSV streaming (10x faster generation)</li>
     <li><span class="v">v0.11~13</span>Advanced types (nullable, weighted enum, pattern), auto-detected when pasting JSON, emails and phone numbers guaranteed not to exist</li>
   `,
+  delIntro: `Removes it from the workspace list. Short URLs (<code>_s=</code>) using this ID stop working.<br>
+       Saving the exact same schema again brings the same ID back.`,
   fbIntro: `Rough edges, missing features — anything goes. Sent anonymously to the developer.`,
   helpBody: `
     <h4><span class="n">1</span>Two ways to start</h4>
@@ -237,6 +241,7 @@ customer.address.city = location.city</pre>
        (requests with <code>_delay</code> and failure responses are excluded).<br>
        Need a different dataset? Append <code>_seed=anything</code>.<br>
        Share a finished schema with your team via <b>Save</b> — you get a short <code>?_s=ID</code> URL that other parameters can override (e.g. <code>?_s=aB3xK9&amp;_page=2</code>).<br>
+       Saved presets are deleted from the dropdown list itself — the <b>✕</b> on the right of each entry.<br>
        If a URL is wrong, the 400 response explains what is wrong and why.<br>
        Resource paths can have multiple segments like <code>/api/v2/users/123/orders</code> — the path is decoration, the query defines the data,
        and detail responses come from the <code>_wrap=one&amp;_seed=123</code> combo.</p>

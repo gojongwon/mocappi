@@ -8,9 +8,15 @@
  * 여러 함수에 이미 있어서, 같은 이름이면 함수 안에서 조용히 가려진다.
  */
 export const shared = {
-  /** 현재 워크스페이스 ID — null 이면 공용 풀(조회 전용) */
+  /**
+   * 현재 워크스페이스 ID — null 이면 공용 풀(조회 전용).
+   * @type {string | null} (초기값만 보면 tsc 가 null 로 굳혀서 테스트의 대입이 막힌다)
+   */
   ws: null,
-  /** 불러오거나 방금 저장한 프리셋 { sid, res, query, name } — 짧은 URL 표시의 근거 */
+  /**
+   * 불러오거나 방금 저장한 프리셋 — 짧은 URL 표시의 근거.
+   * @type {{ sid: string, res: string, query: string, name: string } | null}
+   */
   loadedPreset: null,
   /** 저장 프리셋을 처음 선택하기 직전의 편집 상태 — 선택 해제 시 복원용 */
   preloadSnapshot: null,

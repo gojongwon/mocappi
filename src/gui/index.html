@@ -185,7 +185,7 @@
       <h3 data-i18n="whatsNew">새 소식</h3>
     </div>
     <ul class="news-list" data-en-block="newsList">
-      <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 그 메서드로 <b>실제 요청</b>을 보냅니다 (URL 은 깨끗하게 유지). POST 는 201 + 단건, DELETE 는 204. 상태코드가 400 이상이면 실패 바디가 나갑니다 — 표준 4xx·5xx 는 전부 제 이름을 갖습니다 (<code>413</code> → <code>Payload Too Large</code>). 고급의 <b>실패 바디</b> 칸에서는 기본 응답이 회색으로 미리 보이고 <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 끝. 붙여넣은 JSON 은 자동 정렬 + 색상 (직접 친 건 <b>{ } 정렬</b> 버튼으로). URL 옆 <b>내보내기</b> 메뉴가 생겼어요 — <code>curl</code>·<code>fetch</code>·<code>Python requests</code> 호출 스니펫과 <b>TS 타입</b>·<b>OpenAPI 3.1</b> 문서를 골라 복사합니다. 스니펫은 URL 과 달리 <b>메서드까지</b> 담고, OpenAPI 는 Postman·Insomnia 에 그대로 넣거나 원하는 언어의 클라이언트 코드를 뽑는 데 씁니다. 응답은 이제 5분간 캐시돼서 같은 URL 을 다시 부르면 훨씬 빠릅니다 (데이터는 어차피 같으니까요)</li>
+      <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 그 메서드로 <b>실제 요청</b>을 보냅니다 (URL 은 깨끗하게 유지). POST 는 201 + 단건, DELETE 는 204. 상태코드가 400 이상이면 실패 바디가 나갑니다 — 표준 4xx·5xx 는 전부 제 이름을 갖습니다 (<code>413</code> → <code>Payload Too Large</code>). 고급의 <b>실패 바디</b> 칸에서는 기본 응답이 회색으로 미리 보이고 <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 끝. 붙여넣은 JSON 은 자동 정렬 + 색상 (직접 친 건 <b>{ } 정렬</b> 버튼으로). URL 옆 <b>내보내기</b> 메뉴가 생겼어요 — <code>curl</code>·<code>fetch</code>·<code>Python requests</code> 호출 스니펫과 <b>TS 타입</b>·<b>OpenAPI 3.1</b> 문서를 골라 복사합니다. 스니펫은 URL 과 달리 <b>메서드까지</b> 담고, OpenAPI 는 Postman·Insomnia 에 그대로 넣거나 원하는 언어의 클라이언트 코드를 뽑는 데 씁니다. 응답은 이제 5분간 캐시돼서 같은 URL 을 다시 부르면 훨씬 빠릅니다 (데이터는 어차피 같으니까요). 저장한 프리셋을 <b>지울</b> 수 있어요 — 드롭다운을 열면 항목마다 <b>✕</b> 가 있습니다. 지운 뒤에도 목록이 열려 있어 여러 개를 연달아 정리할 수 있어요</li>
       <li><span class="v">v0.27</span>영어 지원 — 헤더 EN/KO 버튼으로 전환, 브라우저 언어 자동 감지. API 에러 힌트도 <code>Accept-Language</code> 를 따라갑니다</li>
       <li><span class="v">v0.26</span>마스킹 타입 <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — 실서비스처럼 가려진 개인정보 ("김*준", "010-****-5678")</li>
       <li><span class="v">v0.25</span>이름이 바뀌었어요 — Mock API Builder → <b>모카삐 (mocappi)</b>. 로고에 번개 배지도 달았습니다 ⚡ 주소는 <code>mocappi.gojongwon.workers.dev</code>, 기능과 저장물은 그대로예요</li>
@@ -338,6 +338,7 @@ customer.address.city = location.city</pre>
          같은 값이니 응답은 5분간 캐시됩니다 — 같은 URL 을 다시 부르면 더 빠릅니다 (<code>_delay</code> 를 준 요청과 실패 응답은 제외).<br>
          다른 데이터셋이 필요하면 <code>_seed=아무값</code> 을 붙이세요.<br>
          완성된 스키마는 <b>저장</b> 버튼으로 팀과 공유하세요 — <code>?_s=ID</code> 짧은 URL 이 생기고, 다른 파라미터로 덮어쓸 수 있습니다 (예: <code>?_s=aB3xK9&amp;_page=2</code>).<br>
+         저장한 프리셋은 드롭다운 목록에서 항목 오른쪽 <b>✕</b> 로 지웁니다.<br>
          URL 을 잘못 쓰면 400 응답이 무엇이 왜 틀렸는지 알려줍니다.<br>
          리소스 경로는 <code>/api/v2/users/123/orders</code> 처럼 여러 단계도 됩니다 — 경로는 장식이고 데이터는 쿼리로 결정되며,
          상세 응답은 <code>_wrap=one&_seed=123</code> 조합으로 만듭니다.</p>
@@ -410,6 +411,24 @@ npm run deploy</pre>
     <div class="modal-actions">
       <button id="saveCancel" class="btn-close" data-i18n="close" style="background:var(--bg);color:var(--muted)">닫기</button>
       <button id="saveApply" data-i18n="save" style="background:var(--accent);color:var(--accent-text)">저장</button>
+    </div>
+  </div>
+</div>
+
+<div id="delModal">
+  <div class="card">
+    <div class="modal-head">
+      <button class="modal-x" data-close="delModal" data-i18n-title="close" title="닫기" aria-label="닫기">✕</button>
+      <h3 data-i18n="delTitle">프리셋 삭제</h3>
+    </div>
+    <p data-en-block="delIntro">워크스페이스 목록에서 지웁니다. 이 ID 를 쓰는 짧은 URL(<code>_s=</code>)은 더 이상 동작하지 않습니다.<br>
+       같은 스키마를 그대로 다시 저장하면 같은 ID 로 돌아옵니다.</p>
+    <div class="wsid" id="delTarget"></div>
+    <div id="delError"></div>
+    <div class="modal-actions">
+      <button id="delCancel" data-i18n="cancel" style="background:var(--bg);color:var(--muted)">취소</button>
+      <!-- 채운 버튼에 흰 글씨 — --danger 는 4.5:1 을 못 넘는다 (app.css 토큰 주석 참고) -->
+      <button id="delApply" data-i18n="del" style="background:var(--m-delete);color:#fff">삭제</button>
     </div>
   </div>
 </div>

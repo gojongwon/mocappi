@@ -401,19 +401,20 @@
   }
 
   /* ===== 모달 공통 ===== */
-  #pasteModal, #helpModal, #saveModal, #wsModal, #newsModal, #fbModal {
+  #pasteModal, #helpModal, #saveModal, #wsModal, #newsModal, #fbModal, #delModal {
     display: none; position: fixed; inset: 0; background: rgba(23, 23, 26, .5);
     z-index: 20; align-items: center; justify-content: center; padding: 20px;
   }
-  #pasteModal .card, #helpModal .card, #saveModal .card, #wsModal .card, #newsModal .card, #fbModal .card {
+  #pasteModal .card, #helpModal .card, #saveModal .card, #wsModal .card, #newsModal .card, #fbModal .card, #delModal .card {
     background: var(--panel); border: var(--bw) solid var(--ink); border-radius: var(--radius);
     box-shadow: 5px 5px 0 rgba(23, 23, 26, .9);
     width: 600px; max-width: 100%; padding: 22px;
   }
-  #pasteModal h3, #helpModal h3, #saveModal h3, #wsModal h3, #newsModal h3, #fbModal h3 { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
-  #pasteModal p, #saveModal p, #wsModal p, #fbModal p { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+  #pasteModal h3, #helpModal h3, #saveModal h3, #wsModal h3, #newsModal h3, #fbModal h3, #delModal h3 { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
+  #pasteModal p, #saveModal p, #wsModal p, #fbModal p, #delModal p { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.7; }
   #saveModal .card { width: 520px; }
-  #saveError, #wsJoinError { color: var(--danger); font-size: 12.5px; min-height: 1.2em; margin: 6px 0 2px; }
+  #delModal .card { width: 440px; } /* 확인만 받는 창 — 기본 600px 은 내용에 비해 넓다 */
+  #saveError, #wsJoinError, #delError { color: var(--danger); font-size: 12.5px; min-height: 1.2em; margin: 6px 0 2px; }
   #pasteInput {
     width: 100%; height: 240px; font-family: var(--mono); font-size: 12.5px;
     resize: vertical; line-height: 1.6;
@@ -429,7 +430,7 @@
   #pasteApply { background: var(--accent); color: var(--accent-text); }
   #pasteApply:hover { background: var(--accent-hover); }
   #pasteCancel { background: var(--panel); color: var(--muted); box-shadow: none; }
-  #wsModal .wsid {
+  #wsModal .wsid, #delModal .wsid {
     font-family: var(--mono); font-size: 13px; background: var(--code-bg);
     border: 1.5px dashed var(--ink); border-radius: 7px; padding: 8px 12px; margin: 8px 0; word-break: break-all;
   }
@@ -487,6 +488,15 @@
   .ac-item.sel, .ac-item:hover { background: var(--accent-soft); }
   .ac-item .v { font-family: var(--mono); font-size: 12.5px; }
   .ac-item .l { color: var(--faint); font-size: 12px; margin-left: auto; white-space: nowrap; }
+  /* 프리셋 행의 삭제 — 필드 행 .frow button.del 과 같은 모양·같은 ✕ (행이 낮아 높이만 22px) */
+  .ac-x {
+    margin-left: auto; align-self: center; flex: none;
+    border: none; background: none; border-radius: 6px; padding: 0 5px; height: 22px;
+    cursor: pointer; color: var(--faint); font-size: 12px; font-family: inherit; opacity: .45;
+    transition: all .1s ease;
+  }
+  .ac-item:hover .ac-x { opacity: 1; }
+  .ac-x:hover { color: var(--danger); background: #fdeceb; }
   /* select 대체 드롭다운 — <optgroup> 라벨과 안내용 disabled 항목 */
   .ac-group {
     padding: 8px 12px 3px; font-size: 11px; font-weight: 700; color: var(--faint);
@@ -532,7 +542,7 @@
     pre#preview { height: clamp(240px, 42vh, 420px); padding: 12px; font-size: 12px; }
 
     /* 모달: 화면 폭에 맞추고 여백 축소 */
-    #pasteModal .card, #helpModal .card, #saveModal .card, #wsModal .card, #newsModal .card, #fbModal .card {
+    #pasteModal .card, #helpModal .card, #saveModal .card, #wsModal .card, #newsModal .card, #fbModal .card, #delModal .card {
       /* 상단 패딩은 .modal-head 가 갖는다 — 카드에 두면 sticky 헤더가 그만큼 내려앉아
          띠 위로 본문이 새어 보인다 */
       width: calc(100vw - 24px) !important; padding: 0 16px 16px; max-height: 88vh; overflow-y: auto;

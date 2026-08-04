@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 class El {
   tagName: string;
-  className = ''; id = ''; value = ''; textContent = ''; label = '';
+  className = ''; id = ''; value = ''; textContent = ''; label = ''; title = '';
   disabled = false; selected = false;
   dataset: Record<string, string> = {};
   attrs: Record<string, string> = {};
@@ -65,7 +65,7 @@ vi.stubGlobal('scrollY', 0);
 vi.stubGlobal('Event', class { type: string; bubbles: boolean; target: El | null = null;
   constructor(type: string, o?: { bubbles?: boolean }) { this.type = type; this.bubbles = !!o?.bubbles; } });
 
-const { closeSelectPop, enhanceSelects } = await import('../src/gui/select.js');
+const { closeSelectPop, enhanceSelects, setRowDelete } = await import('../src/gui/select.js');
 enhanceSelects();
 
 // select.js 가 body 에 붙인 팝업
@@ -152,6 +152,49 @@ describe('선택', () => {
     expect(sel.value).toBe('en');
     expect(seen).toEqual(['input:oLocale', 'change:oLocale']);
     expect(pop.style.display).toBe('none');
+  });
+
+  // 프리셋 삭제 ✕. 확인·삭제는 #delModal 쪽에 있고, 이 위젯이 지는 책임은 둘뿐이다:
+  // 표시된 항목에만 ✕ 를 그리고, 눌리면 팝업을 닫고 (sid, label) 을 넘긴다
+  describe('행별 삭제 ✕', () => {
+    let asked: Array<[string, string]>;
+    const teamSel = (sids: string[]) => {
+      const s = new El('select');
+      s.id = 'teamSel';
+      const ph = new El('option'); ph.value = ''; ph.textContent = '저장된 프리셋…';
+      s.appendChild(ph); // 플레이스홀더엔 표시가 없어 ✕ 도 없다
+      for (const sid of sids) {
+        const o = new El('option');
+        o.value = sid; o.textContent = sid + ' (/api/users)'; o.dataset.del = sid;
+        s.appendChild(o);
+      }
+      return s;
+    };
+
+    beforeEach(() => {
+      asked = [];
+      setRowDelete((sid: string, label: string) => { asked.push([sid, label]); }, '이 프리셋 삭제');
+    });
+
+    it('표시된 항목에만 ✕ 를 붙인다', () => {
+      mousedown(teamSel(['ws1.aaaa', 'ws1.bbbb']));
+      const xs = pop.children.map((r) => r.querySelector('.ac-x'));
+      expect(xs[0]).toBe(null); // 플레이스홀더
+      expect(xs[1]?.textContent).toBe('✕');
+      expect(xs[1]?.title).toBe('이 프리셋 삭제'); // 주입한 문구가 버튼에 닿는다 (ko/en 짝은 부르는 쪽)
+      expect(pop.children.filter((r) => r.querySelector('.ac-x')).length).toBe(2);
+    });
+
+    // 팝업은 z-index 30, 모달은 20 — 안 닫으면 확인창 위로 목록이 떠버린다
+    it('✕ 를 누르면 팝업을 닫고 (sid, label) 을 넘긴다 — 값 선택으로 새지 않는다', () => {
+      const s = teamSel(['ws1.aaaa', 'ws1.bbbb']);
+      mousedown(s);
+      expect(mousedown(pop.children[1].querySelector('.ac-x')!)).toBe(true); // preventDefault
+
+      expect(asked).toEqual([['ws1.aaaa', 'ws1.aaaa (/api/users)']]);
+      expect(pop.style.display).toBe('none');
+      expect(s.value).toBe(''); // 행을 고른 게 아니다 (플레이스홀더 그대로)
+    });
   });
 
   it('disabled 항목은 값을 바꾸지 않는다 — teamSel 의 "아직 없음" 안내', () => {

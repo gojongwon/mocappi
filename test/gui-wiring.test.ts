@@ -12,7 +12,7 @@ const el = () => ({
   classList: { toggle() {}, add() {}, remove() {}, contains: () => false },
   children: [] as unknown[], value: '', textContent: '', innerHTML: '', title: '', open: false,
   appendChild() {}, append() {}, remove() {}, focus() {}, setAttribute() {},
-  hasAttribute: () => false, addEventListener() {},
+  hasAttribute: () => false, addEventListener() {}, contains: () => true,
   querySelector: () => el(), querySelectorAll: () => [], closest: () => el(),
   getBoundingClientRect: () => ({ left: 0, bottom: 0, width: 100 }),
 });
@@ -23,8 +23,9 @@ const pick = (sel: string) => {
   return nodes.get(sel)!;
 };
 
+const SAVED_SID = 'wsabc123.ab12cd34ef';
 const fetched: string[] = [];
-const calls: Array<{ url: string; method: string }> = [];
+const calls: Array<{ url: string; method: string; body?: string }> = [];
 const replaced: string[] = [];
 const listeners = new Map<string, Array<(e: unknown) => void>>();
 
@@ -46,12 +47,13 @@ vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {} }));
 vi.stubGlobal('history', { replaceState: (_a: unknown, _b: unknown, url: string) => replaced.push(url) });
 vi.stubGlobal('performance', { now: () => 0 });
 vi.stubGlobal('MutationObserver', class { observe() {} });
-vi.stubGlobal('fetch', async (url: string, init?: { method?: string }) => {
+vi.stubGlobal('fetch', async (url: string, init?: { method?: string; body?: string }) => {
   fetched.push(url);
-  calls.push({ url, method: init?.method ?? 'GET' });
+  calls.push({ url, method: init?.method ?? 'GET', body: init?.body });
   return {
     ok: true, status: 200, headers: { get: () => 'application/json' },
-    json: async () => ({ fakerPaths: [], dslTypes: [], items: [] }),
+    // sid 는 /schema/save 응답용 (저장 후 shared.loadedPreset 이 이걸 물고 간다)
+    json: async () => ({ fakerPaths: [], dslTypes: [], items: [], sid: SAVED_SID }),
     text: async () => '{}',
   };
 });
@@ -149,7 +151,7 @@ describe('이벤트 배선', () => {
     expect(acceptGhost()).toBe(false);
   });
 
-  // 모달 6개의 닫기가 전부 closeModal 하나라 코너 ✕ 도 data-close 분기 하나로 덮는다
+  // 모달 7개의 닫기가 전부 closeModal 하나라 코너 ✕ 도 data-close 분기 하나로 덮는다
   it('모달 코너 ✕ 클릭 → 해당 모달만 닫힌다', () => {
     pick('#newsModal').style.display = 'flex';
     pick('#helpModal').style.display = 'flex';
@@ -181,5 +183,57 @@ describe('이벤트 배선', () => {
     const api = calls.filter((c) => c.url.includes('/api/')).at(-1)!;
     expect(api.method).toBe('POST');
     expect(api.url).not.toContain('_method'); // API URL 은 메서드 중립
+  });
+});
+
+// 프리셋 삭제: 드롭다운 행의 ✕(select.js) → #delModal 확인 → DELETE(save.js).
+// 세 파일에 걸친 배선이라 한 군데만 끊겨도 조용히 죽는다
+describe('프리셋 삭제 (드롭다운 ✕ → 확인 모달)', () => {
+  const clickX = (sid: string, label: string) =>
+    (globalThis as unknown as { document: { dispatchEvent(e: unknown): void } }).document.dispatchEvent({
+      type: 'mousedown',
+      preventDefault() {},
+      // ✕ 는 .ac-item 안에 있어 둘 다 매치된다 — 핸들러가 .ac-x 를 먼저 보는지까지 확인하는 셈
+      target: { ...el(), closest: (s: string) => (s === '.ac-x' || s === '.ac-item' ? { ...el(), dataset: { sid, label } } : null) },
+    });
+  const clickBtn = (id: string) =>
+    (globalThis as unknown as { document: { dispatchEvent(e: unknown): void } }).document.dispatchEvent({
+      type: 'click',
+      target: { ...el(), closest: () => ({ ...el(), id }) },
+    });
+  const delCalls = () => calls.filter((c) => c.method === 'DELETE');
+  const load = () => {
+    shared.ws = 'wsabc123';
+    shared.loadedPreset = { sid: SAVED_SID, res: 'users', query: 'name=person.fullName', name: '사용자' };
+  };
+
+  it('✕ → 확인 모달이 이름과 함께 열리고, 아직 요청은 없다', () => {
+    load();
+    const before = delCalls().length;
+    clickX(SAVED_SID, '사용자 (/api/users)');
+    expect(pick('#delModal').style.display).toBe('flex');
+    expect(pick('#delTarget').textContent).toBe('사용자 (/api/users)');
+    expect(delCalls().length).toBe(before); // 확인 전에는 안 지운다
+  });
+
+  it('[삭제] → DELETE + 불러온 프리셋 해제 + 모달 닫힘', async () => {
+    load();
+    clickX(SAVED_SID, '사용자 (/api/users)');
+    clickBtn('delApply');
+    await new Promise((r) => setTimeout(r, 5));
+    expect(delCalls().at(-1)!.url).toBe('/schema/saved/' + SAVED_SID);
+    expect(shared.loadedPreset).toBe(null); // 지운 게 편집 중이던 프리셋이면 해제
+    expect(pick('#delModal').style.display).toBe('none');
+  });
+
+  it('[취소] → 요청 없이 닫힌다', async () => {
+    load();
+    clickX(SAVED_SID, '사용자 (/api/users)');
+    const before = delCalls().length;
+    clickBtn('delCancel');
+    await new Promise((r) => setTimeout(r, 5));
+    expect(delCalls().length).toBe(before);
+    expect(pick('#delModal').style.display).toBe('none');
+    expect(shared.loadedPreset).not.toBe(null);
   });
 });

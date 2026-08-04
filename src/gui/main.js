@@ -4,8 +4,8 @@ import { LANG, applyEn, t } from './i18n.js';
 import { applyPaste, closePaste, openPaste } from './paste.js';
 import './preview.js'; // schema:changed 구독자 — 부수효과만, export 없음
 import { enc, snippet } from './pure.js';
-import { applySave, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
-import { enhanceSelects } from './select.js';
+import { applyDeletePreset, applySave, askDeletePreset, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
+import { enhanceSelects, setRowDelete } from './select.js';
 import { shared } from './shared.js';
 import { OPT_DEFAULTS, OPT_INPUTS, PRESETS, acceptGhost, advActive, apiUrl, applyPreset, buildQuery, formatBody, loadFromAddressBar, readState, setMethod, setOptKeys } from './url-state.js';
 import { joinWs, randWs, switchWs, syncWsUi } from './workspace.js';
@@ -54,7 +54,7 @@ async function runExport(sel, kind) {
 }
 // ---- 이벤트 ----
 // Escape·배경 클릭으로 닫히는 모달. 새 소식·피드백은 여기 없다 — 지금 동작 그대로 유지
-const DISMISSABLE = ['pasteModal', 'helpModal', 'saveModal', 'wsModal'];
+const DISMISSABLE = ['pasteModal', 'helpModal', 'saveModal', 'wsModal', 'delModal'];
 document.addEventListener('input', (e) => {
   if (e.target.matches('.fname, .fval, #resource, .opts input, .opts select, .opts textarea')) {
     if (e.target.matches('.fname, .fval')) e.target.title = e.target.value;
@@ -119,6 +119,8 @@ syncTeamSelVisibility();
 renderTeamOptions();
 hardenInputs();
 enhanceSelects();
+// 드롭다운 행별 삭제 — select.js 는 문구도 확인 방식도 모른다. 둘을 아는 건 진입점인 여기다
+setRowDelete(askDeletePreset, t('이 프리셋 삭제', 'Delete this preset'));
 
 const modalObserver = new MutationObserver(syncScrollLock);
 for (const id of MODAL_IDS) {
@@ -149,7 +151,7 @@ document.addEventListener('click', (e) => {
   if (btn.classList.contains('del')) { btn.closest('.frow').remove(); emit('schema:changed'); return; }
   if (btn.dataset && btn.dataset.preset) { applyPreset(btn.dataset.preset); return; }
   if (btn.dataset && btn.dataset.method) { setMethod(btn.dataset.method); return; }
-  // 모달 코너 ✕ — 6개 모달의 닫기가 전부 closeModal 하나라 분기도 하나면 된다
+  // 모달 코너 ✕ — 7개 모달의 닫기가 전부 closeModal 하나라 분기도 하나면 된다
   if (btn.dataset && btn.dataset.close) { closeModal(btn.dataset.close); return; }
   switch (btn.id) {
     // 언어 토글 — 해시만 바꾸고 리로드 (스키마 상태는 location.search 에 있어 안전)
@@ -212,6 +214,8 @@ document.addEventListener('click', (e) => {
     case 'saveWsJoin': closeModal('saveModal'); syncWsUi(); openModal('wsModal'); break;
     case 'saveCancel': closeModal('saveModal'); break;
     case 'saveApply': applySave(); break;
+    case 'delCancel': closeModal('delModal'); break;
+    case 'delApply': applyDeletePreset(); break;
     case 'shortCopy': copyIcon($('#shortUrlBox').dataset.url || '', btn); break;
     case 'shortLineCopy': copyIcon($('#shortLine').dataset.url || '', btn); break;
   }
