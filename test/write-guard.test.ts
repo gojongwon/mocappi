@@ -102,6 +102,22 @@ describe('저장 리미터 (베스트에포트)', () => {
     expect(calls).toContain('10.1.0.2');
   });
 
+  // 삭제도 쓰기다 — GUI 드롭다운에 ✕ 가 생겨 누구나 닿는다. 저장과 별개 카운터라 서로 굶기지 않는다
+  it('삭제도 시간당 10회 제한, 저장 카운터와 분리', async () => {
+    const kv = new CountingKV();
+    const rec = await saveSchema(kv, WS, '지울것', 'users', Q);
+    const del = (ip: string) =>
+      worker.fetch(new Request('https://x/schema/saved/' + rec.sid, { method: 'DELETE', headers: { 'cf-connecting-ip': ip } }), { SCHEMAS: kv });
+
+    // 첫 삭제만 200, 이후는 대상이 없어 404 — 리미터는 그와 무관하게 세다가 11번째를 막는다
+    expect((await del('10.4.0.1')).status).toBe(200);
+    for (let i = 1; i < 10; i++) expect((await del('10.4.0.1')).status).toBe(404);
+    expect((await del('10.4.0.1')).status).toBe(429);
+
+    // 같은 IP 의 저장 카운터는 삭제 10회에 닳지 않았다
+    expect((await save(kv, '10.4.0.1', 1)).status).toBe(200);
+  });
+
   it('데이터 생성 API 는 리미터와 무관', async () => {
     for (let i = 0; i < 15; i++) {
       const res = await worker.fetch(

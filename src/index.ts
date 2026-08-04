@@ -390,6 +390,15 @@ export default {
       if (!storage) return json(noKv(lang), 501);
       const listHint = pick(lang, 'GET /schema/saved 로 목록을 확인하세요.', 'Check the list via GET /schema/saved.');
       if (request.method === 'DELETE') {
+        // 삭제도 저장과 같은 쓰기다 — GUI 에 삭제 버튼이 생겨 누구나 닿을 수 있게 됐으니
+        // 루프·스팸이 일일 쓰기 한도(KV 무료 1,000)를 태우는 길을 저장·피드백과 똑같이 막는다
+        const delIp = request.headers.get('cf-connecting-ip') ?? 'unknown';
+        const delLimited = env.SAVE_RL
+          ? !(await env.SAVE_RL.limit({ key: 'del:' + delIp })).success
+          : saveLimited('del:' + delIp);
+        if (delLimited) {
+          return json({ error: 'Too many requests', hint: pick(lang, '삭제가 너무 잦습니다. 잠시 후 다시 시도하세요.', 'Too many deletions. Please try again shortly.') }, 429);
+        }
         const ok = await deleteSchema(storage, sm[1]);
         return ok
           ? json({ ok: true, hint: pick(lang, '삭제됨 — 이 ID 를 쓰는 _s= URL 은 더 이상 동작하지 않습니다.', 'Deleted — _s= URLs using this ID will no longer work.') })
