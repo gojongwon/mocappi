@@ -51,6 +51,13 @@ describe('결정론', () => {
     expect(n1).toBe(n2);
   });
 
+  it('_q/_sort 만 다른 URL → 동일 시드 (뷰일 뿐 데이터가 아니다)', () => {
+    const base = parseQuery(new URLSearchParams(`${BASE}&_total=50`)).normalized;
+    for (const view of ['_q=김', '_sort=-age', '_q=김&_qin=name&_sort=age,-seq']) {
+      expect(parseQuery(new URLSearchParams(`${BASE}&_total=50&${view}`)).normalized).toBe(base);
+    }
+  });
+
   it('예약 파라미터 기본값 명시 여부와 무관하게 동일 시드', () => {
     const a = runRaw(`${BASE}`);
     const b = runRaw(`${BASE}&_locale=ko&_total=100&_page=1&_limit=10`);

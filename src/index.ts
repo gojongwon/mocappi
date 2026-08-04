@@ -4,7 +4,7 @@
  */
 import guiHtml from './gui.generated.html';
 import { parseQuery, type ParsedQuery } from './dsl';
-import { baseSeedOf, csvHeader, csvRow, generateItem, generateResponse, searchMatches } from './generate';
+import { baseSeedOf, csvHeader, csvRow, generateItem, generateResponse, viewItems } from './generate';
 import { inferSchema } from './infer';
 import { generateOpenApi } from './openapi';
 import { generateTsTypes } from './tstype';
@@ -136,8 +136,9 @@ const cacheHeader = (q: ParsedQuery): string =>
 function streamResponse(q: ParsedQuery): Response {
   const baseSeed = baseSeedOf(q);
   const start = (q.page - 1) * q.limit;
-  // 검색 모드면 매치를 먼저 구해 페이지 슬라이스를 스트리밍 (창이 1,000이라 메모리 부담 없음)
-  const searched = q.q !== null ? searchMatches(q).slice(start, start + q.limit) : null;
+  // 검색·정렬 모드면 창 전체를 먼저 구해 페이지 슬라이스를 스트리밍 (창이 1,000이라 메모리 부담 없음)
+  const view = q.q !== null || q.sort !== null ? viewItems(q) : null;
+  const searched = view ? view.slice(start, start + q.limit) : null;
   const count = searched ? searched.length : Math.max(0, Math.min(q.limit, q.total - start));
   const enc = new TextEncoder();
   const BATCH = 100;

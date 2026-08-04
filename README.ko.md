@@ -61,6 +61,19 @@ GUI 주소창 자체가 편집 상태이므로, 브라우저 주소를 복사해
 /api/users?name=person.fullName&_wrap=none&_locale=en
 ```
 
+**6. 검색과 정렬 — 데이터는 그대로, 필터와 순서만**
+
+```
+/api/users?name=person.fullName&age=int:20~60&_q=김            # 값 부분일치, total 은 매치 수
+/api/users?name=person.fullName&age=int:20~60&_q=김&_qin=name   # name 필드만 검색
+/api/users?name=person.fullName&age=int:20~60&_sort=-age,name   # 나이 내림차순, 동률은 이름순
+```
+
+`_q`·`_sort` 는 시드에 들어가지 않는다 — i번째 아이템 자체는 검색·정렬 유무와 무관하게 늘 같고,
+바뀌는 건 어느 아이템이 어느 순서로 나오는지다. 둘 다 **앞 1,000개 창** 안에서 동작한다
+(CPU 예산 때문). `_total` 이 그보다 크면 `total` 은 창 안 개수가 된다.
+빈 값(`null`)은 오름/내림 어느 쪽이든 항상 뒤로 간다.
+
 ## HTTP 메서드
 
 요청 바디는 보지 않는다 — 목이 돌려줘야 하는 건 **메서드에 맞는 응답 모양과 상태코드**다.
@@ -130,6 +143,7 @@ curl -X POST /api/users?name=person.fullName      # 201 + 단건
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv 는 아이템만 스트리밍 |
 | `_q` | — | 검색 — 모든 값 부분일치(대소문자 무시), `total` 은 매치 수 (앞 1,000개 창) |
 | `_qin` | — | 검색 대상 필드 한정 (쉼표, 중첩은 `a.b`) — `_q` 와 함께. 예: `_q=김&_qin=name` |
+| `_sort` | — | 정렬 (쉼표, `-` 는 내림차순, 중첩은 `a.b`). 예: `_sort=name,-age` (앞 1,000개 창) |
 | `_alias` | — | 예약 키를 실제 API 이름으로: `_alias=page:_page,size:_limit,keyword:_q` → `?page=2&size=20&keyword=김` 으로 호출 |
 
 `_` 로 시작하지 않는 파라미터는 전부 필드 정의다.

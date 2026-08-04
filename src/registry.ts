@@ -445,6 +445,7 @@ export const TYPE_DOCS = {
     { name: '_format', default: 'json', desc: 'json | ndjson | csv — ndjson/csv 는 아이템만 스트리밍 (대용량용)' },
     { name: '_q', default: '—', desc: '검색어 — 모든 값에 부분일치(대소문자 무시). total 은 매치 수. 앞 1,000개 창 안에서 검색' },
     { name: '_qin', default: '—', desc: '검색 대상 필드 한정 (쉼표 구분, 중첩은 a.b). _q 와 함께 사용. 예: _q=김&_qin=name,city' },
+    { name: '_sort', default: '—', desc: "정렬 (쉼표 구분, '-' 접두사는 내림차순, 중첩은 a.b). 데이터는 그대로고 순서만 바뀝니다. 앞 1,000개 창 안에서 정렬. 예: _sort=name,-age" },
     { name: '_alias', default: '—', desc: '예약 파라미터 별칭 — 실제 API 의 키 이름으로 호출. 예: _alias=page:_page,size:_limit → ?page=2&size=20' },
     { name: '_s', default: '—', desc: '저장된 팀 스키마 ID. 다른 파라미터로 오버라이드 가능 (예: ?_s=aB3xK9&_page=2)' },
   ],
@@ -521,6 +522,7 @@ const EN_RESERVED: Record<string, { default?: string; desc: string }> = {
   _format: { desc: 'json | ndjson | csv — ndjson/csv stream items only (for large payloads)' },
   _q: { desc: 'Search term — partial match on every value (case-insensitive). total is the match count. Searches within the first 1,000 items' },
   _qin: { desc: 'Restrict search to specific fields (comma-separated, nested as a.b). Use with _q, e.g. _q=kim&_qin=name,city' },
+  _sort: { desc: "Sort (comma-separated, '-' prefix for descending, nested as a.b). The data is unchanged — only the order. Sorts within the first 1,000 items, e.g. _sort=name,-age" },
   _alias: { desc: "Aliases for reserved parameters — call with your real API's key names, e.g. _alias=page:_page,size:_limit → ?page=2&size=20" },
   _s: { desc: 'Saved team schema ID. Other parameters can override it (e.g. ?_s=aB3xK9&_page=2)' },
 };

@@ -17,6 +17,12 @@ export interface FieldSpec {
   gen: Generator;
 }
 
+/** _sort 의 정렬 키 하나 — path 는 점 표기 경로, desc 는 '-' 접두사 */
+export interface SortKey {
+  path: string;
+  desc: boolean;
+}
+
 export interface ParsedQuery {
   page: number;
   limit: number;
@@ -35,16 +41,18 @@ export interface ParsedQuery {
   q: string | null;
   /** _qin 검색 대상 필드(점 표기 경로) — null 이면 전체 검색. 중첩은 부분트리 매치 */
   qin: string[] | null;
+  /** _sort 정렬 키 목록 — 데이터는 동일하고 순서만 바뀐다 (시드 제외). null 이면 생성 순서 */
+  sort: SortKey[] | null;
   seedParam: string | null;
   /** name 기준 정렬 완료 상태 */
   fields: FieldSpec[];
   /** _body — 실패(_status>=400) 응답으로 그대로 내보낼 JSON. null 이면 기본 실패 바디 (시드 제외) */
   body: unknown | null;
-  /** baseSeed 계산용 정규화 문자열 (_page/_limit/_delay/_status/_method/_body/_wrap/_format 제외, 정렬됨) */
+  /** baseSeed 계산용 정규화 문자열 (_page/_limit/_delay/_status/_method/_body/_wrap/_format/_sort 제외, 정렬됨) */
   normalized: string;
 }
 
-const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_method', '_body', '_wrap', '_format', '_q', '_qin', '_alias'];
+const RESERVED_NAMES = ['_page', '_limit', '_total', '_seed', '_locale', '_delay', '_status', '_method', '_body', '_wrap', '_format', '_q', '_qin', '_sort', '_alias'];
 /** _alias 로 별칭을 걸 수 있는 대상 (자기 자신 제외 — _s 는 라우트 레벨이라 제외) */
 const ALIASABLE = RESERVED_NAMES.filter((n) => n !== '_alias');
 const ALIAS_NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
@@ -150,6 +158,7 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   let format: 'json' | 'ndjson' | 'csv' = 'json';
   let qSearch: string | null = null;
   let qin: string[] | null = null;
+  let sort: SortKey[] | null = null;
   let seedParam: string | null = null;
 
   const fields: FieldSpec[] = [];
@@ -255,6 +264,17 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
           if (parts.length > 0) qin = parts; // 필드 존재 검증은 필드 파싱 후에
           break;
         }
+        case '_sort': {
+          const keys = value.split(',').map((s) => s.trim()).filter((s) => s !== '')
+            .map((s) => (s.startsWith('-') ? { path: s.slice(1).trim(), desc: true } : { path: s, desc: false }));
+          if (keys.some((k) => k.path === '')) {
+            fail('Invalid reserved parameter', key, value,
+              "'-' 뒤에 필드명이 필요합니다. 예: _sort=name,-age",
+              "A field name must follow '-', e.g. _sort=name,-age");
+          }
+          if (keys.length > 0) sort = keys; // 필드 존재 검증은 필드 파싱 후에
+          break;
+        }
         default:
           fail(
             'Unknown reserved parameter',
@@ -325,6 +345,10 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
   // 경로 충돌 검사 (a=int:1~5 와 a.b=uuid 동시 정의 등)
   checkPathConflicts(fields);
 
+  // _qin·_sort 가 가리킬 수 있는 경로 — 리프 또는 그 상위 경로
+  const available = [...new Set(fields.map((f) => f.path.join('.')))];
+  const known = (p: string) => available.some((a) => a === p || a.startsWith(p + '.'));
+
   // _qin 검증 — 존재하는 필드 경로(또는 그 상위 경로)만 허용. 오타를 조용히 무시하면
   // "왜 결과가 이상하지" 로 이어지므로 400 + 가용 목록으로 명시한다.
   if (qin !== null) {
@@ -333,13 +357,29 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
         '_qin 은 _q(검색어) 와 함께 사용합니다. 예: _q=김&_qin=name',
         '_qin must be used together with _q (the search term), e.g. _q=kim&_qin=name');
     }
-    const available = [...new Set(fields.map((f) => f.path.join('.')))];
     for (const p of qin) {
-      const ok = available.some((a) => a === p || a.startsWith(p + '.'));
-      if (!ok) {
+      if (!known(p)) {
         fail('Unknown search field', '_qin', p,
           `'${p}' 필드가 없습니다. 사용 가능: ${available.join(', ')}`,
           `There is no '${p}' field. Available: ${available.join(', ')}`);
+      }
+    }
+  }
+
+  // _sort 검증 — _qin 과 같은 이유로 오타는 400.
+  // _wrap=one 은 아이템이 한 개라 정렬할 대상이 없다. 조용히 무시하면 "왜 안 먹지" 가 된다
+  // (_sort 는 새 파라미터라 이 400 이 기존 _s= 프리셋을 깨지 않는다).
+  if (sort !== null) {
+    if (wrap === 'one') {
+      fail('Invalid reserved parameter', '_sort', sort.map((k) => (k.desc ? '-' : '') + k.path).join(','),
+        '_wrap=one 은 단일 객체라 정렬할 목록이 없습니다. _wrap 을 envelope 나 none 으로 두세요.',
+        '_wrap=one returns a single object, so there is no list to sort. Use _wrap=envelope or none.');
+    }
+    for (const k of sort) {
+      if (!known(k.path)) {
+        fail('Unknown sort field', '_sort', k.path,
+          `'${k.path}' 필드가 없습니다. 사용 가능: ${available.join(', ')}`,
+          `There is no '${k.path}' field. Available: ${available.join(', ')}`);
       }
     }
   }
@@ -352,14 +392,14 @@ export function parseQuery(params: URLSearchParams): ParsedQuery {
       '_body is the failure response body. Set _status to 400 or above, e.g. _status=401&_body={"code":"E_AUTH"}');
   }
 
-  // baseSeed 용 정규화 문자열 — _page/_limit/_delay/_status/_method/_body/_wrap 제외.
+  // baseSeed 용 정규화 문자열 — _page/_limit/_delay/_status/_method/_body/_wrap/_sort 제외.
   // 기본값을 명시한 URL 과 생략한 URL 이 같은 시드를 갖도록 유효값 기준으로 만든다.
   const parts = [`_locale=${locale}`, `_total=${total}`];
   if (seedParam !== null) parts.push(`_seed=${seedParam}`);
   for (const f of fields) parts.push(`${f.name}=${f.typeRaw}`);
   const normalized = parts.join('&');
 
-  return { page, limit, total, locale, delay, status, statusSet, method, body, wrap, format, q: qSearch, qin, seedParam, fields, normalized };
+  return { page, limit, total, locale, delay, status, statusSet, method, body, wrap, format, q: qSearch, qin, sort, seedParam, fields, normalized };
 }
 
 function checkPathConflicts(fields: FieldSpec[]): void {

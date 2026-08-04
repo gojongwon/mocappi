@@ -52,6 +52,17 @@ Search (filtered items + match-count `total` — the data itself is unchanged, `
 /api/users?name=person.fullName&city=location.city&_q=kim&_qin=name   # search only the name field
 ```
 
+Sort — `-` prefixes a descending key, comma-separates several:
+
+```
+/api/users?name=person.fullName&age=int:20~60&_sort=-age,name   # oldest first, ties by name
+```
+
+Neither `_q` nor `_sort` enters the seed — the *i*-th item is always the same item; only which
+items come back, and in what order, changes. Both work within the **first 1,000 items** (CPU
+budget), so with a larger `_total` the reported `total` is the count inside that window.
+Empty values (`null`) always sort last, whichever direction you ask for.
+
 Nested paths and detail endpoints — any `/api/...` depth works (the path is cosmetic; data is determined by the query). Combine `_wrap=one` with `_seed=<id>` for per-id detail objects:
 
 ```
@@ -135,6 +146,7 @@ Statuses below 400 (e.g. `_status=302`) keep the normal data and only change the
 | `_format` | json | `json` \| `ndjson` \| `csv` — ndjson/csv stream items only |
 | `_q` | — | Search: case-insensitive substring over generated values; `total` becomes the match count (scans the first 1,000 virtual items) |
 | `_qin` | — | Limit search to specific fields (comma-separated, dot paths). Use with `_q`: `_q=kim&_qin=name,city` |
+| `_sort` | — | Sort (comma-separated, `-` for descending, dot paths): `_sort=name,-age` (within the first 1,000 items) |
 | `_alias` | — | Rename reserved params to match your real API: `_alias=page:_page,size:_limit,keyword:_q` → call with `?page=2&size=20&keyword=kim` |
 | `_s` | — | Saved schema ID (see Workspaces) |
 

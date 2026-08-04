@@ -85,6 +85,7 @@
       </div>
       <div><label><span data-i18n="optQ">검색</span> <input class="okey" data-for="_q" value="_q" spellcheck="false" data-i18n-title="okeyQ" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: keyword)"></label><input id="oQ" data-i18n-ph="phQ" placeholder="값 부분일치 (예: 김)" spellcheck="false"></div>
       <div><label><span data-i18n="optQin">검색 필드</span> <input class="okey" data-for="_qin" value="_qin" spellcheck="false" data-i18n-title="okeyQin" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: qin)"></label><input id="oQin" data-i18n-ph="phQin" placeholder="한정 (예: name,city)" spellcheck="false"></div>
+      <div><label><span data-i18n="optSort">정렬</span> <input class="okey" data-for="_sort" value="_sort" spellcheck="false" data-i18n-title="okeySort" title="키 이름 — 실제 API 의 이름으로 바꿀 수 있어요 (예: sort)"></label><input id="oSort" data-i18n-ph="phSort" placeholder="예: name,-age (- 는 내림차순)" spellcheck="false"></div>
     </div>
 
     <details class="opts-adv" id="optsAdv">
@@ -174,7 +175,7 @@
 </main>
 
 <div class="corner">
-  <button id="newsBtn" data-i18n-title="newsBtnTitle" title="최근 업데이트 보기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span data-i18n="newsLabel">v0.28 · 새 소식</span></button>
+  <button id="newsBtn" data-i18n-title="newsBtnTitle" title="최근 업데이트 보기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span data-i18n="newsLabel">v0.29 · 새 소식</span></button>
   <button id="fbBtn" data-i18n-title="fbBtnTitle" title="개발자에게 의견 보내기"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span data-i18n="feedback">피드백</span></button>
 </div>
 
@@ -185,6 +186,7 @@
       <h3 data-i18n="whatsNew">새 소식</h3>
     </div>
     <ul class="news-list" data-en-block="newsList">
+      <li><span class="v">v0.29</span><b>정렬</b>이 생겼습니다 — 옵션의 정렬 칸에 <code>name,-age</code> 처럼 적으면 그 순서로 나옵니다 (<code>-</code> 는 내림차순, 쉼표로 여러 키). 데이터는 그대로고 순서만 바뀌며, 검색·NDJSON·CSV 와도 같이 씁니다</li>
       <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 그 메서드로 <b>실제 요청</b>을 보냅니다 (URL 은 깨끗하게 유지). POST 는 201 + 단건, DELETE 는 204. 상태코드가 400 이상이면 실패 바디가 나갑니다 — 표준 4xx·5xx 는 전부 제 이름을 갖습니다 (<code>413</code> → <code>Payload Too Large</code>). 고급의 <b>실패 바디</b> 칸에서는 기본 응답이 회색으로 미리 보이고 <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 끝. 붙여넣은 JSON 은 자동 정렬 + 색상 (직접 친 건 <b>{ } 정렬</b> 버튼으로). URL 옆 <b>내보내기</b> 메뉴가 생겼어요 — <code>curl</code>·<code>fetch</code>·<code>Python requests</code> 호출 스니펫과 <b>TS 타입</b>·<b>OpenAPI 3.1</b> 문서를 골라 복사합니다. 스니펫은 URL 과 달리 <b>메서드까지</b> 담고, OpenAPI 는 Postman·Insomnia 에 그대로 넣거나 원하는 언어의 클라이언트 코드를 뽑는 데 씁니다. 응답은 이제 5분간 캐시돼서 같은 URL 을 다시 부르면 훨씬 빠릅니다 (데이터는 어차피 같으니까요). 저장한 프리셋을 <b>지울</b> 수 있어요 — 드롭다운을 열면 항목마다 <b>✕</b> 가 있고, 확인 창에서 한 번 더 확인하면 목록에서 사라집니다 (짧은 URL 도 함께 끊깁니다)</li>
       <li><span class="v">v0.27</span>영어 지원 — 헤더 EN/KO 버튼으로 전환, 브라우저 언어 자동 감지. API 에러 힌트도 <code>Accept-Language</code> 를 따라갑니다</li>
       <li><span class="v">v0.26</span>마스킹 타입 <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — 실서비스처럼 가려진 개인정보 ("김*준", "010-****-5678")</li>
@@ -290,6 +292,7 @@ customer.address.city = location.city</pre>
         <tr><td><code>_format=ndjson</code></td><td>아이템만 줄 단위 스트리밍 — 대용량 (<code>csv</code> 도 가능)</td></tr>
         <tr><td><code>_q=김</code></td><td>생성 데이터 검색 — 값 부분일치, <code>total</code> 은 매치 수</td></tr>
         <tr><td><code>_qin=name,city</code></td><td>검색 대상 필드 한정 — <code>_q</code> 와 함께 (중첩은 <code>a.b</code>)</td></tr>
+        <tr><td><code>_sort=name,-age</code></td><td>정렬 — <code>-</code> 는 내림차순, 쉼표로 여러 키. 데이터는 그대로고 순서만 바뀝니다</td></tr>
         <tr><td><code>_alias=page:_page</code></td><td>예약 키를 실제 API 이름으로 — 옵션의 <u>키 이름을 직접 클릭</u>해 바꾸면 자동 생성됩니다</td></tr>
       </table>
       <p style="font-size:12.5px;color:var(--muted)">상한: <code>_limit</code> 최대 1000 · <code>_q</code> 100자 · <code>_delay</code> 5초.

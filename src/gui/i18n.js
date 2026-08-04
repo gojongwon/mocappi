@@ -27,6 +27,7 @@ const EN = {
   optLocale: 'Locale',
   optQ: 'Search',
   optQin: 'Search in',
+  optSort: 'Sort',
   optDelay: 'Delay ms',
   optStatus: 'Status code',
   optBody: 'Failure body',
@@ -42,6 +43,7 @@ const EN = {
   okeyLocale: 'Key name — rename to match your real API (e.g. locale)',
   okeyQ: 'Key name — rename to match your real API (e.g. keyword)',
   okeyQin: 'Key name — rename to match your real API (e.g. qin)',
+  okeySort: 'Key name — rename to match your real API (e.g. sort)',
   okeyDelay: 'Key name — rename to match your real API (e.g. delay)',
   okeyStatus: 'Key name — rename to match your real API (e.g. status)',
   okeyGeneric: 'Key name — rename to match your real API',
@@ -53,6 +55,7 @@ const EN = {
   formatNdjson: 'NDJSON (line-delimited)',
   phQ: 'substring match on values',
   phQin: 'limit to (e.g. name,city)',
+  phSort: 'e.g. name,-age (- is descending)',
   phSeed: 'e.g. 123 (a detail API id)',
   advSummary: 'Advanced — delay · status · failure body · shape · seed · format',
   pasteJson: '{ } Paste JSON',
@@ -71,7 +74,7 @@ const EN = {
   copyResp: 'Copy full response',
   // 코너 버튼
   newsBtnTitle: 'See recent updates',
-  newsLabel: "v0.28 · What's new",
+  newsLabel: "v0.29 · What's new",
   fbBtnTitle: 'Send feedback to the developer',
   feedback: 'Feedback',
   // 모달
@@ -112,6 +115,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
+    <li><span class="v">v0.29</span><b>Sorting</b> arrived — type something like <code>name,-age</code> in the Sort option and the items come back in that order (<code>-</code> is descending, comma-separate several keys). The data is unchanged, only the order, and it composes with search, NDJSON and CSV</li>
     <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body — every standard 4xx/5xx carries its proper reason phrase (<code>413</code> → <code>Payload Too Large</code>). The <b>Failure body</b> field under Advanced previews the default response in grey and <b>Tab</b> fills it in for you to edit. Pasted JSON is auto-formatted and colored (hand-typed: hit <b>{ } Format</b>). There is an <b>Export</b> menu next to the URL — pick a <code>curl</code>/<code>fetch</code>/<code>Python requests</code> call snippet, or a <b>TS types</b>/<b>OpenAPI 3.1</b> document. Unlike the URL, snippets carry <b>the method</b> too; the OpenAPI document drops straight into Postman/Insomnia or generates a client in any language. Responses are now cached for 5 minutes, so calling the same URL again is much faster (the data is identical either way). Saved presets can now be <b>deleted</b> — open the dropdown and every entry has an <b>✕</b>, then confirm once in the dialog and it is gone from the list (its short URL stops working too)</li>
     <li><span class="v">v0.27</span>English support — switch with the EN/KO button in the header, auto-detected from your browser. API error hints follow <code>Accept-Language</code> too</li>
     <li><span class="v">v0.26</span>Masking types <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — redacted PII like real services show ("김*준", "010-****-5678")</li>
@@ -192,6 +196,7 @@ customer.address.city = location.city</pre>
       <tr><td><code>_format=ndjson</code></td><td>stream items line by line — for large data (<code>csv</code> works too)</td></tr>
       <tr><td><code>_q=김</code></td><td>search the generated data — substring match on values, <code>total</code> becomes the match count</td></tr>
       <tr><td><code>_qin=name,city</code></td><td>limit which fields are searched — use with <code>_q</code> (nested: <code>a.b</code>)</td></tr>
+      <tr><td><code>_sort=name,-age</code></td><td>sort — <code>-</code> is descending, comma-separated keys. The data is unchanged, only the order</td></tr>
       <tr><td><code>_alias=page:_page</code></td><td>map reserved keys to your real API's names — generated automatically when you <u>click a key name</u> in the options</td></tr>
     </table>
     <p style="font-size:12.5px;color:var(--muted)">Limits: <code>_limit</code> max 1000 · <code>_q</code> 100 chars · <code>_delay</code> 5s.

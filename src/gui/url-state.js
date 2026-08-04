@@ -3,8 +3,8 @@ import { t } from './i18n.js';
 import { buildQuery as buildQueryPure, enc, encPath, highlightJson, minifyJson, parseAliasParam, prettyJson } from './pure.js';
 import { shared } from './shared.js';
 
-export const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _method: 'get', _body: '', _q: '', _qin: '', _wrap: 'envelope', _seed: '', _format: 'json' };
-export const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _method: '#oMethod', _body: '#oBody', _q: '#oQ', _qin: '#oQin', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat' };
+export const OPT_DEFAULTS = { _total: '100', _limit: '10', _page: '1', _locale: 'ko', _delay: '0', _status: '200', _method: 'get', _body: '', _q: '', _qin: '', _sort: '', _wrap: 'envelope', _seed: '', _format: 'json' };
+export const OPT_INPUTS = { _total: '#oTotal', _limit: '#oLimit', _page: '#oPage', _locale: '#oLocale', _delay: '#oDelay', _status: '#oStatus', _method: '#oMethod', _body: '#oBody', _q: '#oQ', _qin: '#oQin', _sort: '#oSort', _wrap: '#oWrap', _seed: '#oSeed', _format: '#oFormat' };
 
 // ---- 옵션 키 별칭 (인라인 편집 → _alias 자동 조립) ----
 const ALIAS_OK_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
