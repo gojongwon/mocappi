@@ -186,7 +186,7 @@
       <h3 data-i18n="whatsNew">새 소식</h3>
     </div>
     <ul class="news-list" data-en-block="newsList">
-      <li><span class="v">v0.29</span><b>정렬</b>이 생겼습니다 — 옵션의 정렬 칸에 <code>name,-age</code> 처럼 적으면 그 순서로 나옵니다 (<code>-</code> 는 내림차순, 쉼표로 여러 키). 데이터는 그대로고 순서만 바뀌며, 검색·NDJSON·CSV 와도 같이 씁니다</li>
+      <li><span class="v">v0.29</span><b>정렬</b>이 생겼습니다 — 옵션의 정렬 칸에 <code>name,-age</code> 처럼 적으면 그 순서로 나옵니다 (<code>-</code> 는 내림차순, 쉼표로 여러 키). 데이터는 그대로고 순서만 바뀌며, 검색·NDJSON·CSV 와도 같이 씁니다. 목록 응답에는 전체 개수가 <code>X-Total-Count</code> 헤더로도 실립니다 — 배열만·NDJSON·CSV 처럼 envelope 이 없는 모양에서도 개수를 알 수 있고, 테이블 라이브러리에 그대로 붙습니다</li>
       <li><span class="v">v0.28</span>GET 말고도 <b>POST·PUT·PATCH·DELETE</b> — URL 위 버튼으로 고르면 그 메서드로 <b>실제 요청</b>을 보냅니다 (URL 은 깨끗하게 유지). POST 는 201 + 단건, DELETE 는 204. 상태코드가 400 이상이면 실패 바디가 나갑니다 — 표준 4xx·5xx 는 전부 제 이름을 갖습니다 (<code>413</code> → <code>Payload Too Large</code>). 고급의 <b>실패 바디</b> 칸에서는 기본 응답이 회색으로 미리 보이고 <b>Tab</b> 을 누르면 그대로 채워집니다 — 거기서 고쳐 쓰면 끝. 붙여넣은 JSON 은 자동 정렬 + 색상 (직접 친 건 <b>{ } 정렬</b> 버튼으로). URL 옆 <b>내보내기</b> 메뉴가 생겼어요 — <code>curl</code>·<code>fetch</code>·<code>Python requests</code> 호출 스니펫과 <b>TS 타입</b>·<b>OpenAPI 3.1</b> 문서를 골라 복사합니다. 스니펫은 URL 과 달리 <b>메서드까지</b> 담고, OpenAPI 는 Postman·Insomnia 에 그대로 넣거나 원하는 언어의 클라이언트 코드를 뽑는 데 씁니다. 응답은 이제 5분간 캐시돼서 같은 URL 을 다시 부르면 훨씬 빠릅니다 (데이터는 어차피 같으니까요). 저장한 프리셋을 <b>지울</b> 수 있어요 — 드롭다운을 열면 항목마다 <b>✕</b> 가 있고, 확인 창에서 한 번 더 확인하면 목록에서 사라집니다 (짧은 URL 도 함께 끊깁니다)</li>
       <li><span class="v">v0.27</span>영어 지원 — 헤더 EN/KO 버튼으로 전환, 브라우저 언어 자동 감지. API 에러 힌트도 <code>Accept-Language</code> 를 따라갑니다</li>
       <li><span class="v">v0.26</span>마스킹 타입 <code>mask.name</code>·<code>mask.email</code>·<code>mask.phone</code>·<code>mask.card</code> — 실서비스처럼 가려진 개인정보 ("김*준", "010-****-5678")</li>
@@ -343,6 +343,7 @@ customer.address.city = location.city</pre>
          완성된 스키마는 <b>저장</b> 버튼으로 팀과 공유하세요 — <code>?_s=ID</code> 짧은 URL 이 생기고, 다른 파라미터로 덮어쓸 수 있습니다 (예: <code>?_s=aB3xK9&amp;_page=2</code>).<br>
          저장한 프리셋은 드롭다운 목록에서 항목 오른쪽 <b>✕</b> 로 지웁니다.<br>
          URL 을 잘못 쓰면 400 응답이 무엇이 왜 틀렸는지 알려줍니다.<br>
+         목록 응답은 전체 개수를 <code>X-Total-Count</code> 헤더로도 보냅니다 — 배열만·NDJSON·CSV 처럼 envelope 이 없는 모양에서 개수를 얻는 길입니다.<br>
          리소스 경로는 <code>/api/v2/users/123/orders</code> 처럼 여러 단계도 됩니다 — 경로는 장식이고 데이터는 쿼리로 결정되며,
          상세 응답은 <code>_wrap=one&_seed=123</code> 조합으로 만듭니다.</p>
     </div>

@@ -217,6 +217,22 @@ Note: upgrading the faker library may change generated values — pin the versio
 Two things are never cached: requests with `_delay` (the delay is the point) and `_status>=400`
 failures. Deleting a saved preset (`_s=`) may keep serving the old response for up to 5 minutes.
 
+## `X-Total-Count`
+
+Every list response carries the total count as a header, so it survives shapes that have no
+envelope to put it in — `_wrap=none`, `_format=ndjson`, `_format=csv`. It is the same number the
+envelope's `total` reports (with `_q`/`_sort`, the window count). `Access-Control-Expose-Headers`
+already ships with it, so browser JS can read it cross-origin without extra setup:
+
+```js
+const res = await fetch('https://…/api/users?name=person.fullName&_wrap=none');
+const total = Number(res.headers.get('X-Total-Count'));   // 100
+```
+
+That's the contract table libraries like json-server clients, react-admin and refine expect.
+Responses that aren't lists don't carry it: `_wrap=one`, write methods (POST/PUT/PATCH),
+`DELETE` (204), and `_status>=400` failures.
+
 ## Safe contact data
 
 Mock data should never reach a real person:

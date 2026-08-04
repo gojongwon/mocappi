@@ -298,6 +298,22 @@ curl 'https://mocappi.gojongwon.workers.dev/schema/openapi?_res=users&id=uuid&na
 캐시를 타지 않는 것 둘 — `_delay` 를 준 요청(지연이 목적이라), `_status>=400` 실패 응답.
 저장 프리셋(`_s=`)을 지우면 최대 5분간 옛 응답이 나올 수 있다.
 
+## `X-Total-Count`
+
+목록 응답은 전체 개수를 헤더로도 내보낸다. envelope 이 없는 모양 — `_wrap=none`,
+`_format=ndjson`, `_format=csv` — 에서도 개수가 살아남는다. 값은 envelope 의 `total` 과 같다
+(`_q`·`_sort` 면 창 안 개수). `Access-Control-Expose-Headers` 가 이미 함께 나가므로
+브라우저 JS 가 크로스오리진에서 바로 읽는다.
+
+```js
+const res = await fetch('https://…/api/users?name=person.fullName&_wrap=none');
+const total = Number(res.headers.get('X-Total-Count'));   // 100
+```
+
+json-server 계열 클라이언트, react-admin, refine 같은 테이블 라이브러리가 기대하는 규약이다.
+목록이 아닌 응답에는 붙지 않는다 — `_wrap=one`, 쓰기 메서드(POST/PUT/PATCH),
+`DELETE`(204), `_status>=400` 실패 응답.
+
 ## 안전한 연락처 데이터
 
 목업 데이터가 실제 사람에게 닿는 일이 없도록:

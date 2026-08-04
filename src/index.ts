@@ -4,7 +4,7 @@
  */
 import guiHtml from './gui.generated.html';
 import { parseQuery, type ParsedQuery } from './dsl';
-import { baseSeedOf, csvHeader, csvRow, generateItem, generateResponse, viewItems } from './generate';
+import { baseSeedOf, csvHeader, csvRow, generateItem, listResponse, viewItems } from './generate';
 import { inferSchema } from './infer';
 import { generateOpenApi } from './openapi';
 import { generateTsTypes } from './tstype';
@@ -31,6 +31,8 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Max-Age': '86400',
+  // 목 API 는 정의상 크로스오리진으로 불린다 — 이게 없으면 브라우저 JS 가 X-Total-Count 를 못 읽는다
+  'Access-Control-Expose-Headers': 'X-Total-Count',
 };
 
 /**
@@ -140,6 +142,8 @@ function streamResponse(q: ParsedQuery): Response {
   const view = q.q !== null || q.sort !== null ? viewItems(q) : null;
   const searched = view ? view.slice(start, start + q.limit) : null;
   const count = searched ? searched.length : Math.max(0, Math.min(q.limit, q.total - start));
+  // 스트리밍엔 envelope 이 없다 — 전체 개수는 헤더로만 나간다
+  const total = view ? view.length : q.total;
   const enc = new TextEncoder();
   const BATCH = 100;
   let i = 0;
@@ -165,6 +169,7 @@ function streamResponse(q: ParsedQuery): Response {
     headers: {
       'content-type': q.format === 'csv' ? 'text/csv; charset=utf-8' : 'application/x-ndjson; charset=utf-8',
       'cache-control': cacheHeader(q),
+      'x-total-count': String(total),
       ...CORS_HEADERS,
     },
   });
@@ -175,13 +180,14 @@ function streamResponse(q: ParsedQuery): Response {
  * /schema/types·/schema/ts 는 Accept-Language 로 본문이 갈리고 /schema/saved 는 가변이다.
  * 캐시는 결정적이라고 확인한 곳에서만 세 번째 인자로 옵트인한다.
  */
-function json(body: unknown, status = 200, cache = 'no-store'): Response {
+function json(body: unknown, status = 200, cache = 'no-store', extra?: Record<string, string>): Response {
   return new Response(JSON.stringify(body, null, 2), {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
       'cache-control': cache,
       ...CORS_HEADERS,
+      ...extra,
     },
   });
 }
@@ -467,9 +473,12 @@ export default {
         }
         // 생성 먼저 — _delay/_status/_method 가 달라도 데이터는 동일.
         // 쓰기 메서드는 방금 만들어진/고쳐진 한 건을 돌려준다 = 목록의 0번 아이템
-        const body = method === 'GET' ? generateResponse(q) : generateItem(baseSeedOf(q), 0, q);
+        const list = method === 'GET' ? listResponse(q) : null;
+        const body = list ? list.body : generateItem(baseSeedOf(q), 0, q);
+        // X-Total-Count 는 목록에만 — 단건(_wrap=one·쓰기 메서드)에는 셀 전체가 없다
+        const countHeader = list && q.wrap !== 'one' ? { 'x-total-count': String(list.total) } : undefined;
         await sleep();
-        return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200, cacheHeader(q));
+        return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200, cacheHeader(q), countHeader);
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);
