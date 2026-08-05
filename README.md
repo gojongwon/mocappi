@@ -225,7 +225,14 @@ for p in 1 2 3 4 5; do curl -s "https://<worker>/api/users?...&_limit=1000&_page
 - Field order, `_delay`, and `_status` don't affect the data.
 - faker `date.*` uses a pinned refDate so values don't drift over time.
 
-Note: upgrading the faker library may change generated values — pin the version while using snapshots.
+**The v1.0 promise.** Determinism is now a semantic-versioning commitment:
+
+- Within 1.x the seed rules never change — what enters the seed (`_locale`, `_total`, `_seed`,
+  the field definitions) and how it is derived stay as they are, so a URL you saved keeps
+  returning the same bytes across every 1.x deploy.
+- Anything that would alter generated values — including a faker upgrade — only lands in a major
+  version. That is why faker is pinned to an exact version (`10.5.0`) in `package.json`.
+  For snapshot tests, pinning mocappi to a major is enough.
 
 **Caching:** because the same URL is the same bytes, successful responses ship
 `Cache-Control: public, max-age=300` and are cached at the edge for 5 minutes (check

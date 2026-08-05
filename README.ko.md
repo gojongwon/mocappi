@@ -325,7 +325,14 @@ curl -X POST https://mocappi.gojongwon.workers.dev/schema/infer \
 - 필드 순서만 다른 URL, `_delay`/`_status` 만 다른 URL → 같은 데이터
 - faker `date.*` 계열은 refDate 를 `2026-01-01` 로 고정해 시간이 지나도 값이 변하지 않는다.
 
-주의: faker 라이브러리 버전을 올리면 생성 값이 바뀔 수 있다. 스냅샷을 쓰는 동안은 버전을 고정할 것.
+**v1.0 약속.** 결정성은 이제 시맨틱 버전 약속이다:
+
+- 1.x 안에서는 시드 규칙이 바뀌지 않는다 — 시드에 들어가는 것(`_locale`, `_total`, `_seed`,
+  필드 정의)과 파생 방식이 그대로이므로, 저장해 둔 URL 은 1.x 의 어느 배포에서도 같은 바이트를
+  돌려준다.
+- 생성 값이 바뀌는 변경 — faker 업그레이드 포함 — 은 메이저 버전에서만 온다. 그래서 faker 는
+  `package.json` 에 정확한 버전(`10.5.0`)으로 고정되어 있다. 스냅샷 테스트는 mocappi 의
+  메이저만 고정하면 충분하다.
 
 **캐시:** 같은 URL 이 같은 바이트라서 성공 응답은 `Cache-Control: public, max-age=300` 으로
 엣지에 5분 캐시된다 (`Cf-Cache-Status: HIT` 로 확인). 데이터는 어차피 같으니 영향은 속도뿐이다.

@@ -79,6 +79,10 @@ i18n  pure  shared            (잎 — 아무것도 import 안 함)
 포맷을 바꿔도 데이터가 같아야 한다. `normalized` 에 뭔가 더하는 변경은 저장된 모든 `_s=` URL 의
 데이터를 바꾼다. `test/determinism.test.ts` 가 지킨다.
 
+v1.0 부터 이건 시맨틱 버전 약속이다: 시드 규칙 변경과 생성 값이 바뀌는 변경(faker 업그레이드
+포함)은 **메이저 버전에서만**. 그래서 faker 는 `package.json` 에 정확한 버전으로 고정한다 —
+`^` 를 되돌리지 말 것.
+
 **2. ko/en 쌍.** 사용자에게 보이는 문자열은 한국어와 영어가 항상 함께 간다.
 - 서버: `index.ts` 의 `pick(lang, ko, en)`, `registry.ts` 의 `fail(error, value, hint, hintEn)`
 - GUI 동적 문자열: `t('한국어', 'English')`

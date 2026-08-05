@@ -74,7 +74,7 @@ const EN = {
   copyResp: 'Copy full response',
   // 코너 버튼
   newsBtnTitle: 'See recent updates',
-  newsLabel: "v0.31 · What's new",
+  newsLabel: "v1.0 · What's new",
   fbBtnTitle: 'Send feedback to the developer',
   feedback: 'Feedback',
   // 모달
@@ -115,6 +115,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
+    <li><span class="v">v1.0</span><b>mocappi is 1.0</b> — "the same URL always returns the same bytes" is now a semantic-versioning promise. Within 1.x the seed rules never change, and anything that would alter generated values (a faker upgrade included) only lands in a major. Saved URLs and snapshot tests are safe to lean on</li>
     <li><span class="v">v0.31</span><b>Relations between resources</b> — new <code>pk</code>/<code>ref</code> types. Put <code>id=pk:users</code> on the users side and <code>userId=ref:users</code> on the orders side, and every order's userId is one of the real user ids. Two URLs that have never seen each other stay in lockstep forever, keyed by nothing but the resource name — adding fields to either side never breaks it (widen the pool with <code>ref:users:500</code>)</li>
     <li><span class="v">v0.30</span><b>OpenAPI import</b> — paste a whole OpenAPI (Swagger) document your team already has into the <b>Paste JSON</b> dialog, and the response schema definition fills in the fields, the types, and even the resource name. It understands <code>$ref</code>, <code>allOf</code>, nullable, enum and formats (uuid, email, date-time, …), and tells you what it had to skip and why. Together with Export (OpenAPI 3.1), spec document ↔ mock API now goes both ways</li>
     <li><span class="v">v0.29</span><b>Sorting</b> arrived — type something like <code>name,-age</code> in the Sort option and the items come back in that order (<code>-</code> is descending, comma-separate several keys). The data is unchanged, only the order, and it composes with search, NDJSON and CSV. List responses now also carry the total count in an <code>X-Total-Count</code> header — so shapes without an envelope (array only, NDJSON, CSV) still tell you the count, and table libraries pick it up as-is</li>
