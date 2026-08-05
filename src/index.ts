@@ -33,8 +33,8 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS',
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Max-Age': '86400',
-  // 목 API 는 정의상 크로스오리진으로 불린다 — 이게 없으면 브라우저 JS 가 X-Total-Count 를 못 읽는다
-  'Access-Control-Expose-Headers': 'X-Total-Count',
+  // 목 API 는 정의상 크로스오리진으로 불린다 — 이게 없으면 브라우저 JS 가 아래 둘을 못 읽는다
+  'Access-Control-Expose-Headers': 'X-Total-Count, X-Mock-State',
 };
 
 /**
@@ -536,10 +536,12 @@ export default {
             const out = applyWrite(q, rec, rv, pathId, writeBody, sid as string, lang);
             if (out.dirty) await storage.put(stateKey, JSON.stringify(rec), { expirationTtl: STATE_TTL_SECONDS });
             await sleep();
+            // X-Mock-State — "상태에 반영됐는가"를 기계가 읽을 수 있게. 무상태 쓰기도 201 을
+            // 돌려주므로 상태코드만으로는 구분이 안 된다 — 네트워크 탭에서 바로 가르라고 있는 헤더
             if (out.status === 204) {
-              return new Response(null, { status: 204, headers: { 'cache-control': 'no-store', ...CORS_HEADERS } });
+              return new Response(null, { status: 204, headers: { 'cache-control': 'no-store', 'x-mock-state': 'applied', ...CORS_HEADERS } });
             }
-            return json(out.body, out.status);
+            return json(out.body, out.status, 'no-store', out.dirty ? { 'x-mock-state': 'applied' } : undefined);
           }
         }
 
@@ -552,7 +554,7 @@ export default {
 
         if (method === 'DELETE') {
           await sleep();
-          return new Response(null, { status: q.statusSet ? q.status : 204, headers: { 'cache-control': 'no-store', ...CORS_HEADERS } });
+          return new Response(null, { status: q.statusSet ? q.status : 204, headers: { 'cache-control': 'no-store', 'x-mock-state': 'stateless', ...CORS_HEADERS } });
         }
         if (q.format !== 'json') {
           await sleep();
@@ -567,10 +569,12 @@ export default {
           const found = findById(q, stateRec, pathId);
           if (found) body = found;
         }
-        // X-Total-Count 는 목록에만 — 단건(_wrap=one·쓰기 메서드)에는 셀 전체가 없다
+        // X-Total-Count 는 목록에만 — 단건(_wrap=one·쓰기 메서드)에는 셀 전체가 없다.
+        // 쓰기 모양 응답에는 X-Mock-State: stateless — 상태에 반영되지 않았음을 명시
         const countHeader = list && q.wrap !== 'one' ? { 'x-total-count': String(list.total) } : undefined;
+        const extra = method === 'GET' ? countHeader : { ...countHeader, 'x-mock-state': 'stateless' };
         await sleep();
-        return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200, cache, countHeader);
+        return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200, cache, extra);
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);

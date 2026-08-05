@@ -40,6 +40,7 @@ describe('생성 → 목록 반영', () => {
   it('POST(JSON 바디) → 201 + 보낸 값이 병합된 완성 아이템', async () => {
     const res = await req(`/api/users?_s=${sid}`, { method: 'POST', body: JSON.stringify({ name: '홍길동' }) });
     expect(res.status).toBe(201);
+    expect(res.headers.get('x-mock-state')).toBe('applied'); // 상태에 반영됐음을 헤더로
     const item = await jsonOf<Record<string, unknown>>(res);
     expect(item.name).toBe('홍길동'); // 보낸 값 그대로
     expect(typeof item.id).toBe('string'); // 안 보낸 필드는 스키마 기본값
@@ -118,6 +119,7 @@ describe('상태가 생기지 않는 경우 — 결정성 보호', () => {
     const before = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
     const res = await req(`/api/users?_s=${sid}`, { method: 'POST' });
     expect(res.status).toBe(201); // 기존 무상태 응답 그대로
+    expect(res.headers.get('x-mock-state')).toBe('stateless'); // 반영 안 됐음도 헤더로
     const after = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
     expect(after.total).toBe(before.total);
   });
@@ -131,7 +133,8 @@ describe('상태가 생기지 않는 경우 — 결정성 보호', () => {
 
   it('순수 쿼리 URL 의 쓰기는 지금처럼 무상태·캐시 유지', async () => {
     const url = '/api/users?id=uuid&name=person.fullName&_total=5';
-    await req(url, { method: 'POST', body: JSON.stringify({ name: '아무개' }) });
+    const w = await req(url, { method: 'POST', body: JSON.stringify({ name: '아무개' }) });
+    expect(w.headers.get('x-mock-state')).toBe('stateless');
     const res = await req(url);
     expect((await jsonOf<Env>(res)).total).toBe(5);
     expect(res.headers.get('cache-control')).toBe('public, max-age=300');

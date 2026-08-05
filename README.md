@@ -123,6 +123,9 @@ The single-item shapes compose as usual: `_wrap=one`, write methods, arrays (`vi
 
 ## Stateful presets
 
+Write responses carry an `X-Mock-State` header — `applied` (reflected in state) or `stateless`
+(shape-only mocking). Stateless writes answer 201 too, so tell them apart by this header, not the status.
+
 A preset saved in a workspace (`_s=<ws>.<id>`) **remembers writes** — the TanStack Query style
 "mutation → invalidate → refetch" flow actually works:
 

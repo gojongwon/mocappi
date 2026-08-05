@@ -119,6 +119,9 @@ curl -X POST /api/users?name=person.fullName      # 201 + 단건
 
 ## 프리셋 상태
 
+쓰기 응답에는 `X-Mock-State` 헤더가 실린다 — `applied`(상태에 반영됨) 또는 `stateless`(모양만 목킹됨).
+무상태 쓰기도 201 을 돌려주므로, 반영 여부는 상태코드가 아니라 이 헤더로 가른다.
+
 워크스페이스에 저장한 프리셋(`_s=<ws>.<id>`)은 쓰기를 **기억한다** — TanStack Query 류의
 "mutation → invalidate → refetch" 흐름이 실제로 동작한다:
 

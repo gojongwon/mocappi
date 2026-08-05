@@ -56,9 +56,9 @@ describe('X-Total-Count', () => {
 
   it('Access-Control-Expose-Headers 로 노출된다', async () => {
     const res = await call(`${SCHEMA}&_total=10`);
-    expect(res.headers.get('access-control-expose-headers')).toBe('X-Total-Count');
+    expect(res.headers.get('access-control-expose-headers')).toBe('X-Total-Count, X-Mock-State');
     // 프리플라이트에도 실려 나간다
     const pre = await call(`${SCHEMA}`, 'OPTIONS');
-    expect(pre.headers.get('access-control-expose-headers')).toBe('X-Total-Count');
+    expect(pre.headers.get('access-control-expose-headers')).toBe('X-Total-Count, X-Mock-State');
   });
 });
