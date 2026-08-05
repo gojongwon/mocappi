@@ -123,6 +123,14 @@ describe('부팅 (한국어, 맨 주소)', () => {
     expect(calls.some((u) => u.includes('/api/users') && u.includes('_s=' + SID))).toBe(true);
     expect($('#stateBar').style.display).toBe('block');
   });
+
+  it('쓰기 메서드 선택 → 바디 편집기에 스키마 기반 고스트가 뜬다', () => {
+    $('button[data-method="post"]').click();
+    expect($('#stateBodyWrap').style.display).toBe('block');
+    // 스키마(id=uuid&name=person.fullName)에서 id 를 뺀 예시 바디 — Tab 으로 채우는 고스트
+    expect($('#stateBodyHl').textContent).toContain('홍길동');
+    expect($('#stateSend').textContent).toContain('POST');
+  });
 });
 
 describe('부팅 (영어 해시)', () => {

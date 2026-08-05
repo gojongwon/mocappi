@@ -253,12 +253,12 @@
     padding: 5px 6px 5px 10px; border-bottom: 1.5px solid #3a3a40;
   }
   .ce-hint { color: #6a6a74; font-size: 11px; font-family: var(--mono); }
-  #oBodyFmt {
+  #oBodyFmt, #stateBodyFmt {
     margin-left: auto; border: 1.5px solid #3a3a40; background: #232329; color: #9a9aa5;
     border-radius: 7px; padding: 4px 8px; cursor: pointer;
     font-family: var(--mono); font-size: 11px; transition: all .1s ease;
   }
-  #oBodyFmt:hover { color: var(--accent); border-color: var(--accent); }
+  #oBodyFmt:hover, #stateBodyFmt:hover { color: var(--accent); border-color: var(--accent); }
   .ce-body { position: relative; } /* pre 의 inset:0 기준 */
   /* 두 겹의 글자 배치가 완전히 같아야 캐럿이 글자 위에 얹힌다.
      scrollbar-gutter 까지 맞추는 이유: 한쪽에만 스크롤바가 생기면 내용 폭이 달라져
@@ -335,11 +335,12 @@
   #stateBar .sb-head b { font-size: 12.5px; }
   #stateBar .sb-hint { margin: 6px 0; font-size: 12px; color: var(--muted); }
   #stateBar .sb-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
-  #stateBar input, #stateBar textarea {
+  /* id 입력만 — 바디는 실패 바디와 같은 .code-edit 이 스타일을 갖고 있다 */
+  #stateBar .sb-row input {
     width: 100%; font-family: var(--mono); font-size: 12.5px;
     border: 1.5px solid var(--ink); border-radius: 6px; padding: 7px 9px; background: var(--bg);
   }
-  #stateBar textarea { margin-top: 6px; resize: vertical; }
+  #stateBar .sb-edit { margin-top: 6px; }
   #stateBar button {
     border: 1.5px solid var(--ink); border-radius: 6px; padding: 6px 12px; cursor: pointer;
     font-size: 12px; font-weight: 700; background: var(--accent); color: var(--accent-text);

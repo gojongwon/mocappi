@@ -3,7 +3,7 @@ import { $, ICON_COPY, addRow, applyLock, closeModal, copyIcon, copyText, emit, 
 import { LANG, applyEn, t } from './i18n.js';
 import { applyPaste, closePaste, openPaste } from './paste.js';
 import './preview.js'; // schema:changed 구독자 — 부수효과만, export 없음
-import { resetStateNow, sendStateWrite } from './statebar.js'; // schema:changed 구독 + 상태 패널
+import { formatStateBody, resetStateNow, sendStateWrite } from './statebar.js'; // schema:changed 구독 + 상태 패널
 import { enc, snippet } from './pure.js';
 import { applyDeletePreset, applySave, askDeletePreset, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
 import { enhanceSelects, setRowDelete } from './select.js';
@@ -221,6 +221,14 @@ document.addEventListener('click', (e) => {
     case 'shortLineCopy': copyIcon($('#shortLine').dataset.url || '', btn); break;
     case 'stateSend': sendStateWrite(); break;
     case 'stateReset': resetStateNow(); break;
+    case 'stateBodyFmt': {
+      // 실패 바디의 oBodyFmt 와 같은 계약 — 깨진 JSON 은 손대지 않고 버튼이 잠깐 알린다
+      if (!formatStateBody()) {
+        btn.textContent = t('JSON 오류', 'Invalid JSON');
+        setTimeout(() => (btn.textContent = t('{ } 정렬', '{ } Format')), 1500);
+      }
+      break;
+    }
   }
 });
 

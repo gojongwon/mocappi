@@ -1,5 +1,6 @@
 import { $, on } from './dom.js';
 import { LANG, t } from './i18n.js';
+import { highlightJson, prettyJson } from './pure.js';
 import { shared } from './shared.js';
 import { readState, setMethod, shortApiUrl } from './url-state.js';
 
@@ -23,6 +24,75 @@ function msg(text, ok) {
   el.style.color = ok === undefined ? 'var(--muted)' : ok ? 'var(--ok)' : 'var(--danger)';
 }
 
+// ---- 바디 편집기 — 실패 바디(url-state.paintBody)와 같은 문법: 고스트·Tab·하이라이트·자동 정렬 ----
+
+/** DSL 타입 → 고스트용 예시 값. 정확할 필요는 없다 — "이런 모양으로 보내라"는 안내다 */
+function sampleFor(type) {
+  if (type.startsWith('int:')) return parseInt(type.slice(4), 10) || 1;
+  if (type.startsWith('float:')) return 1.5;
+  if (type.startsWith('bool')) return true;
+  if (type.startsWith('enum:')) return type.slice(5).split('|')[0].replace(/\*[\d.]+$/, '');
+  if (type.startsWith('const:')) return type.slice(6);
+  if (type.includes('email')) return 'hong@example.com';
+  if (type.startsWith('person.') || type.includes('name')) return t('홍길동', 'Hong Gildong');
+  return t('새 값', 'new value');
+}
+
+/** 현재 스키마에서 뽑은 예시 바디 — id·배열·중첩은 빼고 스칼라 필드 앞 두 개 */
+function ghostBody() {
+  const picks = [];
+  for (const [name, type] of readState().fields) {
+    if (name === 'id' || name.endsWith('[]') || name.includes('.')) continue;
+    picks.push([name, sampleFor(type)]);
+    if (picks.length === 2) break;
+  }
+  if (!picks.length) return null;
+  return JSON.stringify(Object.fromEntries(picks), null, 2);
+}
+
+let ghost = null;
+
+function paintStateBody() {
+  const ta = $('#stateBody');
+  const hl = $('#stateBodyHl');
+  if (document.activeElement !== ta && ta.value !== '') {
+    const out = prettyJson(ta.value);
+    if (out !== null) ta.value = out; // 자동 정렬은 포커스가 없을 때만 — 캐럿 보호 (paintBody 와 동일)
+  }
+  const empty = ta.value === '';
+  ghost = empty ? ghostBody() : null;
+  hl.classList.toggle('ghost', empty);
+  hl.innerHTML = highlightJson(empty ? (ghost ?? '{}') : ta.value) + '\n'; // pre 가 끝 줄바꿈을 삼키는 것 보정
+  $('#stateBodyHint').hidden = ghost === null;
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(ta.scrollHeight, hl.scrollHeight) + 'px';
+}
+
+export function formatStateBody() {
+  const ta = $('#stateBody');
+  const out = prettyJson(ta.value);
+  if (out === null) return false;
+  ta.value = out;
+  paintStateBody();
+  return true;
+}
+
+// 위임으로 못 받는 이벤트는 직접 건다 (main.js 의 #oBody 블록과 같은 이유) —
+// input 은 schema:changed 대상이 아니라서(바디는 스키마가 아니다) 여기서 하이라이트만 갱신한다
+{
+  const ta = $('#stateBody');
+  ta.addEventListener('input', paintStateBody);
+  ta.addEventListener('scroll', () => { $('#stateBodyHl').scrollTop = ta.scrollTop; });
+  ta.addEventListener('paste', () => setTimeout(paintStateBody, 0));
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' && !e.shiftKey && ta.value === '' && ghost !== null) {
+      e.preventDefault();
+      ta.value = ghost;
+      paintStateBody();
+    }
+  });
+}
+
 export function syncStateBar() {
   const bar = $('#stateBar');
   const sid = wsSid();
@@ -34,7 +104,9 @@ export function syncStateBar() {
   const method = $('#oMethod').value;
   const write = WRITES.has(method);
   $('#stateIdRow').style.display = write && method !== 'post' ? 'block' : 'none';
-  $('#stateBody').style.display = write && method !== 'delete' ? 'block' : 'none';
+  const bodyOn = write && method !== 'delete';
+  $('#stateBodyWrap').style.display = bodyOn ? 'block' : 'none';
+  if (bodyOn) paintStateBody(); // 스키마가 바뀌면 고스트도 새 필드 기준으로
   $('#stateSend').style.display = write ? 'inline-block' : 'none';
   $('#stateSend').textContent = method.toUpperCase() + ' ' + t('보내기', 'Send');
   $('#stateHint').textContent = write

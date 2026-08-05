@@ -165,7 +165,18 @@
       <div class="sb-row" id="stateIdRow" style="display:none">
         <input id="stateId" data-i18n-ph="phStateId" placeholder="아이템 id — 목록 응답에서 복사 (수정·삭제 대상)" spellcheck="false">
       </div>
-      <textarea id="stateBody" rows="3" data-i18n-ph="phStateBody" placeholder='{"name": "홍길동"}' spellcheck="false" style="display:none"></textarea>
+      <!-- 실패 바디와 같은 code-edit 컴포넌트 — 고스트·Tab 채우기·하이라이트·자동 정렬까지
+           입력 문법이 하나여야 사용자가 새로 배울 게 없다 -->
+      <div class="code-edit sb-edit" id="stateBodyWrap" style="display:none">
+        <div class="ce-bar">
+          <span class="ce-hint" id="stateBodyHint" hidden data-i18n="bodyGhostHint">Tab ⇥ 기본값 채우기</span>
+          <button id="stateBodyFmt" data-i18n="fmtBody" data-i18n-title="fmtBodyTitle" title="지금 내용을 2칸 들여쓰기로 정렬 — 붙여넣기는 자동, 직접 친 JSON 은 이 버튼으로">{ } 정렬</button>
+        </div>
+        <div class="ce-body">
+          <pre id="stateBodyHl" aria-hidden="true"></pre>
+          <textarea id="stateBody" rows="3" spellcheck="false"></textarea>
+        </div>
+      </div>
       <div class="sb-row">
         <button id="stateSend" style="display:none">POST 보내기</button>
         <span id="stateMsg"></span>

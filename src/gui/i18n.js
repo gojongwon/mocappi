@@ -95,7 +95,6 @@ const EN = {
   stateReset: 'Reset state',
   stateResetTitle: "Clear this preset's state and go back to the base data",
   phStateId: 'item id — copy from a list response (target of edit/delete)',
-  phStateBody: '{"name": "Hong Gildong"}',
   pasteTitle: 'Paste JSON',
   phPaste: '{"id": "a1b2...", "name": "Kim Minjun", "age": 34, "tags": ["a", "b"]}',
   cancel: 'Cancel',
