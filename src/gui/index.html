@@ -343,8 +343,9 @@ customer.address.city = location.city</pre>
       <p>돌려주는 단건은 같은 스키마 <code>GET</code> 목록의 첫 아이템과 완전히 같습니다 —
          메서드는 모양만 바꾸고 데이터는 건드리지 않습니다. 요청 바디는 보지 않습니다.</p>
       <p><b>프리셋 상태</b> — 단, 워크스페이스에 <b>저장한 프리셋</b>(<code>_s=</code>)으로 부르면 쓰기가 기억됩니다:
-         JSON 바디를 실은 POST 는 다음 GET 목록 맨 앞에 나타나고, <code>PATCH·DELETE /api/users/&lt;id&gt;</code> 는
-         그 아이템을 고치고 지웁니다 (없는 id 는 404). TanStack Query 의 refetch 흐름이 실제로 동작해요.
+         JSON 바디를 실은 POST 는 다음 GET 목록 맨 앞에 나타나고, <code>/api/users/&lt;id&gt;</code> 에 대한
+         <code>PATCH</code> 는 보낸 필드만, <code>PUT</code> 은 통째로 바꾸고, <code>DELETE</code> 는 지웁니다
+         (없는 id 는 404). TanStack Query 의 refetch 흐름이 실제로 동작해요.
          상태는 마지막 쓰기 후 24시간 뒤 사라지고 <code>DELETE /schema/state/&lt;sid&gt;</code> 로 초기화합니다.
          저장 안 한 URL 은 지금처럼 완전 무상태입니다.
          GUI 에서 해보려면: 프리셋을 불러오고 쓰기 메서드를 고르세요 — URL 아래 <b>상태 패널</b>에서

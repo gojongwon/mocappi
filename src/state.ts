@@ -30,8 +30,10 @@ export interface StateRecord {
   seq: number;
   /** 생성된 아이템 — 최신 먼저. 쓰기 시점에 완성된 객체로 저장한다 */
   created: Array<Record<string, unknown>>;
-  /** id 값(문자열화) → 얕은 패치 (최상위 키 병합) */
+  /** PATCH: id 값(문자열화) → 얕은 패치 (최상위 키 병합) */
   updated: Record<string, Record<string, unknown>>;
+  /** PUT: id 값(문자열화) → 교체 바디 — 안 보낸 필드는 사라진다 (id 는 유지) */
+  replaced: Record<string, Record<string, unknown>>;
   /** 삭제된 기본 아이템의 id 값(문자열화) */
   deleted: string[];
 }
@@ -42,10 +44,11 @@ export const MAX_UPDATED = 100;
 export const MAX_DELETED = 200;
 const MAX_BODY_JSON = 4000;
 
-export const emptyState = (): StateRecord => ({ v: 1, seq: 0, created: [], updated: {}, deleted: [] });
+export const emptyState = (): StateRecord => ({ v: 1, seq: 0, created: [], updated: {}, replaced: {}, deleted: [] });
 
 export const hasState = (rec: StateRecord): boolean =>
-  rec.created.length > 0 || rec.deleted.length > 0 || Object.keys(rec.updated).length > 0;
+  rec.created.length > 0 || rec.deleted.length > 0 ||
+  Object.keys(rec.updated).length > 0 || Object.keys(rec.replaced).length > 0;
 
 /** 상태 저장 키 — 워크스페이스 프리셋만 상태를 가진다. 아니면 null */
 export function stateKeyOf(sid: string): string | null {
@@ -65,7 +68,17 @@ export function idFieldOf(q: ParsedQuery): boolean {
 const idOf = (item: Record<string, unknown>): string | null =>
   item.id === undefined || item.id === null ? null : String(item.id);
 
-/** 오버레이 적용된 창 — [생성(최신 먼저)] ++ [기본 창 − 삭제, 수정 병합] */
+/** 기본 아이템에 교체(PUT)·패치(PATCH)를 순서대로 적용 — PUT 이 바닥, PATCH 가 그 위 */
+function composed(item: Record<string, unknown>, key: string | null, rec: StateRecord): Record<string, unknown> {
+  if (key === null) return item;
+  const rep = rec.replaced[key];
+  const up = rec.updated[key];
+  if (!rep && !up) return item;
+  const base = rep ? { ...rep, id: item.id } : item; // PUT: 안 보낸 필드는 사라진다 — 정체성(id)만 지킨다
+  return up ? { ...base, ...up } : { ...base };
+}
+
+/** 오버레이 적용된 창 — [생성(최신 먼저)] ++ [기본 창 − 삭제, 교체·수정 반영] */
 export function mergedWindow(q: ParsedQuery, rec: StateRecord): Record<string, unknown>[] {
   const base = windowItems(q);
   const deleted = new Set(rec.deleted);
@@ -73,8 +86,7 @@ export function mergedWindow(q: ParsedQuery, rec: StateRecord): Record<string, u
   for (const item of base) {
     const key = idOf(item);
     if (key !== null && deleted.has(key)) continue;
-    const patch = key !== null ? rec.updated[key] : undefined;
-    out.push(patch ? { ...item, ...patch } : item);
+    out.push(composed(item, key, rec));
   }
   return out;
 }
@@ -86,8 +98,7 @@ export function findById(q: ParsedQuery, rec: StateRecord, id: string): Record<s
   for (const item of windowItems(q)) {
     if (idOf(item) !== id) continue;
     if (rec.deleted.includes(id)) return null; // 삭제된 아이템의 상세도 없어야 진짜다
-    const patch = rec.updated[id];
-    return patch ? { ...item, ...patch } : item;
+    return composed(item, id, rec);
   }
   return null;
 }
@@ -146,6 +157,7 @@ export function applyWrite(
     if (ci !== -1) {
       rec.created.splice(ci, 1);
       delete rec.updated[id];
+      delete rec.replaced[id];
       return { status: 204, body: null, dirty: true };
     }
     if (!idFieldOf(q) || rec.deleted.includes(id)) return notFound(id, lang);
@@ -157,6 +169,7 @@ export function applyWrite(
     }
     rec.deleted.push(id);
     delete rec.updated[id];
+    delete rec.replaced[id];
     return { status: 204, body: null, dirty: true };
   }
 
@@ -195,8 +208,13 @@ export function applyWrite(
   }
   const { id: _drop, ...patch } = body; // id 자체는 바꿀 수 없다 — 정체성이 흔들리면 매칭이 깨진다
 
+  // PUT 은 교체, PATCH 는 병합 — 실제 REST 의미 그대로. 목이 의미를 뭉개면
+  // "왜 PUT 인데 나머지 필드가 남지?" 같은 실서비스 착각을 학습시킨다
   const created = rec.created.find((c) => idOf(c) === id);
   if (created) {
+    if (method === 'PUT') {
+      for (const k of Object.keys(created)) if (k !== 'id') delete created[k];
+    }
     Object.assign(created, patch);
     return { status: 200, body: created, dirty: true };
   }
@@ -208,13 +226,19 @@ export function applyWrite(
   if (rec.deleted.includes(id)) return notFound(id, lang);
   const target = windowItems(q).find((item) => idOf(item) === id);
   if (!target) return notFound(id, lang);
-  if (rec.updated[id] === undefined && Object.keys(rec.updated).length >= MAX_UPDATED) {
+  const touched = rec.updated[id] !== undefined || rec.replaced[id] !== undefined;
+  if (!touched && Object.keys(rec.updated).length + Object.keys(rec.replaced).length >= MAX_UPDATED) {
     fail('State full',
       `수정은 프리셋당 최대 ${MAX_UPDATED}건입니다. DELETE /schema/state/${sid} 로 상태를 초기화하세요.`,
       `Updates are limited to ${MAX_UPDATED} per preset. Reset the state via DELETE /schema/state/${sid}.`);
   }
-  rec.updated[id] = { ...rec.updated[id], ...patch };
-  return { status: 200, body: { ...target, ...rec.updated[id] }, dirty: true };
+  if (method === 'PUT') {
+    rec.replaced[id] = patch;
+    delete rec.updated[id]; // 교체는 리셋이다 — 이전 패치가 남으면 교체가 아니다
+  } else {
+    rec.updated[id] = { ...rec.updated[id], ...patch };
+  }
+  return { status: 200, body: composed(target, id, rec), dirty: true };
 }
 
 /** 저장 레코드 역직렬화 — 손상·구버전이면 빈 상태로 (상태는 임시 데이터라 복구보다 리셋) */
@@ -222,7 +246,10 @@ export function parseState(raw: string | null): StateRecord {
   if (raw === null) return emptyState();
   try {
     const rec = JSON.parse(raw) as StateRecord;
-    if (rec && rec.v === 1 && Array.isArray(rec.created) && Array.isArray(rec.deleted) && rec.updated) return rec;
+    if (rec && rec.v === 1 && Array.isArray(rec.created) && Array.isArray(rec.deleted) && rec.updated) {
+      rec.replaced ??= {}; // replaced 도입(v1.1.6) 이전 레코드 호환
+      return rec;
+    }
   } catch { /* fall through */ }
   return emptyState();
 }

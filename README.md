@@ -138,6 +138,8 @@ curl -X DELETE '…/api/users/<id>?_s=aB3xK9.x1y2z3'                          # 
 
 - POST returns a complete item: schema defaults plus the body you sent. Editing or deleting a
   missing id answers 404 — like a real API.
+- `PATCH` merges only the fields you send; `PUT` replaces the whole item with the body
+  (omitted fields disappear, only `id` survives) — real REST semantics.
 - Updates and deletes target the id in the last path segment (matched against the schema's
   top-level `id` field). Created items get an id injected even when the schema has no `id` field.
 - State is scoped to the workspace — the same "whoever has the link" model as saved presets.

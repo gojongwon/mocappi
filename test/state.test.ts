@@ -96,6 +96,31 @@ describe('수정·삭제 → 목록 반영', () => {
     expect(after.data.some((d) => d.id === target.id)).toBe(false);
   });
 
+  it('PUT — 통째 교체: 안 보낸 필드가 사라진다 (PATCH 와 의미가 다르다)', async () => {
+    const before = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
+    const target = before.data[3];
+    const res = await req(`/api/users/${target.id}?_s=${sid}`, { method: 'PUT', body: JSON.stringify({ name: '교체본' }) });
+    expect(res.status).toBe(200);
+    const item = await jsonOf<Record<string, unknown>>(res);
+    expect(item.name).toBe('교체본');
+    expect(item.id).toBe(target.id); // 정체성은 유지
+    expect('age' in item).toBe(false); // 안 보낸 필드는 사라진다
+
+    const after = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
+    const replaced = after.data.find((d) => d.id === target.id)!;
+    expect('age' in replaced).toBe(false);
+  });
+
+  it('PUT 뒤 PATCH — 패치는 교체본 위에 얹힌다', async () => {
+    const list = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
+    const target = list.data.find((d) => d.name === '교체본')!;
+    await req(`/api/users/${target.id}?_s=${sid}`, { method: 'PATCH', body: JSON.stringify({ age: 7 }) });
+    const after = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
+    const item = after.data.find((d) => d.id === target.id)!;
+    expect(item.name).toBe('교체본');
+    expect(item.age).toBe(7);
+  });
+
   it('삭제된 아이템은 수정도 404 — 실제 API 처럼', async () => {
     const list = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
     const missing = 'ffffffff-0000-4000-8000-000000000000';

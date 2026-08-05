@@ -118,15 +118,18 @@ export function syncStateBar() {
   if (bodyOn) paintStateBody(); // 스키마가 바뀌면 고스트도 새 필드 기준으로
   $('#stateSend').style.display = write ? 'inline-block' : 'none';
   $('#stateSend').textContent = method.toUpperCase() + ' ' + t('보내기', 'Send');
+  const HINTS = {
+    post: t('JSON 바디를 보내면 진짜 생성됩니다 — 성공하면 GET 목록으로 전환해 보여드려요.',
+            'Send a JSON body and it is really created — on success we switch to the GET list to show it.'),
+    put: t('통째로 교체합니다 — 안 보낸 필드는 사라져요. 부분 수정은 PATCH 를 쓰세요.',
+           'Replaces the whole item — fields you omit disappear. For partial edits use PATCH.'),
+    patch: t('보낸 필드만 바뀝니다 — 목록 응답에서 고칠 아이템의 id 를 복사해 넣으세요.',
+             "Only the fields you send change — copy the target item's id from a list response."),
+    delete: t('목록 응답에서 지울 아이템의 id 를 복사해 넣으세요.',
+              'Copy the id of the item to delete from a list response.'),
+  };
   $('#stateHint').textContent = write
-    ? method === 'post'
-      ? t('JSON 바디를 보내면 진짜 생성됩니다 — 성공하면 GET 목록으로 전환해 보여드려요.',
-          'Send a JSON body and it is really created — on success we switch to the GET list to show it.')
-      : method === 'delete'
-        ? t('목록 응답에서 지울 아이템의 id 를 복사해 넣으세요.',
-            'Copy the id of the item to delete from a list response.')
-        : t('목록 응답에서 고칠 아이템의 id 를 복사하고, 바꿀 필드만 바디에 적으세요.',
-            'Copy the target item’s id from a list response and put only the fields to change in the body.')
+    ? HINTS[method]
     : t('위 메서드에서 POST·PUT·PATCH·DELETE 를 고르면 여기서 실제로 보낼 수 있어요. 쓴 상태는 24시간 뒤 사라집니다.',
         'Pick POST·PUT·PATCH·DELETE above to actually send one from here. Written state expires after 24h.');
 }
