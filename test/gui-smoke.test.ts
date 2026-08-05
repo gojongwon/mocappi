@@ -118,15 +118,17 @@ describe('부팅 (한국어, 맨 주소)', () => {
     expect($('#urlBox').textContent).toContain('/api/products?');
   });
 
-  it('프리셋 없이 쓰기 메서드 선택 → 티저가 기능을 알린다 (저장 CTA)', () => {
-    // 사용법을 안 읽은 사용자도 "저장하면 쓰기가 진짜가 된다"를 그 자리에서 배운다
+  it('프리셋 없이 쓰기 메서드 선택 → 티저가 원래 저장 버튼을 가리키며 강조한다', () => {
+    // 사용법을 안 읽은 사용자도 "저장하면 쓰기가 진짜가 된다"를 그 자리에서 배운다.
+    // 버튼을 복제하지 않는다 — 같은 행동의 버튼이 두 개 보이면 그게 소음이다
     $('button[data-method="post"]').click();
     expect($('#stateBar').style.display).toBe('block');
-    expect($('#stateHint').textContent).toContain('저장');
-    expect($('#stateSaveCta').style.display).toBe('inline-block');
+    expect($('#stateHint').textContent).toContain('프리셋으로 저장');
+    expect($('#saveBtn').className).toContain('attn'); // 원래 저장 버튼이 주인공
     expect($('#stateSend').style.display).toBe('none'); // 편집기·보내기는 아직 없다
     $('button[data-method="get"]').click(); // 되돌리기 — 다음 테스트는 GET 에서 시작
     expect($('#stateBar').style.display).toBe('none');
+    expect($('#saveBtn').className).not.toContain('attn'); // 강조도 함께 꺼진다
   });
 
   it('팀 프리셋 로드 → 미리보기가 _s= 짧은 URL 로 요청하고 상태 패널이 나타난다', async () => {

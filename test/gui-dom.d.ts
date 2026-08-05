@@ -6,6 +6,7 @@
 interface SmokeEl {
   textContent: string | null;
   innerHTML: string;
+  className: string;
   value: string;
   href: string;
   lang: string;

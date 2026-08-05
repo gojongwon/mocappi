@@ -221,7 +221,6 @@ document.addEventListener('click', (e) => {
     case 'shortLineCopy': copyIcon($('#shortLine').dataset.url || '', btn); break;
     case 'stateSend': sendStateWrite(); break;
     case 'stateReset': resetStateNow(); break;
-    case 'stateSaveCta': openSave(); break; // 티저 → 기존 저장 모달로 (워크스페이스 생성까지 그쪽이 안내한다)
     case 'stateBodyFmt': {
       // 실패 바디의 oBodyFmt 와 같은 계약 — 깨진 JSON 은 손대지 않고 버튼이 잠깐 알린다
       if (!formatStateBody()) {

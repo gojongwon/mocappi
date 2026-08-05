@@ -353,7 +353,9 @@
   #stateBar #stateReset { background: var(--bg); color: var(--muted); box-shadow: none; }
   /* 메시지 왼쪽 · 보내기 오른쪽 — 행동 버튼은 흐름의 끝(오른쪽 아래)에 있어야 눈이 안 헤맨다 */
   #stateBar #stateMsg { flex: 1; font-size: 12px; min-height: 1.2em; word-break: break-all; }
-  #stateBar #stateSend, #stateBar #stateSaveCta { margin-left: auto; }
+  #stateBar #stateSend { margin-left: auto; }
+  /* 티저가 가리키는 동안 원래 저장 버튼을 주인공으로 — 버튼 복제 대신 위치 학습 */
+  .url-actions #saveBtn.attn { background: var(--accent); color: var(--accent-text); }
   .url-actions { display: flex; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
   .url-actions button, .url-actions select {
     border: 1.5px solid var(--ink); border-radius: var(--radius-s); padding: 8px 15px; cursor: pointer;

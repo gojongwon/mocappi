@@ -126,23 +126,24 @@ export function syncStateBar() {
   const ready = sid !== null && shortApiUrl(readState()) !== null; // 상태 자격
 
   // 티저 — 쓰기 메서드를 골랐는데 상태 자격이 없다: 기능이 가장 필요한 순간이
-  // 곧 기능을 알릴 순간이다. 문서를 안 읽어도 "저장하면 진짜가 된다"를 여기서 배운다
+  // 곧 기능을 알릴 순간이다. 저장 버튼을 하나 더 만들지 않고 원래 있는 버튼을
+  // 강조해 가리킨다 — 같은 행동의 버튼이 화면에 두 개면 그게 곧 소음이다
   if (write && !ready) {
     bar.style.display = 'block';
     $('#stateHint').textContent = t(
-      `지금 이 ${method.toUpperCase()} 는 응답 모양만 목킹돼요. 프리셋으로 저장하면 쓰기가 기억되어 다음 GET 목록에 실제로 반영됩니다.`,
-      `Right now this ${method.toUpperCase()} only mocks the response shape. Save it as a preset and writes are remembered — they show up in the next GET list.`,
+      `지금 이 ${method.toUpperCase()} 는 응답 모양만 목킹돼요. 아래 '프리셋으로 저장'을 누르면 쓰기가 기억되어 다음 GET 목록에 실제로 반영됩니다.`,
+      `Right now this ${method.toUpperCase()} only mocks the response shape. Hit 'Save as preset' below and writes are remembered — they show up in the next GET list.`,
     );
     $('#stateReset').style.display = 'none';
     $('#stateIdRow').style.display = 'none';
     $('#stateBodyWrap').style.display = 'none';
     $('#stateSend').style.display = 'none';
-    $('#stateSaveCta').style.display = 'inline-block';
+    $('#saveBtn').classList.add('attn'); // 원래 저장 버튼을 주인공으로
     $('#stateMsg').textContent = '';
     msgMethod = null;
     return;
   }
-  $('#stateSaveCta').style.display = 'none';
+  $('#saveBtn').classList.remove('attn');
   $('#stateReset').style.display = '';
 
   // GET 인데 반영된 상태도 없으면 패널 자체가 소음이다 — 숨긴다.
