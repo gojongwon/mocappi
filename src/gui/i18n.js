@@ -74,7 +74,7 @@ const EN = {
   copyResp: 'Copy full response',
   // 코너 버튼
   newsBtnTitle: 'See recent updates',
-  newsLabel: "v0.29 · What's new",
+  newsLabel: "v0.30 · What's new",
   fbBtnTitle: 'Send feedback to the developer',
   feedback: 'Feedback',
   // 모달
@@ -115,6 +115,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
+    <li><span class="v">v0.30</span><b>OpenAPI import</b> — paste a whole OpenAPI (Swagger) document your team already has into the <b>Paste JSON</b> dialog, and the response schema definition fills in the fields, the types, and even the resource name. It understands <code>$ref</code>, <code>allOf</code>, nullable, enum and formats (uuid, email, date-time, …), and tells you what it had to skip and why. Together with Export (OpenAPI 3.1), spec document ↔ mock API now goes both ways</li>
     <li><span class="v">v0.29</span><b>Sorting</b> arrived — type something like <code>name,-age</code> in the Sort option and the items come back in that order (<code>-</code> is descending, comma-separate several keys). The data is unchanged, only the order, and it composes with search, NDJSON and CSV. List responses now also carry the total count in an <code>X-Total-Count</code> header — so shapes without an envelope (array only, NDJSON, CSV) still tell you the count, and table libraries pick it up as-is</li>
     <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body — every standard 4xx/5xx carries its proper reason phrase (<code>413</code> → <code>Payload Too Large</code>). The <b>Failure body</b> field under Advanced previews the default response in grey and <b>Tab</b> fills it in for you to edit. Pasted JSON is auto-formatted and colored (hand-typed: hit <b>{ } Format</b>). There is an <b>Export</b> menu next to the URL — pick a <code>curl</code>/<code>fetch</code>/<code>Python requests</code> call snippet, or a <b>TS types</b>/<b>OpenAPI 3.1</b> document. Unlike the URL, snippets carry <b>the method</b> too; the OpenAPI document drops straight into Postman/Insomnia or generates a client in any language. Responses are now cached for 5 minutes, so calling the same URL again is much faster (the data is identical either way). Saved presets can now be <b>deleted</b> — open the dropdown and every entry has an <b>✕</b>, then confirm once in the dialog and it is gone from the list (its short URL stops working too)</li>
     <li><span class="v">v0.27</span>English support — switch with the EN/KO button in the header, auto-detected from your browser. API error hints follow <code>Accept-Language</code> too</li>
@@ -136,7 +137,7 @@ const EN_BLOCKS = {
   fbIntro: `Rough edges, missing features — anything goes. Sent anonymously to the developer.`,
   helpBody: `
     <h4><span class="n">1</span>Two ways to start</h4>
-    <p><b>Paste JSON</b> — paste a real API response and the fields and types are filled in automatically. The fastest way.<br>
+    <p><b>Paste JSON</b> — paste a real API response or a whole <b>OpenAPI (Swagger) document</b> and the fields and types are filled in automatically. The fastest way.<br>
        <b>Presets</b> — start from the Users / Products / Orders preset and tweak it (header buttons on desktop, the dropdown on mobile).</p>
 
     <h4><span class="n">2</span>A field = name + type</h4>
@@ -274,7 +275,8 @@ npm run deploy</pre>
     </div>
   `,
   pasteIntro: `Paste a real API response or a sample object and the fields and types are inferred automatically.
-     <code style="font-family:var(--mono);font-size:12px">{"data": [...]}</code> envelopes are unwrapped for you.`,
+     <code style="font-family:var(--mono);font-size:12px">{"data": [...]}</code> envelopes are unwrapped for you.<br>
+     Pasting a whole <b>OpenAPI (Swagger) document</b> works too — the response schema definition is imported.`,
 };
 
 export function applyEn() {

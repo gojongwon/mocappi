@@ -1,6 +1,6 @@
 {
   "name": "mocappi",
-  "version": "0.29.1",
+  "version": "0.30.0",
   "description": "URL 만으로 정의하는 목 REST API — 같은 URL 이면 언제나 같은 바이트. A mock REST API defined entirely in the URL.",
   "scripts": {
     "dev": "wrangler dev",

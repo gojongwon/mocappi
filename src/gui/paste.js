@@ -31,6 +31,8 @@ export async function applyPaste() {
   shared.loadedPreset = null; shared.preloadSnapshot = null; // 붙여넣기로 새 스키마 시작 — 저장본과 무관
   fieldsEl.innerHTML = '';
   for (const f of result.fields) addRow(f.name, f.type);
+  // OpenAPI 임포트는 경로에서 리소스 이름까지 알아낸다 — 예시 JSON 추론에는 없는 정보
+  if (result.res) $('#resource').value = result.res;
   const note = $('#inferNote');
   const lines = [];
   if (result.note) lines.push('ℹ ' + result.note);

@@ -7,7 +7,7 @@ URL 만으로 스키마를 정의하는 팀 내부용 목(mock) REST API. 앱 �
 - GUI (URL 빌더 + 실시간 미리보기): `GET /`
 - 데이터: `GET | POST | PUT | PATCH | DELETE /api/<리소스명>?필드=타입&...`
 - 지원 타입 목록: `GET /schema/types`
-- JSON 예시 → 스키마 추론: `POST /schema/infer`
+- JSON 예시 → 스키마 추론: `POST /schema/infer` (OpenAPI/Swagger 문서를 보내면 스펙 임포트)
 - 스키마 → TypeScript 타입: `GET /schema/ts` (GUI 의 "TS 타입 복사" 버튼)
 
 **팀 배포 주소: <https://mocappi.gojongwon.workers.dev>** — 브라우저로 열면 GUI가 뜬다.
@@ -269,6 +269,25 @@ curl 'https://mocappi.gojongwon.workers.dev/schema/openapi?_res=users&id=uuid&na
   `internet.email?0.2` → `type: [string, null]` (3.1 방식)
 - 필드마다 실제 생성값이 `examples` 로 들어가고, `_locale` 을 따른다
 - `_method` 를 주면 그 메서드의 오퍼레이션으로 나온다 (POST → 201 단건, DELETE → 204)
+
+### OpenAPI 가져오기 (역방향)
+
+내보내기의 반대도 된다 — 팀에 이미 있는 OpenAPI(Swagger) 문서를 GUI 의 **JSON 붙여넣기** 창에
+통째로 넣으면 (또는 `POST /schema/infer` 로 보내면) 응답 스키마 정의를 읽어 필드·타입과
+리소스 이름까지 채운다. 스펙 문서가 곧 목 API 가 되는 가장 빠른 길.
+
+```bash
+curl -X POST https://mocappi.gojongwon.workers.dev/schema/infer \
+  -H 'content-type: application/json' --data @openapi.json
+```
+
+- OpenAPI 3.x 와 Swagger 2.0 을 받는다. `$ref`(문서 내부)·`allOf`·`oneOf/anyOf` 해석,
+  nullable(3.0 `nullable` / 3.1 `type: [..., null]`) 은 `?0.2` 로 반영
+- `format` 매핑: `uuid` → `uuid`, `email` → `internet.email`, `date-time` → `date:…`,
+  `uri` → `internet.url` 등. `enum`·`const`·`minimum/maximum`·`maxLength` 도 읽는다
+- 문서에 오퍼레이션이 여러 개면 가장 목록다운 GET 200 하나를 고르고 나머지는 무시한다고
+  알려준다 — 원하는 경로만 남긴 문서를 붙여넣으면 그 경로를 가져온다
+- 객체 배열처럼 v1 DSL 이 표현 못 하는 필드는 `skipped` 로 이유와 함께 알려준다
 
 ## 대용량 데이터
 

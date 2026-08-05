@@ -6,6 +6,7 @@ import guiHtml from './gui.generated.html';
 import { parseQuery, type ParsedQuery } from './dsl';
 import { baseSeedOf, csvHeader, csvRow, generateItem, listResponse, viewItems } from './generate';
 import { inferSchema } from './infer';
+import { inferFromOpenApi, isOpenApiDoc } from './infer-openapi';
 import { generateOpenApi } from './openapi';
 import { generateTsTypes } from './tstype';
 import { deleteSchema, getSchema, listSchemas, mergeQuery, saveSchema, validateWs, type KVNamespaceLike } from './store';
@@ -416,7 +417,8 @@ export default {
       return json(rec);
     }
 
-    // JSON 예시 붙여넣기 → 스키마 추론
+    // JSON 예시 붙여넣기 → 스키마 추론. OpenAPI 문서(3.x·Swagger 2.0)를 통째로
+    // 붙여넣으면 예시 값 대신 응답 스키마 선언을 읽는다 — 같은 입구, 다른 눈.
     if (url.pathname === '/schema/infer') {
       if (request.method !== 'POST') {
         return json({ error: 'Method not allowed', hint: pick(lang, 'JSON 예시를 POST body 로 보내세요.', 'Send a JSON example as the POST body.') }, 405);
@@ -428,7 +430,7 @@ export default {
         return json({ error: 'Invalid JSON', hint: pick(lang, 'JSON 파싱에 실패했습니다. 올바른 JSON 인지 확인하세요.', 'Failed to parse JSON. Make sure the body is valid JSON.') }, 400);
       }
       try {
-        return json(inferSchema(body));
+        return json(isOpenApiDoc(body) ? inferFromOpenApi(body, lang) : inferSchema(body));
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);

@@ -17,7 +17,7 @@ export interface InferResult {
   note?: string;
 }
 
-const FIELD_KEY_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
+export const FIELD_KEY_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const ISO_DATE_RE = /^(\d{4})-\d{2}-\d{2}([T ].*)?$/;
@@ -127,6 +127,29 @@ function inferString(keyLc: string, v: string): string {
   return inferStringKeyed(keyLc, v) ?? inferStringTail(keyLc, v);
 }
 
+/**
+ * 값 없이 키 이름만으로 강한 의미를 갖는 매핑 — OpenAPI 임포트처럼 예시 값이 없는
+ * 자리에서 쓴다. inferStringKeyed 의 키 검사 절반과 같은 규칙을 공유해야
+ * 값 기반 추론과 문서 기반 추론이 같은 키에 다른 타입을 내지 않는다.
+ */
+export function dslForKeyOnly(keyLc: string): string | null {
+  if (KEY.image.test(keyLc)) return 'image:200x200';
+  if (KEY.email.test(keyLc)) return 'internet.email';
+  if (KEY.phone.test(keyLc)) return 'phone.number';
+  if (KEY.firstName.test(keyLc)) return 'person.firstName';
+  if (KEY.lastName.test(keyLc)) return 'person.lastName';
+  if (KEY.name.test(keyLc)) return 'person.fullName';
+  if (KEY.city.test(keyLc)) return 'location.city';
+  if (KEY.country.test(keyLc)) return 'location.country';
+  if (KEY.zip.test(keyLc)) return 'location.zipCode';
+  if (KEY.address.test(keyLc)) return 'location.streetAddress';
+  if (KEY.company.test(keyLc)) return 'company.name';
+  if (KEY.job.test(keyLc)) return 'person.jobTitle';
+  if (KEY.url.test(keyLc)) return 'internet.url';
+  if (KEY.longText.test(keyLc)) return 'text:120';
+  return null;
+}
+
 function inferNumber(keyLc: string, v: number): string {
   if (Number.isInteger(v)) {
     if (keyLc === 'id' || keyLc.endsWith('index') || keyLc === 'seq' || keyLc === 'sequence' || keyLc === 'no') return 'index';
@@ -145,7 +168,7 @@ function inferNumber(keyLc: string, v: number): string {
   return `float:${lo}~${hi}:${decimals}`;
 }
 
-function inferScalar(key: string, v: unknown): string {
+export function inferScalar(key: string, v: unknown): string {
   if (typeof v === 'boolean') return 'bool';
   if (typeof v === 'number') return inferNumber(key.toLowerCase(), v);
   if (typeof v === 'string') return inferString(key.toLowerCase(), v);
@@ -161,7 +184,7 @@ const round1 = (x: number): number => Math.round(x * 10) / 10;
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 
 /** enum 값으로 안전한 문자열 — '|'(구분자), '*'(가중치), '?'(nullable), 공백 제외 */
-const ENUM_SAFE_RE = /^[^|*?\s]{1,24}$/;
+export const ENUM_SAFE_RE = /^[^|*?\s]{1,24}$/;
 
 /** 반복되는 소수의 문자열 값 → enum. 빈도가 뚜렷이 다르면 표본 개수를 가중치로 */
 function tryEnum(keyLc: string, vals: string[]): string | null {

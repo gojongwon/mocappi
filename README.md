@@ -9,7 +9,7 @@ A mock REST API you define entirely in the URL. No app to install, no config to 
 - GUI (URL builder + live preview): `GET /`
 - Data: `GET | POST | PUT | PATCH | DELETE /api/<resource>?field=type&...`
 - Supported types: `GET /schema/types`
-- Infer a schema from example JSON: `POST /schema/infer`
+- Infer a schema from example JSON: `POST /schema/infer` (send an OpenAPI/Swagger document to import a spec)
 - Generate TypeScript types: `GET /schema/ts` (or the "TS 타입 복사" button in the GUI)
 
 ## Quick start
@@ -321,6 +321,26 @@ curl 'https://mocappi.gojongwon.workers.dev/schema/openapi?_res=users&id=uuid&na
   `internet.email?0.2` → `type: [string, null]` (the 3.1 way, not `nullable: true`).
 - Every field carries a real generated value in `examples`, in the request's `_locale`.
 - Pass `_method` and the operation is emitted under that verb (POST → 201 single item, DELETE → 204).
+
+### OpenAPI import (the reverse direction)
+
+Export's opposite works too — paste an OpenAPI (Swagger) document your team already has into the
+GUI's **Paste JSON** dialog (or send it to `POST /schema/infer`) and the response schema definition
+fills in the fields, the types, and the resource name. The fastest path from a spec document to a
+working mock API.
+
+```bash
+curl -X POST https://mocappi.gojongwon.workers.dev/schema/infer \
+  -H 'content-type: application/json' --data @openapi.json
+```
+
+- Accepts OpenAPI 3.x and Swagger 2.0. Resolves in-document `$ref`, `allOf`, `oneOf/anyOf`;
+  nullable (3.0 `nullable` / 3.1 `type: [..., null]`) becomes `?0.2`
+- `format` mapping: `uuid` → `uuid`, `email` → `internet.email`, `date-time` → `date:…`,
+  `uri` → `internet.url`, and so on. `enum`, `const`, `minimum/maximum` and `maxLength` are read too
+- With several operations in the document it picks the most list-like GET 200 and tells you the
+  rest were ignored — paste a document with just the path you want to import that one
+- Fields the v1 DSL cannot express (arrays of objects, …) come back in `skipped` with a reason
 
 ## Development
 
