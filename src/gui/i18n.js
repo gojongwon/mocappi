@@ -74,7 +74,7 @@ const EN = {
   copyResp: 'Copy full response',
   // 코너 버튼
   newsBtnTitle: 'See recent updates',
-  newsLabel: "v0.30 · What's new",
+  newsLabel: "v0.31 · What's new",
   fbBtnTitle: 'Send feedback to the developer',
   feedback: 'Feedback',
   // 모달
@@ -115,6 +115,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
+    <li><span class="v">v0.31</span><b>Relations between resources</b> — new <code>pk</code>/<code>ref</code> types. Put <code>id=pk:users</code> on the users side and <code>userId=ref:users</code> on the orders side, and every order's userId is one of the real user ids. Two URLs that have never seen each other stay in lockstep forever, keyed by nothing but the resource name — adding fields to either side never breaks it (widen the pool with <code>ref:users:500</code>)</li>
     <li><span class="v">v0.30</span><b>OpenAPI import</b> — paste a whole OpenAPI (Swagger) document your team already has into the <b>Paste JSON</b> dialog, and the response schema definition fills in the fields, the types, and even the resource name. It understands <code>$ref</code>, <code>allOf</code>, nullable, enum and formats (uuid, email, date-time, …), and tells you what it had to skip and why. Together with Export (OpenAPI 3.1), spec document ↔ mock API now goes both ways</li>
     <li><span class="v">v0.29</span><b>Sorting</b> arrived — type something like <code>name,-age</code> in the Sort option and the items come back in that order (<code>-</code> is descending, comma-separate several keys). The data is unchanged, only the order, and it composes with search, NDJSON and CSV. List responses now also carry the total count in an <code>X-Total-Count</code> header — so shapes without an envelope (array only, NDJSON, CSV) still tell you the count, and table libraries pick it up as-is</li>
     <li><span class="v">v0.28</span>Beyond GET — <b>POST·PUT·PATCH·DELETE</b>. Pick one above the URL and it sends that verb <b>for real</b> (the URL stays clean). POST answers 201 + a single item, DELETE answers 204. Any status at 400+ returns a failure body — every standard 4xx/5xx carries its proper reason phrase (<code>413</code> → <code>Payload Too Large</code>). The <b>Failure body</b> field under Advanced previews the default response in grey and <b>Tab</b> fills it in for you to edit. Pasted JSON is auto-formatted and colored (hand-typed: hit <b>{ } Format</b>). There is an <b>Export</b> menu next to the URL — pick a <code>curl</code>/<code>fetch</code>/<code>Python requests</code> call snippet, or a <b>TS types</b>/<b>OpenAPI 3.1</b> document. Unlike the URL, snippets carry <b>the method</b> too; the OpenAPI document drops straight into Postman/Insomnia or generates a client in any language. Responses are now cached for 5 minutes, so calling the same URL again is much faster (the data is identical either way). Saved presets can now be <b>deleted</b> — open the dropdown and every entry has an <b>✕</b>, then confirm once in the dialog and it is gone from the list (its short URL stops working too)</li>
@@ -163,6 +164,7 @@ const EN_BLOCKS = {
         <tr><td>Weighted choice</td><td><code>enum:paid*8|refund*2</code></td><td>paid 80% / refund 20%</td></tr>
         <tr><td>Sometimes null</td><td><code>internet.email?0.2</code></td><td>null 20% of the time — append ?probability to any type</td></tr>
         <tr><td>Masked PII</td><td><code>mask.name</code> <code>mask.email</code> <code>mask.phone</code> <code>mask.card</code></td><td>"김*준" / "mi***@example.com" / "010-****-5678"</td></tr>
+        <tr><td>Relations (foreign keys)</td><td><code>pk:users</code> · <code>ref:users</code></td><td><code>id=pk:users</code> on users ↔ <code>userId=ref:users</code> on orders always agree</td></tr>
       </table>
     </details>
 

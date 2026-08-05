@@ -102,6 +102,21 @@ curl -X POST /api/users?name=person.fullName      # 201 + 단건
 /api/users?name=person.fullName&_method=post      # 같은 응답, 평범한 GET
 ```
 
+## 리소스 간 관계
+
+`pk`/`ref` 는 리소스 사이의 외래 키를 맞물리게 한다 — 저장소도, 상대 URL 조회도 없이.
+양쪽 다 리소스 이름과 항목 인덱스에서만 값을 파생하므로, 서로 본 적 없는 두 URL 이 영원히 일치한다:
+
+```
+/api/users?id=pk:users&name=person.fullName                 # id: 인덱스별 결정적 uuid
+/api/orders?id=uuid&userId=ref:users&amount=int:1000~90000  # userId ∈ users 앞 100개의 id
+```
+
+모든 `orders[i].userId` 는 `users` 목록의 `id` 값 중 정확히 하나다. 어느 쪽이든 다른 필드를
+더하거나 빼도 관계는 깨지지 않는다 (`pk` 는 일부러 자기 스키마의 나머지를 무시한다).
+`ref:users:500` 은 풀을 앞 500개로 넓힌다 — 대상 리소스의 `_total` 과 맞추면 된다.
+단건 모양과도 그대로 조합된다: `_wrap=one`, 쓰기 메서드, 배열(`viewers[]=ref:users:2`).
+
 ## 실패 응답
 
 `_status` 가 400 이상이면 데이터 대신 실패 바디가 나간다.

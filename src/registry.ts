@@ -3,7 +3,7 @@
  * 각 생성 함수는 (seed, ctx) => value 시그니처의 순수 함수다.
  */
 import { Faker, ko, en, ja, zh_CN, base, type Randomizer } from '@faker-js/faker';
-import { createRNG } from './rng';
+import { createRNG, hashString } from './rng';
 
 export type Locale = 'ko' | 'en' | 'ja' | 'zh';
 
@@ -64,7 +64,7 @@ export class DslError extends Error {
   }
 }
 
-const KNOWN_TYPES = 'int, float, bool, enum, const, text, image, date, uuid, index, pattern';
+const KNOWN_TYPES = 'int, float, bool, enum, const, text, image, date, uuid, index, pattern, pk, ref';
 
 /** nullable 수식자 — 아무 타입 뒤 '?확률'. 예: internet.email?0.2 */
 export const NULLABLE_RE = /^(.+)\?(0?\.\d+|1|0)$/;
@@ -366,6 +366,51 @@ function compileDate(rest: string, raw: string): Generator {
 }
 
 // ---------------------------------------------------------------------------
+// pk / ref — 리소스 간 관계 (orders.userId ↔ users.id)
+//
+// 두 URL 이 서로를 모른 채 같은 값을 내야 하므로, 시드를 "리소스 이름 + 인덱스"
+// 에서만 파생한다. pk 는 필드 시드(스키마 전체에 좌우됨)를 버리고, ref 는 필드
+// 시드로 인덱스 하나만 고른 뒤 같은 파생을 거친다 — 그래서 어느 쪽 스키마에
+// 필드를 더해도 관계는 깨지지 않는다. 저장소·상대 URL 조회가 없는 순수 함수.
+// ---------------------------------------------------------------------------
+
+const RES_NAME_RE = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
+const MAX_REF_COUNT = 1_000_000; // _total 상한과 같은 값
+
+/** (리소스, 인덱스) → uuid. pk 와 ref 가 공유하는 유일한 진실 */
+const pkValue = (name: string, index: number): string => uuidFromSeed(hashString(`pk:${name}:${index}`));
+
+function compilePk(rest: string, raw: string): Generator {
+  if (!RES_NAME_RE.test(rest)) {
+    fail('Invalid pk resource', raw,
+      "형식: pk:리소스명 (영문 시작, 영숫자/_/-, 64자 이내). 예: id=pk:users — 다른 리소스가 ref:users 로 참조합니다.",
+      "Format: pk:resource (letter first, alphanumerics/_/-, up to 64 chars), e.g. id=pk:users — other resources reference it with ref:users.");
+  }
+  return (_seed, ctx) => pkValue(rest, ctx.globalIndex);
+}
+
+function compileRef(rest: string, raw: string): Generator {
+  const parts = rest.split(':');
+  if (parts.length > 2 || !RES_NAME_RE.test(parts[0])) {
+    fail('Invalid ref spec', raw,
+      "형식: ref:리소스명 또는 ref:리소스명:총원. 예: userId=ref:users — id=pk:users 인 리소스의 값 중 하나가 나옵니다.",
+      "Format: ref:resource or ref:resource:count, e.g. userId=ref:users — yields one of the values of a resource with id=pk:users.");
+  }
+  let count = 100; // 기본 100 = _total 기본값 — 대상 리소스의 앞 100개를 가리킨다
+  if (parts.length === 2) {
+    const n = parseIntStrict(parts[1]);
+    if (n === null || n < 1 || n > MAX_REF_COUNT) {
+      fail('Invalid ref count', raw,
+        `총원은 1~${MAX_REF_COUNT.toLocaleString('en-US')} 사이 정수입니다 — 대상 리소스의 _total 과 맞추세요. 예: ref:users:500`,
+        `Count must be an integer between 1 and ${MAX_REF_COUNT.toLocaleString('en-US')} — match the target resource's _total, e.g. ref:users:500`);
+    }
+    count = n;
+  }
+  const name = parts[0];
+  return (seed) => pkValue(name, createRNG(seed).int(0, count - 1));
+}
+
+// ---------------------------------------------------------------------------
 // 진입점
 // ---------------------------------------------------------------------------
 
@@ -415,6 +460,10 @@ export function compileType(raw: string): Generator {
       return compileDate(rest, raw);
     case 'pattern':
       return compilePattern(rest, raw);
+    case 'pk':
+      return compilePk(rest, raw);
+    case 'ref':
+      return compileRef(rest, raw);
     default:
       if (raw.includes('.')) return compileFakerPath(raw);
       fail(
@@ -463,6 +512,8 @@ export const TYPE_DOCS = {
     { type: 'pattern', syntax: 'pattern:템플릿 (#=숫자 ?=대문자 *=영숫자)', example: 'pattern:ORD-####-???', label: '패턴 문자열' },
     { type: 'enum', syntax: 'enum:a*가중치|b*가중치', example: 'enum:paid*8|refund*2', label: '가중치 enum' },
     { type: 'nullable', syntax: '아무타입?확률', example: 'internet.email?0.2', label: 'null 섞기 (수식자)' },
+    { type: 'pk', syntax: 'pk:리소스명', example: 'pk:users', label: '기본 키 — 관계용 결정적 uuid' },
+    { type: 'ref', syntax: 'ref:리소스명[:총원]', example: 'ref:users', label: '다른 리소스의 pk 참조 (외래 키)' },
   ],
   fakerPaths: [
     { value: 'person.fullName', label: '이름(전체)' },
@@ -542,6 +593,8 @@ const EN_DSL: ReadonlyArray<{ syntax: string; label: string }> = [
   { syntax: 'pattern:template (#=digit ?=uppercase *=alphanumeric)', label: 'Pattern string' },
   { syntax: 'enum:a*weight|b*weight', label: 'Weighted enum' },
   { syntax: 'anyType?probability', label: 'Mix in nulls (modifier)' },
+  { syntax: 'pk:resource', label: 'Primary key — deterministic uuid for relations' },
+  { syntax: 'ref:resource[:count]', label: "Reference to another resource's pk (foreign key)" },
 ];
 
 const EN_FAKER_LABELS: Record<string, string> = {

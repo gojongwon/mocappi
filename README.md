@@ -105,6 +105,22 @@ browser GET can preview a POST response:
 /api/users?name=person.fullName&_method=post      # same response, plain GET
 ```
 
+## Relations between resources
+
+`pk`/`ref` make foreign keys line up across resources — with no storage and no lookups.
+Both sides derive the value from nothing but the resource name and the item index, so two URLs
+that have never seen each other agree forever:
+
+```
+/api/users?id=pk:users&name=person.fullName                 # id: deterministic uuid per index
+/api/orders?id=uuid&userId=ref:users&amount=int:1000~90000  # userId ∈ users' first 100 ids
+```
+
+Every `orders[i].userId` is exactly one of the `id` values in the `users` list. Adding or removing
+other fields on either side never breaks the relation (a `pk` ignores the rest of its schema on
+purpose). `ref:users:500` widens the pool to the first 500 — match it to the target's `_total`.
+The single-item shapes compose as usual: `_wrap=one`, write methods, arrays (`viewers[]=ref:users:2`).
+
 ## Failure responses
 
 `_status` at 400 or above replaces the data with a failure body:
