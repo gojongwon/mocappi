@@ -117,6 +117,29 @@ curl -X POST /api/users?name=person.fullName      # 201 + 단건
 `ref:users:500` 은 풀을 앞 500개로 넓힌다 — 대상 리소스의 `_total` 과 맞추면 된다.
 단건 모양과도 그대로 조합된다: `_wrap=one`, 쓰기 메서드, 배열(`viewers[]=ref:users:2`).
 
+## 프리셋 상태
+
+워크스페이스에 저장한 프리셋(`_s=<ws>.<id>`)은 쓰기를 **기억한다** — TanStack Query 류의
+"mutation → invalidate → refetch" 흐름이 실제로 동작한다:
+
+```bash
+curl -X POST   '…/api/users?_s=aB3xK9.x1y2z3' -d '{"name":"홍길동"}'   # 201 — 생성
+curl           '…/api/users?_s=aB3xK9.x1y2z3'                          # 목록 맨 앞에 홍길동, total +1
+curl -X PATCH  '…/api/users/<id>?_s=aB3xK9.x1y2z3' -d '{"age":30}'     # 그 아이템만 수정
+curl -X DELETE '…/api/users/<id>?_s=aB3xK9.x1y2z3'                     # 204 — 목록에서 사라짐
+```
+
+- POST 는 "스키마 기본값 + 보낸 바디"의 완성 아이템을 돌려준다. 없는 id 의 수정·삭제는 404 — 실제 API 처럼.
+- 수정·삭제 대상은 경로 마지막 세그먼트의 id 로 찾는다 (스키마의 최상위 `id` 필드 기준).
+  스키마에 `id` 필드가 없어도 생성물에는 id 가 주입되어 수정·삭제할 수 있다.
+- 상태의 범위는 워크스페이스 — 프리셋 저장과 같은 "링크 아는 사람끼리" 모델이다.
+  검색(`_q`)·정렬(`_sort`)·NDJSON/CSV 응답에도 병합돼 나간다 (검색과 같은 앞 1,000개 창).
+- 수명: 마지막 쓰기로부터 24시간. `GET /schema/state/<sid>` 로 확인, `DELETE /schema/state/<sid>` 로 초기화.
+  상한: 생성 50 · 수정 100 · 삭제 200 (넘으면 초기화 안내와 함께 400).
+- **결정성 경계**: 저장하지 않은 URL 과 공용 풀 프리셋은 지금처럼 완전 무상태다.
+  바디 없는 POST(GUI 미리보기가 이 경우)와 `_method=` 링크는 상태를 바꾸지 않는다 —
+  상태는 JSON 바디를 실은 실제 verb 로만 바뀐다.
+
 ## 실패 응답
 
 `_status` 가 400 이상이면 데이터 대신 실패 바디가 나간다.
@@ -336,7 +359,8 @@ curl -X POST https://mocappi.gojongwon.workers.dev/schema/infer \
 
 **캐시:** 같은 URL 이 같은 바이트라서 성공 응답은 `Cache-Control: public, max-age=300` 으로
 엣지에 5분 캐시된다 (`Cf-Cache-Status: HIT` 로 확인). 데이터는 어차피 같으니 영향은 속도뿐이다.
-캐시를 타지 않는 것 둘 — `_delay` 를 준 요청(지연이 목적이라), `_status>=400` 실패 응답.
+캐시를 타지 않는 것 셋 — `_delay` 를 준 요청(지연이 목적이라), `_status>=400` 실패 응답,
+그리고 워크스페이스 프리셋(`_s=<ws>.<id>`) 응답(상태를 기억할 수 있어서 — 아래 "프리셋 상태" 절).
 저장 프리셋(`_s=`)을 지우면 최대 5분간 옛 응답이 나올 수 있다.
 
 ## `X-Total-Count`

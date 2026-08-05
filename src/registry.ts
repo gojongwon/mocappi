@@ -83,7 +83,7 @@ function parseNumStrict(s: string): number | null {
   return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : null;
 }
 
-function uuidFromSeed(seed: number): string {
+export function uuidFromSeed(seed: number): string {
   const rng = createRNG(seed);
   const b: number[] = [];
   for (let i = 0; i < 16; i++) b.push(Math.floor(rng.next() * 256));
@@ -496,7 +496,7 @@ export const TYPE_DOCS = {
     { name: '_qin', default: '—', desc: '검색 대상 필드 한정 (쉼표 구분, 중첩은 a.b). _q 와 함께 사용. 예: _q=김&_qin=name,city' },
     { name: '_sort', default: '—', desc: "정렬 (쉼표 구분, '-' 접두사는 내림차순, 중첩은 a.b). 데이터는 그대로고 순서만 바뀝니다. 앞 1,000개 창 안에서 정렬. 예: _sort=name,-age" },
     { name: '_alias', default: '—', desc: '예약 파라미터 별칭 — 실제 API 의 키 이름으로 호출. 예: _alias=page:_page,size:_limit → ?page=2&size=20' },
-    { name: '_s', default: '—', desc: '저장된 팀 스키마 ID. 다른 파라미터로 오버라이드 가능 (예: ?_s=aB3xK9&_page=2)' },
+    { name: '_s', default: '—', desc: '저장된 팀 스키마 ID. 다른 파라미터로 오버라이드 가능 (예: ?_s=aB3xK9&_page=2). 워크스페이스 프리셋은 쓰기(JSON 바디)를 기억해 다음 GET 에 반영합니다' },
   ],
   dslTypes: [
     { type: 'int', syntax: 'int:min~max', example: 'int:20~60', label: '정수 범위' },
@@ -575,7 +575,7 @@ const EN_RESERVED: Record<string, { default?: string; desc: string }> = {
   _qin: { desc: 'Restrict search to specific fields (comma-separated, nested as a.b). Use with _q, e.g. _q=kim&_qin=name,city' },
   _sort: { desc: "Sort (comma-separated, '-' prefix for descending, nested as a.b). The data is unchanged — only the order. Sorts within the first 1,000 items, e.g. _sort=name,-age" },
   _alias: { desc: "Aliases for reserved parameters — call with your real API's key names, e.g. _alias=page:_page,size:_limit → ?page=2&size=20" },
-  _s: { desc: 'Saved team schema ID. Other parameters can override it (e.g. ?_s=aB3xK9&_page=2)' },
+  _s: { desc: 'Saved team schema ID. Other parameters can override it (e.g. ?_s=aB3xK9&_page=2). Workspace presets remember writes (JSON body) and reflect them in the next GET' },
 };
 
 /** dslTypes 와 같은 순서의 영어 syntax/label (positional — TYPE_DOCS.dslTypes 순서와 1:1) */

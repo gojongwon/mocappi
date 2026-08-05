@@ -121,6 +121,30 @@ other fields on either side never breaks the relation (a `pk` ignores the rest o
 purpose). `ref:users:500` widens the pool to the first 500 — match it to the target's `_total`.
 The single-item shapes compose as usual: `_wrap=one`, write methods, arrays (`viewers[]=ref:users:2`).
 
+## Stateful presets
+
+A preset saved in a workspace (`_s=<ws>.<id>`) **remembers writes** — the TanStack Query style
+"mutation → invalidate → refetch" flow actually works:
+
+```bash
+curl -X POST   '…/api/users?_s=aB3xK9.x1y2z3' -d '{"name":"Hong Gildong"}'  # 201 — created
+curl           '…/api/users?_s=aB3xK9.x1y2z3'                               # first in the list, total +1
+curl -X PATCH  '…/api/users/<id>?_s=aB3xK9.x1y2z3' -d '{"age":30}'          # that item changes
+curl -X DELETE '…/api/users/<id>?_s=aB3xK9.x1y2z3'                          # 204 — gone from the list
+```
+
+- POST returns a complete item: schema defaults plus the body you sent. Editing or deleting a
+  missing id answers 404 — like a real API.
+- Updates and deletes target the id in the last path segment (matched against the schema's
+  top-level `id` field). Created items get an id injected even when the schema has no `id` field.
+- State is scoped to the workspace — the same "whoever has the link" model as saved presets.
+  It merges into search (`_q`), sort (`_sort`) and NDJSON/CSV responses too (the same first-1,000 window).
+- Lifetime: 24 hours from the last write. Inspect via `GET /schema/state/<sid>`, reset via
+  `DELETE /schema/state/<sid>`. Caps: 50 creates · 100 updates · 200 deletes (exceeding answers 400 with a reset hint).
+- **The determinism boundary**: unsaved URLs and public-pool presets stay fully stateless.
+  A body-less POST (the GUI preview is one) and `_method=` links never change state —
+  state changes only through real verbs carrying a JSON body.
+
 ## Failure responses
 
 `_status` at 400 or above replaces the data with a failure body:
@@ -237,8 +261,8 @@ for p in 1 2 3 4 5; do curl -s "https://<worker>/api/users?...&_limit=1000&_page
 **Caching:** because the same URL is the same bytes, successful responses ship
 `Cache-Control: public, max-age=300` and are cached at the edge for 5 minutes (check
 `Cf-Cache-Status: HIT`). The data is identical either way, so the only difference is speed.
-Two things are never cached: requests with `_delay` (the delay is the point) and `_status>=400`
-failures. Deleting a saved preset (`_s=`) may keep serving the old response for up to 5 minutes.
+Three things are never cached: requests with `_delay` (the delay is the point), `_status>=400`
+failures, and workspace-preset (`_s=<ws>.<id>`) responses — they may carry state (see Stateful presets). Deleting a saved preset (`_s=`) may keep serving the old response for up to 5 minutes.
 
 ## `X-Total-Count`
 

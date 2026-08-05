@@ -4,7 +4,8 @@
  */
 import guiHtml from './gui.generated.html';
 import { parseQuery, type ParsedQuery } from './dsl';
-import { baseSeedOf, csvHeader, csvRow, generateItem, listResponse, viewItems } from './generate';
+import { applyView, baseSeedOf, csvHeader, csvRow, generateItem, listResponse, listResponseFrom, viewItems } from './generate';
+import { applyWrite, findById, hasState, mergedWindow, parseState, stateKeyOf, STATE_TTL_SECONDS } from './state';
 import { inferSchema } from './infer';
 import { inferFromOpenApi, isOpenApiDoc } from './infer-openapi';
 import { generateOpenApi } from './openapi';
@@ -102,20 +103,26 @@ const noKv = (lang: 'ko' | 'en') => ({
 // 목적: 버그 루프·스팸이 KV 쓰기 일일 한도(무료 1,000)를 태우는 것을 차단.
 const SAVE_WINDOW_MS = 60 * 60 * 1000; // 1시간
 const SAVE_MAX_PER_WINDOW = 10;
+// 상태 쓰기는 CRUD 데모의 본론이라 저장보다 훨씬 후하게 — 저장소 쓰기 한도는 여전히 지킨다
+const STATE_MAX_PER_WINDOW = 240;
 const saveHits = new Map<string, number[]>();
+const stateHits = new Map<string, number[]>();
 
-function saveLimited(ip: string): boolean {
+function hitLimited(map: Map<string, number[]>, key: string, max: number): boolean {
   const now = Date.now();
-  const arr = (saveHits.get(ip) ?? []).filter((t) => now - t < SAVE_WINDOW_MS);
-  if (arr.length >= SAVE_MAX_PER_WINDOW) {
-    saveHits.set(ip, arr);
+  const arr = (map.get(key) ?? []).filter((t) => now - t < SAVE_WINDOW_MS);
+  if (arr.length >= max) {
+    map.set(key, arr);
     return true;
   }
   arr.push(now);
-  if (saveHits.size > 10_000) saveHits.clear(); // 메모리 상한 — 드물게 초기화돼도 베스트에포트라 무방
-  saveHits.set(ip, arr);
+  if (map.size > 10_000) map.clear(); // 메모리 상한 — 드물게 초기화돼도 베스트에포트라 무방
+  map.set(key, arr);
   return false;
 }
+
+const saveLimited = (ip: string): boolean => hitLimited(saveHits, ip, SAVE_MAX_PER_WINDOW);
+const stateLimited = (ip: string): boolean => hitLimited(stateHits, ip, STATE_MAX_PER_WINDOW);
 
 /**
  * 결정적 응답만 엣지 캐시(wrangler.toml 의 [cache])에 태운다.
@@ -136,11 +143,12 @@ const cacheHeader = (q: ParsedQuery): string =>
  * _format=ndjson|csv — 아이템을 배치 단위로 생성하며 스트리밍.
  * 데이터는 JSON 응답과 완전히 동일하다 (_format 은 baseSeed 에서 제외).
  */
-function streamResponse(q: ParsedQuery): Response {
+function streamResponse(q: ParsedQuery, preView?: Record<string, unknown>[] | null): Response {
   const baseSeed = baseSeedOf(q);
   const start = (q.page - 1) * q.limit;
-  // 검색·정렬 모드면 창 전체를 먼저 구해 페이지 슬라이스를 스트리밍 (창이 1,000이라 메모리 부담 없음)
-  const view = q.q !== null || q.sort !== null ? viewItems(q) : null;
+  // 검색·정렬 모드면 창 전체를 먼저 구해 페이지 슬라이스를 스트리밍 (창이 1,000이라 메모리 부담 없음).
+  // preView 는 상태 병합 창(필터·정렬 적용 완료) — 있으면 그게 진실이다
+  const view = preView ?? (q.q !== null || q.sort !== null ? viewItems(q) : null);
   const searched = view ? view.slice(start, start + q.limit) : null;
   const count = searched ? searched.length : Math.max(0, Math.min(q.limit, q.total - start));
   // 스트리밍엔 envelope 이 없다 — 전체 개수는 헤더로만 나간다
@@ -417,6 +425,31 @@ export default {
       return json(rec);
     }
 
+    // 프리셋 상태 조회/초기화 — 상태는 워크스페이스 프리셋(_s=<ws>.<id>) 단위다
+    const stm = url.pathname.match(/^\/schema\/state\/([a-z0-9.]{4,42})$/);
+    if (stm) {
+      if (!storage) return json(noKv(lang), 501);
+      const stateKey = stateKeyOf(stm[1]);
+      if (!stateKey) {
+        return json({
+          error: 'Invalid state id', value: stm[1],
+          hint: pick(lang,
+            '상태는 워크스페이스 프리셋(_s=<ws>.<id>)에만 있습니다. 공용 풀 프리셋과 순수 쿼리 URL 은 무상태입니다.',
+            'State exists only for workspace presets (_s=<ws>.<id>). Public-pool presets and plain query URLs are stateless.'),
+        }, 400);
+      }
+      if (request.method === 'DELETE') {
+        const rsIp = request.headers.get('cf-connecting-ip') ?? 'unknown';
+        const rsLimited = env.SAVE_RL ? !(await env.SAVE_RL.limit({ key: 'str:' + rsIp })).success : saveLimited('str:' + rsIp);
+        if (rsLimited) {
+          return json({ error: 'Too many requests', hint: pick(lang, '초기화가 너무 잦습니다. 잠시 후 다시 시도하세요.', 'Too many resets. Please try again shortly.') }, 429);
+        }
+        await storage.delete(stateKey);
+        return json({ ok: true, hint: pick(lang, '상태가 초기화되었습니다 — 기본 데이터로 돌아갑니다.', 'State reset — back to the base data.') });
+      }
+      return json({ sid: stm[1], state: parseState(await storage.get(stateKey)) });
+    }
+
     // JSON 예시 붙여넣기 → 스키마 추론. OpenAPI 문서(3.x·Swagger 2.0)를 통째로
     // 붙여넣으면 예시 값 대신 응답 스키마 선언을 읽는다 — 같은 입구, 다른 눈.
     if (url.pathname === '/schema/infer') {
@@ -446,12 +479,16 @@ export default {
         // _s=<id> 면 저장된 스키마를 불러와 요청 파라미터와 병합 (요청이 우선)
         let params = url.searchParams;
         const sid = params.get('_s');
+        let savedRes: string | null = null;
+        let stateKey: string | null = null; // 워크스페이스 프리셋일 때만 non-null — 상태의 자격
         if (sid !== null) {
           if (!storage) return json(noKv(lang), 501);
           const rec = await getSchema(storage, sid);
           if (!rec) {
             return json({ error: 'Unknown schema id', field: '_s', value: sid, hint: pick(lang, '저장된 스키마가 없습니다. GET /schema/saved 로 목록을 확인하세요.', 'No saved schema with this ID. Check the list via GET /schema/saved.') }, 404);
           }
+          savedRes = rec.res;
+          stateKey = stateKeyOf(sid);
           params = mergeQuery(rec.query, params);
         }
         const q = parseQuery(params);
@@ -465,22 +502,75 @@ export default {
           await sleep();
           return json(q.body ?? failBody(q.status, lang), q.status);
         }
+
+        // 경로 id — 저장된 리소스 경로 뒤에 붙은 세그먼트 (…/users/123 의 '123')
+        let pathId: string | null = null;
+        if (savedRes !== null && m[1] !== savedRes && m[1].startsWith(savedRes + '/')) {
+          const rest = m[1].slice(savedRes.length + 1).split('/');
+          pathId = rest[rest.length - 1] || null;
+        }
+
+        // ── 프리셋 상태: 쓰기 — 실제 verb 로만 (링크의 _method 로는 상태가 안 바뀐다) ──
+        // POST/PUT/PATCH 는 JSON 바디가 있을 때만, DELETE 는 경로 id 가 있을 때만.
+        // 조건 미달이면 아래 기존 무상태 응답으로 떨어진다 — 바디 없는 GUI 미리보기가 그 경우다.
+        const rv = request.method;
+        if (stateKey !== null && storage && (rv === 'POST' || rv === 'PUT' || rv === 'PATCH' || rv === 'DELETE')) {
+          let writeBody: unknown;
+          if (rv !== 'DELETE') {
+            const text = await request.text();
+            if (text.trim() !== '') {
+              try {
+                writeBody = JSON.parse(text);
+              } catch {
+                return json({ error: 'Invalid JSON', hint: pick(lang, '쓰기 바디가 올바른 JSON 이 아닙니다.', 'The write body is not valid JSON.') }, 400);
+              }
+            }
+          }
+          if (rv === 'DELETE' ? pathId !== null : writeBody !== undefined) {
+            const stIp = request.headers.get('cf-connecting-ip') ?? 'unknown';
+            const stLimited = env.SAVE_RL ? !(await env.SAVE_RL.limit({ key: 'st:' + stIp })).success : false;
+            if (stLimited || stateLimited(stIp)) {
+              return json({ error: 'Too many writes', hint: pick(lang, `상태 쓰기는 시간당 ${STATE_MAX_PER_WINDOW}회까지입니다. 잠시 후 다시 시도하세요.`, `Stateful writes are limited to ${STATE_MAX_PER_WINDOW} per hour. Please try again shortly.`) }, 429);
+            }
+            const rec = parseState(await storage.get(stateKey));
+            const out = applyWrite(q, rec, rv, pathId, writeBody, sid as string, lang);
+            if (out.dirty) await storage.put(stateKey, JSON.stringify(rec), { expirationTtl: STATE_TTL_SECONDS });
+            await sleep();
+            if (out.status === 204) {
+              return new Response(null, { status: 204, headers: { 'cache-control': 'no-store', ...CORS_HEADERS } });
+            }
+            return json(out.body, out.status);
+          }
+        }
+
+        // ── 프리셋 상태: 읽기 — 상태가 쌓여 있으면 병합된 창으로 응답 ──
+        const stateRec =
+          stateKey !== null && storage && method === 'GET' ? parseState(await storage.get(stateKey)) : null;
+        const merged = stateRec && hasState(stateRec) ? mergedWindow(q, stateRec) : null;
+        // 상태 자격이 있는 프리셋은 캐시하지 않는다 — 쓰기 직후의 refetch 가 옛 바이트를 보면 안 된다
+        const cache = stateKey !== null ? 'no-store' : cacheHeader(q);
+
         if (method === 'DELETE') {
           await sleep();
           return new Response(null, { status: q.statusSet ? q.status : 204, headers: { 'cache-control': 'no-store', ...CORS_HEADERS } });
         }
         if (q.format !== 'json') {
           await sleep();
-          return streamResponse(q);
+          return streamResponse(q, merged ? applyView(q, merged) : null);
         }
         // 생성 먼저 — _delay/_status/_method 가 달라도 데이터는 동일.
         // 쓰기 메서드는 방금 만들어진/고쳐진 한 건을 돌려준다 = 목록의 0번 아이템
-        const list = method === 'GET' ? listResponse(q) : null;
-        const body = list ? list.body : generateItem(baseSeedOf(q), 0, q);
+        const list = method === 'GET' ? (merged && q.wrap !== 'one' ? listResponseFrom(q, merged) : listResponse(q)) : null;
+        let body = list ? list.body : generateItem(baseSeedOf(q), 0, q);
+        // _wrap=one 상세 — 경로 id 가 생성/수정된 아이템과 맞으면 그 아이템이 진실
+        if (method === 'GET' && stateRec && q.wrap === 'one' && pathId !== null) {
+          const found = findById(q, stateRec, pathId);
+          if (found) body = found;
+        }
         // X-Total-Count 는 목록에만 — 단건(_wrap=one·쓰기 메서드)에는 셀 전체가 없다
         const countHeader = list && q.wrap !== 'one' ? { 'x-total-count': String(list.total) } : undefined;
         await sleep();
-        return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200, cacheHeader(q), countHeader);
+        return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200, cache, countHeader);
       } catch (e) {
         if (e instanceof DslError) return json(dslBody(e.info, lang), 400);
         return json({ error: 'Internal error', hint: String(e) }, 500);

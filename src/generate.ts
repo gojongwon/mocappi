@@ -70,8 +70,8 @@ function valueAt(item: Record<string, unknown>, path: string): unknown {
   return cur;
 }
 
-/** 창 안의 아이템 전체 — 필터·정렬 이전의 원본 순서 */
-function windowItems(q: ParsedQuery): Record<string, unknown>[] {
+/** 창 안의 아이템 전체 — 필터·정렬 이전의 원본 순서. 상태 오버레이(state.ts)도 이 창 위에서 동작한다 */
+export function windowItems(q: ParsedQuery): Record<string, unknown>[] {
   const baseSeed = baseSeedOf(q);
   const scan = Math.min(q.total, SEARCH_SCAN_MAX);
   const out: Record<string, unknown>[] = [];
@@ -79,11 +79,15 @@ function windowItems(q: ParsedQuery): Record<string, unknown>[] {
   return out;
 }
 
-/** 검색 창 안의 매치 전체 (페이지 슬라이스 전). _qin 이 있으면 해당 경로의 값만 대상 */
-function searchMatches(q: ParsedQuery): Record<string, unknown>[] {
+/** _q 매치 판정 — _qin 이 있으면 해당 경로의 값만 대상 */
+function matchesQ(item: Record<string, unknown>, q: ParsedQuery): boolean {
   const needle = (q.q ?? '').toLowerCase();
-  return windowItems(q).filter((item) =>
-    q.qin ? q.qin.some((p) => matchValue(valueAt(item, p), needle)) : matchValue(item, needle));
+  return q.qin ? q.qin.some((p) => matchValue(valueAt(item, p), needle)) : matchValue(item, needle);
+}
+
+/** 검색 창 안의 매치 전체 (페이지 슬라이스 전) */
+function searchMatches(q: ParsedQuery): Record<string, unknown>[] {
+  return windowItems(q).filter((item) => matchesQ(item, q));
 }
 
 /**
@@ -192,6 +196,44 @@ export function listResponse(q: ParsedQuery): { body: Envelope | unknown[] | Rec
 
 export function generateResponse(q: ParsedQuery): Envelope | unknown[] | Record<string, unknown> {
   return listResponse(q).body;
+}
+
+/**
+ * 미리 병합된 아이템 목록(상태 오버레이 적용 후)에서 목록 응답 — state.ts 전용.
+ * _q/_sort 는 병합된 항목 위에서 동작한다: 생성한 아이템도 검색·정렬에 걸린다.
+ * total 은 병합 후 개수 — 생성하면 늘고 삭제하면 준다 (검색 모드와 같은 창 규칙).
+ * 기존 무상태 경로(listResponse)와 분리해 둔 이유: 그쪽 envelope 바이트는
+ * 결정성 약속에 묶여 있어 한 글자도 못 건드린다.
+ */
+/** 주어진 아이템 목록에 _q 필터·_sort 정렬 적용 — 상태 병합 창의 뷰 계산용 */
+export function applyView(q: ParsedQuery, items: Record<string, unknown>[]): Record<string, unknown>[] {
+  if (q.q !== null) items = items.filter((it) => matchesQ(it, q));
+  if (q.sort !== null) items = sortItems(items, q.sort);
+  return items;
+}
+
+export function listResponseFrom(
+  q: ParsedQuery,
+  merged: Record<string, unknown>[],
+): { body: Envelope | unknown[]; total: number } {
+  const items = applyView(q, merged);
+  const total = items.length;
+  const start = (q.page - 1) * q.limit;
+  const data = items.slice(start, start + q.limit);
+  if (q.wrap === 'none') return { body: data, total };
+  const totalPages = Math.max(1, Math.ceil(total / q.limit));
+  return {
+    body: {
+      data,
+      page: q.page,
+      limit: q.limit,
+      total,
+      totalPages,
+      hasNext: q.page < totalPages && total > 0,
+      hasPrev: q.page > 1,
+    },
+    total,
+  };
 }
 
 // ---------------------------------------------------------------------------
