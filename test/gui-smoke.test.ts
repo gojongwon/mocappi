@@ -28,6 +28,8 @@ const TYPES = {
   fakerPaths: [{ value: 'person.fullName', label: '이름(전체)' }],
 };
 const ENVELOPE = { data: [{ id: 'x', name: '김민준' }], page: 1, limit: 20, total: 500, totalPages: 25, hasNext: true, hasPrev: false };
+const SID = 'wsabc123.ab12cd34ef'; // 워크스페이스 프리셋 — 상태 자격
+const SAVED = { sid: SID, id: 'ab12cd34ef', ws: 'wsabc123', name: '상태', res: 'users', query: 'id=uuid&name=person.fullName&_total=20', createdAt: '' };
 
 /** 부팅된 창 + 가로챈 fetch 호출 목록 */
 function boot(url: string): { window: SmokeWindow; calls: string[] } {
@@ -47,7 +49,8 @@ function boot(url: string): { window: SmokeWindow; calls: string[] } {
         const u = String(input);
         calls.push(u);
         if (u.includes('/schema/types')) return Promise.resolve(fakeResponse(TYPES));
-        if (u.includes('/schema/saved')) return Promise.resolve(fakeResponse({ ws: null, items: [] }));
+        if (u.includes('/schema/saved/')) return Promise.resolve(fakeResponse(SAVED)); // 개별 조회 — 목록보다 먼저
+        if (u.includes('/schema/saved')) return Promise.resolve(fakeResponse({ ws: null, items: [SAVED] }));
         if (u.includes('/api/')) return Promise.resolve(fakeResponse(ENVELOPE));
         return Promise.resolve(fakeResponse({}));
       };
@@ -108,6 +111,17 @@ describe('부팅 (한국어, 맨 주소)', () => {
     $('button[data-preset="products"]').click();
     expect($('#resource').value).toBe('products');
     expect($('#urlBox').textContent).toContain('/api/products?');
+  });
+
+  it('팀 프리셋 로드 → 미리보기가 _s= 짧은 URL 로 요청하고 상태 패널이 나타난다', async () => {
+    // v1.1.1 실사용 회귀: 미리보기가 전체 쿼리 URL(무상태)로 나가면
+    // 상태 패널로 쓴 변화가 목록에 안 보인다 — _s= 경로만 상태를 얹는다
+    const sel = $('#teamSel');
+    sel.value = SID;
+    sel.dispatchEvent(new window.Event('change', { bubbles: true }));
+    await sleep(500); // loadTeamPreset fetch + 미리보기 디바운스 300ms
+    expect(calls.some((u) => u.includes('/api/users') && u.includes('_s=' + SID))).toBe(true);
+    expect($('#stateBar').style.display).toBe('block');
   });
 });
 

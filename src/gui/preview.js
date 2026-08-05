@@ -42,7 +42,10 @@ function update() {
   clearTimeout(timer);
   // 고른 메서드로 진짜 요청한다 — URL 에 _method 를 실어 GET 으로 흉내내지 않는다
   const method = (state.opts._method || 'get').toUpperCase();
-  timer = setTimeout(() => preview(url, method), 300);
+  // 프리셋이 로드돼 있으면 짧은 URL(_s=)로 요청한다 — 프리셋 상태(쓰기 오버레이)는
+  // _s= 호출에만 붙으므로, 전체 쿼리 URL 로 부르면 상태 패널로 쓴 변화가 안 보인다.
+  // 무상태 프리셋에선 두 URL 의 데이터가 같아서 (같은 스키마 = 같은 시드) 차이가 없다
+  timer = setTimeout(() => preview(short ?? url, method), 300);
 }
 
 let loadingTimer = null;
