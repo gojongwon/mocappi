@@ -271,14 +271,22 @@ function findCandidates(doc: Obj): Candidate[] {
 const rank = (code: string): number =>
   code === '200' ? 0 : code === '201' ? 1 : /^2\d\d$/.test(code) ? 2 : code === 'default' ? 3 : 99;
 
-/** envelope 스키마({data: [...]} 등)면 항목 스키마를, 아니면 null */
+/**
+ * envelope 스키마({data: [...]} 등)면 항목 스키마를, 아니면 null.
+ * 배열 안이 "객체"일 때만 껍데기로 본다 — 주문의 items[](상품명 문자열 배열)처럼
+ * 래퍼 키와 이름만 겹치는 스칼라 배열 필드를 목록 껍데기로 오인하면, 문자열
+ * 스키마로 내려가 "객체가 아니다"로 터진다 (infer.ts findItemsArray 의 isObj
+ * 검사와 같은 규칙).
+ */
 function envelopeItems(s: Obj, doc: Obj): Obj | null {
   if (s.type !== 'object' && s.type !== undefined) return null;
   if (!isObj(s.properties)) return null;
   for (const [k, v] of Object.entries(s.properties)) {
     if (!WRAP_KEYS.has(k.toLowerCase())) continue;
     const r = resolve(v, doc, new Set());
-    if (r && r.s.type === 'array' && isObj(r.s.items)) return r.s.items;
+    if (!r || r.s.type !== 'array' || !isObj(r.s.items)) continue;
+    const ir = resolve(r.s.items, doc, new Set());
+    if (ir && (ir.s.type === 'object' || isObj(ir.s.properties))) return r.s.items;
   }
   return null;
 }

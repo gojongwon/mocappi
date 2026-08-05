@@ -4,7 +4,9 @@
  * 그리고 /schema/infer 가 예시 JSON 과 OpenAPI 를 한 입구에서 가르는지.
  */
 import { describe, expect, it } from 'vitest';
+import { parseQuery } from '../src/dsl';
 import { inferFromOpenApi, isOpenApiDoc } from '../src/infer-openapi';
+import { generateOpenApi } from '../src/openapi';
 import worker from '../src/index';
 
 const BASE = 'https://mock.test';
@@ -220,6 +222,45 @@ describe('inferFromOpenApi', () => {
   it('JSON 응답 스키마가 하나도 없으면 DslError', () => {
     expect(() => inferFromOpenApi({ openapi: '3.1.0', paths: { '/x': { get: { responses: { '204': { description: 'no content' } } } } } }))
       .toThrowError(/No importable operation/);
+  });
+});
+
+describe('내보내기 ↔ 가져오기 왕복', () => {
+  it('주문 상세 프리셋 — 스칼라 items[] 를 목록 껍데기로 오인하지 않는다', () => {
+    // GUI orders 프리셋 그대로 (v1.0.0 실사용 회귀: items[] 가 WRAP_KEYS 의
+    // 'items' 와 이름이 겹쳐 문자열 배열인데 envelope 로 벗겨져 400 이 났다)
+    const q = parseQuery(new URLSearchParams([
+      ['orderNo', 'pattern:ORD-2026-######'],
+      ['status', 'enum:paid*5|shipped*3|delivered*4|cancelled*1'],
+      ['amount', 'int:9000~450000'],
+      ['paidAt', 'date:2026-01-01~2026-07-29'],
+      ['customer.name', 'person.fullName'],
+      ['customer.tel', 'phone.number'],
+      ['customer.email', 'internet.email'],
+      ['shipping.city', 'location.city'],
+      ['shipping.street', 'location.streetAddress'],
+      ['items[]', 'commerce.productName:3'],
+      ['memo', 'text:40?0.3'],
+      ['_wrap', 'one'],
+      ['_seed', '1024'],
+    ]));
+    const doc = generateOpenApi(q, 'orders/1024', 'https://mock.test');
+    const r = inferFromOpenApi(doc);
+    const t = Object.fromEntries(r.fields.map((f) => [f.name, f.type]));
+    expect(t['customer.name']).toBe('person.fullName');
+    expect(t['customer.email']).toBe('internet.email');
+    expect(t['items[]']).toMatch(/:3$/); // 스칼라 배열은 껍데기가 아니라 필드다
+    expect(t.memo).toMatch(/\?0\.2$/); // nullable 왕복
+    expect(r.res).toBe('orders'); // '1024' 는 숫자 세그먼트라 건너뛴다
+  });
+
+  it('users 목록 (envelope) — 진짜 껍데기는 여전히 벗긴다', () => {
+    const q = parseQuery(new URLSearchParams('id=uuid&name=person.fullName&age=int:20~60'));
+    const doc = generateOpenApi(q, 'users', 'https://mock.test');
+    const t = Object.fromEntries(inferFromOpenApi(doc).fields.map((f) => [f.name, f.type]));
+    expect(t.id).toBe('uuid');
+    expect(t.name).toBe('person.fullName');
+    expect(t.data).toBeUndefined(); // envelope 키가 필드로 새지 않는다
   });
 });
 
