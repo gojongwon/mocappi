@@ -48,7 +48,7 @@ build/gui.mjs   esbuild 로 gui/* 를 HTML 한 덩어리로 인라인
 i18n  pure  shared            (잎 — 아무것도 import 안 함)
   └ dom                       ($, addRow, 클립보드, emit/on)
       ├ url-state  render  workspace  autocomplete  paste
-      │     └ preview  save
+      │     └ preview  save  statebar
       └ main                  (진입점 — 아무도 여기를 import 하지 않는다)
 ```
 
@@ -58,7 +58,7 @@ i18n  pure  shared            (잎 — 아무것도 import 안 함)
 
 | 이벤트 | 발신 | 수신 |
 |---|---|---|
-| `schema:changed` | 스키마·옵션을 바꾼 모든 곳 (10곳) | `preview.js` — 미리보기 + 주소창 갱신 |
+| `schema:changed` | 스키마·옵션을 바꾼 모든 곳 (10곳) | `preview.js` — 미리보기 + 주소창 갱신 · `statebar.js` — 상태 패널 표시/문구 동기화 |
 | `ws:changed` | `workspace.switchWs` | `save.refreshTeam` — 프리셋 목록 새로고침 |
 | `team:ready` | `save.refreshTeam` (저장소 응답 확인) | `workspace.syncWsUi` — 워크스페이스 버튼 상태 |
 

@@ -3,6 +3,7 @@ import { $, ICON_COPY, addRow, applyLock, closeModal, copyIcon, copyText, emit, 
 import { LANG, applyEn, t } from './i18n.js';
 import { applyPaste, closePaste, openPaste } from './paste.js';
 import './preview.js'; // schema:changed 구독자 — 부수효과만, export 없음
+import { resetStateNow, sendStateWrite } from './statebar.js'; // schema:changed 구독 + 상태 패널
 import { enc, snippet } from './pure.js';
 import { applyDeletePreset, applySave, askDeletePreset, loadTeamPreset, openSave, refreshTeam, renderTeamOptions, syncTeamSelVisibility, unloadTeamPreset } from './save.js';
 import { enhanceSelects, setRowDelete } from './select.js';
@@ -218,6 +219,8 @@ document.addEventListener('click', (e) => {
     case 'delApply': applyDeletePreset(); break;
     case 'shortCopy': copyIcon($('#shortUrlBox').dataset.url || '', btn); break;
     case 'shortLineCopy': copyIcon($('#shortLine').dataset.url || '', btn); break;
+    case 'stateSend': sendStateWrite(); break;
+    case 'stateReset': resetStateNow(); break;
   }
 });
 

@@ -1,0 +1,116 @@
+import { $, on } from './dom.js';
+import { LANG, t } from './i18n.js';
+import { shared } from './shared.js';
+import { readState, setMethod, shortApiUrl } from './url-state.js';
+
+// ---- 프리셋 상태 패널 — 워크스페이스 프리셋의 쓰기를 GUI 에서 실제로 보내본다 ----
+//
+// 미리보기는 상태를 오염시키지 않도록 바디 없이 나간다 (서버가 바디 없는 쓰기를
+// 무상태로 처리). 그래서 "진짜 쓰기"는 이 패널의 보내기 버튼 — 명시적 클릭 —
+// 으로만 나간다. 성공하면 GET 으로 전환해 목록에서 변화가 바로 보이게 한다:
+// mutation → refetch 를 눈으로 확인시키는 게 이 패널의 존재 이유다.
+
+const WRITES = new Set(['post', 'put', 'patch', 'delete']);
+/** 상태 자격 — 워크스페이스 프리셋(_s=<ws>.<id>)이 로드되어 짧은 URL 이 살아 있을 때 */
+const wsSid = () =>
+  shared.loadedPreset && shared.loadedPreset.sid.includes('.') ? shared.loadedPreset.sid : null;
+
+on('schema:changed', syncStateBar);
+
+function msg(text, ok) {
+  const el = $('#stateMsg');
+  el.textContent = text;
+  el.style.color = ok === undefined ? 'var(--muted)' : ok ? 'var(--ok)' : 'var(--danger)';
+}
+
+export function syncStateBar() {
+  const bar = $('#stateBar');
+  const sid = wsSid();
+  if (!sid || !shortApiUrl(readState())) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'block';
+  const method = $('#oMethod').value;
+  const write = WRITES.has(method);
+  $('#stateIdRow').style.display = write && method !== 'post' ? 'block' : 'none';
+  $('#stateBody').style.display = write && method !== 'delete' ? 'block' : 'none';
+  $('#stateSend').style.display = write ? 'inline-block' : 'none';
+  $('#stateSend').textContent = method.toUpperCase() + ' ' + t('보내기', 'Send');
+  $('#stateHint').textContent = write
+    ? method === 'post'
+      ? t('JSON 바디를 보내면 진짜 생성됩니다 — 성공하면 GET 목록으로 전환해 보여드려요.',
+          'Send a JSON body and it is really created — on success we switch to the GET list to show it.')
+      : method === 'delete'
+        ? t('목록 응답에서 지울 아이템의 id 를 복사해 넣으세요.',
+            'Copy the id of the item to delete from a list response.')
+        : t('목록 응답에서 고칠 아이템의 id 를 복사하고, 바꿀 필드만 바디에 적으세요.',
+            'Copy the target item’s id from a list response and put only the fields to change in the body.')
+    : t('위 메서드에서 POST·PUT·PATCH·DELETE 를 고르면 여기서 실제로 보낼 수 있어요. 쓴 상태는 24시간 뒤 사라집니다.',
+        'Pick POST·PUT·PATCH·DELETE above to actually send one from here. Written state expires after 24h.');
+}
+
+export async function sendStateWrite() {
+  const sid = wsSid();
+  const short = shortApiUrl(readState());
+  if (!sid || !short) return;
+  const method = $('#oMethod').value.toUpperCase();
+  if (!WRITES.has(method.toLowerCase())) return;
+
+  const id = $('#stateId').value.trim();
+  const bodyText = $('#stateBody').value.trim();
+  if (method !== 'DELETE') {
+    if (!bodyText) return msg(t('JSON 바디를 입력하세요. 예: {"name": "홍길동"}', 'Enter a JSON body, e.g. {"name": "Hong Gildong"}'), false);
+    try { JSON.parse(bodyText); } catch { return msg(t('바디가 올바른 JSON 이 아닙니다.', 'The body is not valid JSON.'), false); }
+  }
+  if (method !== 'POST' && !id) {
+    return msg(t('대상 아이템의 id 가 필요합니다 — 목록 응답에서 복사하세요.', 'The target item’s id is required — copy it from a list response.'), false);
+  }
+
+  // 짧은 URL 의 쿼리 앞에 /<id> 경로 세그먼트를 끼운다 — 서버가 경로 마지막 세그먼트를 대상 id 로 읽는다
+  const qi = short.indexOf('?');
+  const url = id ? short.slice(0, qi) + '/' + encodeURIComponent(id) + short.slice(qi) : short;
+
+  const btn = $('#stateSend');
+  btn.disabled = true;
+  msg(t('보내는 중…', 'Sending…'));
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { 'content-type': 'application/json', 'Accept-Language': LANG },
+      body: method === 'DELETE' ? undefined : bodyText,
+    });
+    if (res.ok) {
+      if (method === 'POST') {
+        // 생성물의 id 를 채워 둔다 — 이어서 PATCH/DELETE 를 바로 해볼 수 있게
+        try { $('#stateId').value = String((await res.json()).id ?? ''); } catch { /* 바디 없음 */ }
+      }
+      msg('✓ ' + res.status + ' ' + t('반영됨 — 목록에서 확인하세요', 'applied — check the list'), true);
+      setMethod('get'); // GET 으로 전환 → 미리보기가 refetch → 변화가 눈에 보인다
+    } else {
+      const b = await res.json().catch(() => ({}));
+      msg('✗ ' + res.status + ' ' + (b.hint || b.message || b.error || t('실패', 'failed')), false);
+    }
+  } catch (e) {
+    msg(t('요청 실패: ', 'Request failed: ') + e, false);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+export async function resetStateNow() {
+  const sid = wsSid();
+  if (!sid) return;
+  try {
+    const res = await fetch('/schema/state/' + sid, { method: 'DELETE', headers: { 'Accept-Language': LANG } });
+    const b = await res.json().catch(() => ({}));
+    if (res.ok) {
+      msg('✓ ' + (b.hint || t('상태가 초기화되었습니다.', 'State reset.')), true);
+      setMethod('get'); // 초기화 결과도 목록으로 바로 확인
+    } else {
+      msg('✗ ' + (b.hint || b.error || t('초기화 실패', 'Reset failed')), false);
+    }
+  } catch (e) {
+    msg(t('요청 실패: ', 'Request failed: ') + e, false);
+  }
+}

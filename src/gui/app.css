@@ -326,6 +326,28 @@
     display: inline-flex; align-items: center; justify-content: center; transition: all .1s ease;
   }
   #shortLine button:hover { background: var(--panel); color: var(--ink); }
+  /* 프리셋 상태 패널 — 짧은 URL 아래, 워크스페이스 프리셋일 때만 (statebar.js 토글) */
+  #stateBar {
+    margin-top: 8px; padding: 10px 12px;
+    background: var(--panel); border: 1.5px solid var(--ink); border-radius: var(--radius-s);
+  }
+  #stateBar .sb-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  #stateBar .sb-head b { font-size: 12.5px; }
+  #stateBar .sb-hint { margin: 6px 0; font-size: 12px; color: var(--muted); }
+  #stateBar .sb-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  #stateBar input, #stateBar textarea {
+    width: 100%; font-family: var(--mono); font-size: 12.5px;
+    border: 1.5px solid var(--ink); border-radius: 6px; padding: 7px 9px; background: var(--bg);
+  }
+  #stateBar textarea { margin-top: 6px; resize: vertical; }
+  #stateBar button {
+    border: 1.5px solid var(--ink); border-radius: 6px; padding: 6px 12px; cursor: pointer;
+    font-size: 12px; font-weight: 700; background: var(--accent); color: var(--accent-text);
+    box-shadow: var(--btn-shadow); flex: none;
+  }
+  #stateBar button:disabled { opacity: .5; cursor: default; }
+  #stateBar #stateReset { background: var(--bg); color: var(--muted); box-shadow: none; }
+  #stateBar #stateMsg { font-size: 12px; min-height: 1.2em; word-break: break-all; }
   .url-actions { display: flex; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
   .url-actions button, .url-actions select {
     border: 1.5px solid var(--ink); border-radius: var(--radius-s); padding: 8px 15px; cursor: pointer;

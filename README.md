@@ -141,6 +141,8 @@ curl -X DELETE '…/api/users/<id>?_s=aB3xK9.x1y2z3'                          # 
   It merges into search (`_q`), sort (`_sort`) and NDJSON/CSV responses too (the same first-1,000 window).
 - Lifetime: 24 hours from the last write. Inspect via `GET /schema/state/<sid>`, reset via
   `DELETE /schema/state/<sid>`. Caps: 50 creates · 100 updates · 200 deletes (exceeding answers 400 with a reset hint).
+- GUI: load a preset and pick a write method — a **state panel** appears under the URL;
+  send a body and on success it switches to the GET list so the change is right there.
 - **The determinism boundary**: unsaved URLs and public-pool presets stay fully stateless.
   A body-less POST (the GUI preview is one) and `_method=` links never change state —
   state changes only through real verbs carrying a JSON body.

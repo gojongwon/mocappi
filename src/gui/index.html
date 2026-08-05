@@ -155,6 +155,22 @@
       <a id="shortA" target="_blank"></a>
       <button id="shortLineCopy" data-i18n-title="copyShortUrl" title="짧은 URL 복사"></button>
     </div>
+    <!-- 프리셋 상태 패널 — 워크스페이스 프리셋을 불러왔을 때만 (statebar.js 가 토글) -->
+    <div id="stateBar" style="display:none">
+      <div class="sb-head">
+        <b data-i18n="stateTitle">프리셋 상태 — 쓰기를 실제로 반영해보기</b>
+        <button id="stateReset" data-i18n="stateReset" data-i18n-title="stateResetTitle" title="이 프리셋의 상태를 비우고 기본 데이터로 되돌립니다">상태 초기화</button>
+      </div>
+      <p class="sb-hint" id="stateHint"></p>
+      <div class="sb-row" id="stateIdRow" style="display:none">
+        <input id="stateId" data-i18n-ph="phStateId" placeholder="아이템 id — 목록 응답에서 복사 (수정·삭제 대상)" spellcheck="false">
+      </div>
+      <textarea id="stateBody" rows="3" data-i18n-ph="phStateBody" placeholder='{"name": "홍길동"}' spellcheck="false" style="display:none"></textarea>
+      <div class="sb-row">
+        <button id="stateSend" style="display:none">POST 보내기</button>
+        <span id="stateMsg"></span>
+      </div>
+    </div>
     <div class="url-actions">
       <select id="copySel" data-i18n-title="copySelTitle" title="현재 스키마를 복사 — 호출 스니펫(curl·fetch·Python) 또는 타입/스펙 문서">
         <option value="" data-i18n="exportLabel">내보내기</option>
@@ -186,7 +202,7 @@
       <h3 data-i18n="whatsNew">새 소식</h3>
     </div>
     <ul class="news-list" data-en-block="newsList">
-      <li><span class="v">v1.1</span><b>프리셋 상태</b> — 워크스페이스에 저장한 프리셋(<code>_s=</code>)이 이제 쓰기를 <b>기억합니다</b>. JSON 바디를 실은 POST 는 다음 GET 목록 맨 앞에 나타나고, <code>PATCH·DELETE /api/users/&lt;id&gt;</code> 는 그 아이템을 고치고 지웁니다 (없는 id 는 404 — 실제 API 처럼). TanStack Query 의 mutation → refetch 흐름이 그대로 동작해요. 상태는 워크스페이스 안에서만 보이고 마지막 쓰기 후 24시간 뒤 사라지며, <code>DELETE /schema/state/&lt;sid&gt;</code> 로 언제든 초기화합니다. 저장 안 한 URL 은 예전처럼 완전 무상태·결정적입니다</li>
+      <li><span class="v">v1.1</span><b>프리셋 상태</b> — 워크스페이스에 저장한 프리셋(<code>_s=</code>)이 이제 쓰기를 <b>기억합니다</b>. JSON 바디를 실은 POST 는 다음 GET 목록 맨 앞에 나타나고, <code>PATCH·DELETE /api/users/&lt;id&gt;</code> 는 그 아이템을 고치고 지웁니다 (없는 id 는 404 — 실제 API 처럼). TanStack Query 의 mutation → refetch 흐름이 그대로 동작해요. GUI 에서도 바로 해볼 수 있습니다 — 프리셋을 불러오면 URL 아래 <b>상태 패널</b>이 나타나 쓰기를 보내고 결과를 목록으로 확인합니다. 상태는 워크스페이스 안에서만 보이고 마지막 쓰기 후 24시간 뒤 사라지며, <code>DELETE /schema/state/&lt;sid&gt;</code> 로 언제든 초기화합니다. 저장 안 한 URL 은 예전처럼 완전 무상태·결정적입니다</li>
       <li><span class="v">v1.0</span><b>1.0 이 되었습니다</b> — "같은 URL 이면 언제나 같은 바이트"가 이제 시맨틱 버전 약속입니다. 1.x 안에서는 시드 규칙이 바뀌지 않고, 생성 값이 바뀌는 변경(faker 업그레이드 포함)은 메이저에서만 옵니다. 저장해 둔 URL 과 스냅샷 테스트에 마음 놓고 쓰세요</li>
       <li><span class="v">v0.31</span><b>리소스 간 관계</b> — <code>pk</code>/<code>ref</code> 타입이 생겼습니다. users 쪽에 <code>id=pk:users</code>, orders 쪽에 <code>userId=ref:users</code> 를 쓰면 모든 주문의 userId 가 실제 사용자 id 중 하나가 됩니다. 서로 본 적 없는 두 URL 이 리소스 이름만으로 영원히 맞물립니다 — 어느 쪽에 필드를 더해도 안 깨져요 (<code>ref:users:500</code> 으로 풀 확장)</li>
       <li><span class="v">v0.30</span><b>OpenAPI 가져오기</b> — 팀에 이미 있는 OpenAPI(Swagger) 문서를 <b>JSON 붙여넣기</b> 창에 통째로 넣으면 응답 스키마 정의를 읽어 필드·타입은 물론 리소스 이름까지 채웁니다. <code>$ref</code>·<code>allOf</code>·nullable·enum·format(uuid·email·date-time…)을 이해하고, 표현 못 하는 필드는 무엇을 왜 뺐는지 알려줍니다. 내보내기(OpenAPI 3.1)와 합치면 스펙 문서 ↔ 목 API 가 양방향이 됩니다</li>
@@ -319,7 +335,9 @@ customer.address.city = location.city</pre>
          JSON 바디를 실은 POST 는 다음 GET 목록 맨 앞에 나타나고, <code>PATCH·DELETE /api/users/&lt;id&gt;</code> 는
          그 아이템을 고치고 지웁니다 (없는 id 는 404). TanStack Query 의 refetch 흐름이 실제로 동작해요.
          상태는 마지막 쓰기 후 24시간 뒤 사라지고 <code>DELETE /schema/state/&lt;sid&gt;</code> 로 초기화합니다.
-         저장 안 한 URL 은 지금처럼 완전 무상태입니다.</p>
+         저장 안 한 URL 은 지금처럼 완전 무상태입니다.
+         GUI 에서 해보려면: 프리셋을 불러오고 쓰기 메서드를 고르세요 — URL 아래 <b>상태 패널</b>에서
+         바디를 적어 보내면, 성공 시 GET 목록으로 전환돼 변화가 바로 보입니다.</p>
 
       <h4><span class="n">7</span>실패 응답 만들기</h4>
       <p>상태코드를 <b>400 이상</b>으로 두면 데이터 대신 실패 바디가 나갑니다.

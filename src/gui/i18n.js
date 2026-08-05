@@ -90,6 +90,12 @@ const EN = {
   phSaveName: 'Name (e.g. Products — for frontend dev)',
   savedOk: '✓ Saved — call this URL from anywhere',
   save: 'Save',
+  // 프리셋 상태 패널
+  stateTitle: 'Preset state — try writes for real',
+  stateReset: 'Reset state',
+  stateResetTitle: "Clear this preset's state and go back to the base data",
+  phStateId: 'item id — copy from a list response (target of edit/delete)',
+  phStateBody: '{"name": "Hong Gildong"}',
   pasteTitle: 'Paste JSON',
   phPaste: '{"id": "a1b2...", "name": "Kim Minjun", "age": 34, "tags": ["a", "b"]}',
   cancel: 'Cancel',
@@ -115,7 +121,7 @@ const EN_BLOCKS = {
     <a href="/schema/types" target="_blank">All types</a>
   `,
   newsList: `
-    <li><span class="v">v1.1</span><b>Stateful presets</b> — presets saved in a workspace (<code>_s=</code>) now <b>remember writes</b>. A POST carrying a JSON body shows up first in the next GET list, and <code>PATCH·DELETE /api/users/&lt;id&gt;</code> edit and remove that item (a missing id answers 404 — like a real API). TanStack Query's mutation → refetch flow just works. State is visible only inside the workspace, expires 24h after the last write, and <code>DELETE /schema/state/&lt;sid&gt;</code> resets it anytime. Unsaved URLs stay fully stateless and deterministic</li>
+    <li><span class="v">v1.1</span><b>Stateful presets</b> — presets saved in a workspace (<code>_s=</code>) now <b>remember writes</b>. A POST carrying a JSON body shows up first in the next GET list, and <code>PATCH·DELETE /api/users/&lt;id&gt;</code> edit and remove that item (a missing id answers 404 — like a real API). TanStack Query's mutation → refetch flow just works. You can try it right in the GUI too — load a preset and a <b>state panel</b> appears under the URL to send writes and check the result in the list. State is visible only inside the workspace, expires 24h after the last write, and <code>DELETE /schema/state/&lt;sid&gt;</code> resets it anytime. Unsaved URLs stay fully stateless and deterministic</li>
     <li><span class="v">v1.0</span><b>mocappi is 1.0</b> — "the same URL always returns the same bytes" is now a semantic-versioning promise. Within 1.x the seed rules never change, and anything that would alter generated values (a faker upgrade included) only lands in a major. Saved URLs and snapshot tests are safe to lean on</li>
     <li><span class="v">v0.31</span><b>Relations between resources</b> — new <code>pk</code>/<code>ref</code> types. Put <code>id=pk:users</code> on the users side and <code>userId=ref:users</code> on the orders side, and every order's userId is one of the real user ids. Two URLs that have never seen each other stay in lockstep forever, keyed by nothing but the resource name — adding fields to either side never breaks it (widen the pool with <code>ref:users:500</code>)</li>
     <li><span class="v">v0.30</span><b>OpenAPI import</b> — paste a whole OpenAPI (Swagger) document your team already has into the <b>Paste JSON</b> dialog, and the response schema definition fills in the fields, the types, and even the resource name. It understands <code>$ref</code>, <code>allOf</code>, nullable, enum and formats (uuid, email, date-time, …), and tells you what it had to skip and why. Together with Export (OpenAPI 3.1), spec document ↔ mock API now goes both ways</li>
@@ -223,7 +229,9 @@ customer.address.city = location.city</pre>
        A POST carrying a JSON body shows up first in the next GET list, and <code>PATCH·DELETE /api/users/&lt;id&gt;</code>
        edit and remove that item (a missing id answers 404). TanStack Query's refetch flow actually works.
        State expires 24h after the last write and <code>DELETE /schema/state/&lt;sid&gt;</code> resets it.
-       Unsaved URLs stay fully stateless as before.</p>
+       Unsaved URLs stay fully stateless as before.
+       To try it in the GUI: load a preset and pick a write method — the <b>state panel</b> under the URL
+       takes a body and sends it, and on success switches to the GET list so the change is right there.</p>
 
     <h4><span class="n">7</span>Building failure responses</h4>
     <p>Set the status to <b>400 or above</b> and a failure body replaces the data.
