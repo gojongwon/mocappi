@@ -198,6 +198,62 @@ describe('id 필드가 없는 스키마', () => {
   });
 });
 
+describe('바디 검증 — 타입까지만, 값은 안 본다', () => {
+  let vSid = '';
+  beforeAll(async () => {
+    const res = await req('/schema/save', {
+      method: 'POST',
+      body: JSON.stringify({
+        ws: 'team01demo', name: '검증', res: 'orders',
+        query: 'id=uuid&amount=int:1000~90000&paid=bool&tags[]=lorem.word:2&customer.name=person.fullName&_total=10',
+      }),
+    });
+    vSid = (await jsonOf<{ sid: string }>(res)).sid;
+  });
+
+  it('스키마 필드의 타입 불일치 → 400 + 폼 입력 힌트', async () => {
+    const res = await req(`/api/orders?_s=${vSid}`, { method: 'POST', body: JSON.stringify({ amount: '9000' }) });
+    expect(res.status).toBe(400);
+    const b = await jsonOf<{ error: string; field: string; hint: string }>(res);
+    expect(b.error).toBe('Type mismatch');
+    expect(b.field).toBe('amount');
+    expect(b.hint).toContain('폼'); // input 값은 항상 문자열 — 고전 버그를 짚어준다
+  });
+
+  it('값 범위·enum 은 검사하지 않는다 — 생성 규칙이지 검증 규칙이 아니다', async () => {
+    const res = await req(`/api/orders?_s=${vSid}`, { method: 'POST', body: JSON.stringify({ amount: 5 }) });
+    expect(res.status).toBe(201); // int:1000~90000 밖이어도 타입(number)이 맞으면 통과
+    expect((await jsonOf<Record<string, unknown>>(res)).amount).toBe(5);
+  });
+
+  it('스키마에 없는 필드는 조용히 제외 — password 가 entity 에 안 샌다', async () => {
+    const res = await req(`/api/orders?_s=${vSid}`, { method: 'POST', body: JSON.stringify({ paid: true, password: 'secret!' }) });
+    expect(res.status).toBe(201);
+    const item = await jsonOf<Record<string, unknown>>(res);
+    expect(item.paid).toBe(true);
+    expect('password' in item).toBe(false);
+    const list = await jsonOf<Env>(await req(`/api/orders?_s=${vSid}`));
+    expect(list.data.every((d) => !('password' in d))).toBe(true);
+  });
+
+  it('중첩 객체·배열 요소의 타입도 검증한다', async () => {
+    const nested = await req(`/api/orders?_s=${vSid}`, { method: 'POST', body: JSON.stringify({ customer: 'text' }) });
+    expect(nested.status).toBe(400); // customer 는 object 여야 한다
+    const arr = await req(`/api/orders?_s=${vSid}`, { method: 'POST', body: JSON.stringify({ tags: ['a', 1] }) });
+    expect(arr.status).toBe(400); // tags[] 요소는 string
+    const ok = await req(`/api/orders?_s=${vSid}`, { method: 'POST', body: JSON.stringify({ customer: { name: '박서연' }, tags: ['a'] }) });
+    expect(ok.status).toBe(201);
+  });
+
+  it('PUT·PATCH 도 같은 규칙', async () => {
+    const list = await jsonOf<Env>(await req(`/api/orders?_s=${vSid}`));
+    const id = list.data.find((d) => typeof d.id === 'string' && !('password' in d))!.id;
+    const res = await req(`/api/orders/${id}?_s=${vSid}`, { method: 'PUT', body: JSON.stringify({ paid: 'yes' }) });
+    expect(res.status).toBe(400);
+    expect((await jsonOf<{ field: string }>(res)).field).toBe('paid');
+  });
+});
+
 describe('상태 조회·초기화', () => {
   it('GET /schema/state/<sid> → 현재 오버레이', async () => {
     const body = await jsonOf<{ state: { updated: Record<string, unknown>; deleted: string[] } }>(

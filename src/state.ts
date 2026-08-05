@@ -18,7 +18,7 @@
  * GUI 미리보기가 상태를 오염시키지 않는 이유: 미리보기는 바디 없는 요청을 보내고,
  * POST/PUT/PATCH 는 JSON 바디가 있을 때만, DELETE 는 경로에 id 가 있을 때만 쓴다.
  */
-import type { ParsedQuery } from './dsl';
+import type { FieldSpec, ParsedQuery } from './dsl';
 import { baseSeedOf, generateItem, windowItems } from './generate';
 import { DslError, uuidFromSeed } from './registry';
 import { hashString } from './rng';
@@ -110,6 +110,80 @@ export interface WriteOutcome {
   dirty: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// 바디 검증 — 타입까지만, 값은 안 본다.
+//
+// 스키마는 "어떻게 생성할지"의 명세라 값 규칙(int:20~60 의 범위, enum 멤버)을
+// 검증으로 승격하면 정당한 테스트(age=15 미성년 분기 등)가 막힌다. 반면 타입이
+// 어긋난 아이템이 목록에 섞이면 /schema/ts 로 뽑은 타입이 거짓말을 하게 되므로
+// JS 타입 수준은 지킨다. 스키마에 없는 필드는 요청 DTO 전용(password 등)으로
+// 보고 entity 에서 조용히 제외한다 — 실제 API 가 응답에 안 싣는 것과 같다.
+// ---------------------------------------------------------------------------
+
+const typeName = (v: unknown): string => (v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v);
+
+/** 필드의 기대 JS 타입 — 생성기를 실제로 돌려 본다 (openapi.ts 의 probe 와 같은 수법) */
+function probeType(f: FieldSpec, q: ParsedQuery): string {
+  for (const seed of [12345, 777, 20260805]) {
+    const v = f.gen(seed, { globalIndex: 0, locale: q.locale });
+    if (v !== null && v !== undefined) return typeof v;
+  }
+  return 'string'; // 전부 null 이면(극단적 nullable) 문자열로 간주 — 어차피 null 은 항상 통과
+}
+
+function typeFail(path: string, expected: string, got: string): never {
+  const formHint = (expected === 'number' || expected === 'boolean') && got === 'string';
+  throw new DslError({
+    error: 'Type mismatch',
+    field: path,
+    value: got,
+    hint: `'${path}' 는 ${expected} 필드인데 ${got} 을 보냈습니다.` +
+      (formHint ? ' 폼 입력값(항상 문자열)이 변환 없이 들어가지 않았는지 확인하세요.' : ''),
+    hintEn: `'${path}' is a ${expected} field but you sent ${got}.` +
+      (formHint ? ' Check that a form input value (always a string) did not go in unconverted.' : ''),
+  });
+}
+
+/** 바디를 스키마 타입으로 검증하고, 스키마에 없는 필드는 걸러낸 사본을 돌려준다 */
+function validateBody(q: ParsedQuery, body: Record<string, unknown>): Record<string, unknown> {
+  const leaves = new Map<string, FieldSpec>();
+  const parents = new Set<string>();
+  for (const f of q.fields) {
+    leaves.set(f.path.join('.'), f);
+    for (let i = 1; i < f.path.length; i++) parents.add(f.path.slice(0, i).join('.'));
+  }
+
+  function walk(obj: Record<string, unknown>, prefix: string): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      const path = prefix ? `${prefix}.${k}` : k;
+      const f = leaves.get(path);
+      if (f) {
+        if (v === null) { out[k] = null; continue; } // null 은 항상 허용 — nullable 여부는 생성 규칙이다
+        if (f.isArray) {
+          if (!Array.isArray(v)) typeFail(path, 'array', typeName(v));
+          const et = probeType(f, q);
+          for (const el of v) if (el !== null && typeof el !== et) typeFail(`${path}[]`, et, typeName(el));
+          out[k] = v;
+        } else {
+          const et = probeType(f, q);
+          if (typeName(v) !== et) typeFail(path, et, typeName(v));
+          out[k] = v;
+        }
+        continue;
+      }
+      if (parents.has(path)) {
+        if (!v || typeof v !== 'object' || Array.isArray(v)) typeFail(path, 'object', typeName(v));
+        out[k] = walk(v as Record<string, unknown>, path);
+        continue;
+      }
+      // 스키마에 없는 필드 — 요청 전용(password 등)으로 보고 entity 에 싣지 않는다
+    }
+    return out;
+  }
+  return walk(body, '');
+}
+
 /** 쓰기 바디 검증 — JSON 객체 + 크기 상한 */
 function checkBody(body: unknown): Record<string, unknown> {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -173,7 +247,7 @@ export function applyWrite(
     return { status: 204, body: null, dirty: true };
   }
 
-  const body = checkBody(rawBody);
+  const body = validateBody(q, checkBody(rawBody));
 
   if (method === 'POST') {
     if (rec.created.length >= MAX_CREATED) {

@@ -138,6 +138,10 @@ curl -X DELETE '…/api/users/<id>?_s=aB3xK9.x1y2z3'                          # 
 
 - POST returns a complete item: schema defaults plus the body you sent. Editing or deleting a
   missing id answers 404 — like a real API.
+- Bodies are **validated against the schema's types**: a schema field with a mismatched JS type
+  answers 400 (value ranges and enum members are not checked — they are generation rules, not
+  validation rules). Fields not in the schema are silently excluded from the entity — request-only
+  fields like `password` never leak into responses.
 - `PATCH` merges only the fields you send; `PUT` replaces the whole item with the body
   (omitted fields disappear, only `id` survives) — real REST semantics.
 - Updates and deletes target the id in the last path segment (matched against the schema's

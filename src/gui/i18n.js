@@ -227,7 +227,9 @@ customer.address.city = location.city</pre>
     <p><b>Stateful presets</b> — except when you call a preset <b>saved in a workspace</b> (<code>_s=</code>): writes are remembered.
        A POST carrying a JSON body shows up first in the next GET list; against <code>/api/users/&lt;id&gt;</code>,
        <code>PATCH</code> changes only the fields you send, <code>PUT</code> replaces the whole item, and
-       <code>DELETE</code> removes it (a missing id answers 404). TanStack Query's refetch flow actually works.
+       <code>DELETE</code> removes it (a missing id answers 404). Bodies are validated against the schema's
+       types — a mismatch answers 400, fields not in the schema are quietly dropped. TanStack Query's
+       refetch flow actually works.
        State expires 24h after the last write and <code>DELETE /schema/state/&lt;sid&gt;</code> resets it.
        Unsaved URLs stay fully stateless as before.
        To try it in the GUI: load a preset and pick a write method — the <b>state panel</b> under the URL
