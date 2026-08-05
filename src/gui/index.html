@@ -147,8 +147,11 @@
       <input id="oMethod" type="hidden" value="get">
     </div>
     <div class="urlwrap">
-      <div class="urlbox" id="urlBox"></div>
+      <div class="urlbox clamped" id="urlBox"></div>
       <button class="box-copy" id="copyBtn" data-i18n-title="copyUrl" title="URL 복사"></button>
+      <!-- 긴 URL 은 2줄로 접는다 — 복사 버튼이 전체를 복사하니 눈으로 다 볼 일은 드물고,
+           그 높이만큼 미리보기가 화면 위로 올라온다. 펼침은 이 토글로 -->
+      <button class="box-copy box-expand" id="urlExpand" data-i18n-title="urlExpandTitle" title="URL 전체 보기/접기" style="display:none">▾</button>
     </div>
     <div id="shortLine" class="ghosted">
       <span class="stag" data-i18n="shortUrl">짧은 URL</span>
@@ -174,7 +177,7 @@
         </div>
         <div class="ce-body">
           <pre id="stateBodyHl" aria-hidden="true"></pre>
-          <textarea id="stateBody" rows="3" spellcheck="false"></textarea>
+          <textarea id="stateBody" rows="2" spellcheck="false"></textarea>
         </div>
       </div>
       <div class="sb-row">
@@ -192,8 +195,9 @@
         <option value="openapi">OpenAPI</option>
       </select>
       <button id="saveBtn" data-i18n="saveAsPreset" data-i18n-title="saveBtnTitle" title="현재 스키마를 워크스페이스 프리셋으로 저장 — 짧은 URL(_s=ID)이 생깁니다">프리셋으로 저장</button>
+      <!-- 상태 줄을 같은 행 오른쪽에 — 한 줄 아끼면 미리보기가 그만큼 위로 온다 -->
+      <div class="status-line" id="statusLine">&nbsp;</div>
     </div>
-    <div class="status-line" id="statusLine">&nbsp;</div>
     <div class="preview-wrap">
       <pre id="preview" data-i18n="loading">불러오는 중…</pre>
       <button id="respCopyBtn" data-i18n-title="copyResp" title="응답 JSON 전체 복사"></button>

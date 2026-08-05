@@ -63,6 +63,7 @@ const EN = {
   // URL 패널
   generatedUrl: 'Generated URL',
   copyUrl: 'Copy URL',
+  urlExpandTitle: 'Show/collapse the full URL',
   shortUrl: 'Short URL',
   copyShortUrl: 'Copy short URL',
   copySelTitle: 'Copy this schema — a call snippet (curl/fetch/Python) or a types/spec document',
