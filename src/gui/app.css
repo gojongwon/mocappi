@@ -415,6 +415,8 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     transition: opacity .2s ease;
   }
+  /* 내보내기 행 안에서는 왼쪽(읽는 곳), 버튼은 오른쪽(누르는 곳) — 한 줄 절약해 미리보기를 위로 */
+  .url-actions .status-line { margin: 0 auto 0 0; flex: 1; min-width: 0; align-self: center; }
   .status-line .ok { color: var(--ok); font-weight: 700; }
   .status-line .err { color: var(--danger); font-weight: 700; }
 

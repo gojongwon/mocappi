@@ -183,6 +183,8 @@
       </div>
     </div>
     <div class="url-actions">
+      <!-- 상태는 왼쪽(읽는 곳), 행동 버튼은 오른쪽(누르는 곳) — 별도 줄을 없애 미리보기가 위로 온다 -->
+      <div class="status-line" id="statusLine">&nbsp;</div>
       <select id="copySel" data-i18n-title="copySelTitle" title="현재 스키마를 복사 — 호출 스니펫(curl·fetch·Python) 또는 타입/스펙 문서">
         <option value="" data-i18n="exportLabel">내보내기</option>
         <option value="curl">curl</option>
@@ -193,7 +195,6 @@
       </select>
       <button id="saveBtn" data-i18n="saveAsPreset" data-i18n-title="saveBtnTitle" title="현재 스키마를 워크스페이스 프리셋으로 저장 — 짧은 URL(_s=ID)이 생깁니다">프리셋으로 저장</button>
     </div>
-    <div class="status-line" id="statusLine">&nbsp;</div>
     <div class="preview-wrap">
       <pre id="preview" data-i18n="loading">불러오는 중…</pre>
       <button id="respCopyBtn" data-i18n-title="copyResp" title="응답 JSON 전체 복사"></button>
