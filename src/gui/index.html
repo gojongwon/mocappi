@@ -344,7 +344,7 @@ customer.address.city = location.city</pre>
          메서드는 모양만 바꾸고 데이터는 건드리지 않습니다. 요청 바디는 보지 않습니다.</p>
       <p><b>프리셋 상태</b> — 단, 워크스페이스에 <b>저장한 프리셋</b>(<code>_s=</code>)으로 부르면 쓰기가 기억됩니다:
          JSON 바디를 실은 POST 는 다음 GET 목록 맨 앞에 나타나고, <code>/api/users/&lt;id&gt;</code> 에 대한
-         <code>PATCH</code> 는 보낸 필드만, <code>PUT</code> 은 통째로 바꾸고, <code>DELETE</code> 는 지웁니다
+         <code>PATCH</code> 는 보낸 필드만, <code>PUT</code> 은 전체를 받아 통째로 바꾸고(빠진 필드는 400), <code>DELETE</code> 는 지웁니다
          (없는 id 는 404). 바디는 스키마 타입으로 검증돼요 — 타입이 다르면 400,
          스키마에 없는 필드는 조용히 빠집니다. TanStack Query 의 refetch 흐름이 실제로 동작해요.
          상태는 마지막 쓰기 후 24시간 뒤 사라지고 <code>DELETE /schema/state/&lt;sid&gt;</code> 로 초기화합니다.

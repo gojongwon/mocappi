@@ -226,7 +226,8 @@ customer.address.city = location.city</pre>
        the method changes the shape, never the data. The request body is ignored.</p>
     <p><b>Stateful presets</b> — except when you call a preset <b>saved in a workspace</b> (<code>_s=</code>): writes are remembered.
        A POST carrying a JSON body shows up first in the next GET list; against <code>/api/users/&lt;id&gt;</code>,
-       <code>PATCH</code> changes only the fields you send, <code>PUT</code> replaces the whole item, and
+       <code>PATCH</code> changes only the fields you send, <code>PUT</code> takes the complete object and
+       replaces the item (a missing field answers 400), and
        <code>DELETE</code> removes it (a missing id answers 404). Bodies are validated against the schema's
        types — a mismatch answers 400, fields not in the schema are quietly dropped. TanStack Query's
        refetch flow actually works.

@@ -142,8 +142,10 @@ curl -X DELETE '…/api/users/<id>?_s=aB3xK9.x1y2z3'                          # 
   answers 400 (value ranges and enum members are not checked — they are generation rules, not
   validation rules). Fields not in the schema are silently excluded from the entity — request-only
   fields like `password` never leak into responses.
-- `PATCH` merges only the fields you send; `PUT` replaces the whole item with the body
-  (omitted fields disappear, only `id` survives) — real REST semantics.
+- `PATCH` merges only the fields you send; `PUT` demands the **complete representation** —
+  omit any field other than `id` and you get a 400 (with the missing list and a "use PATCH" hint).
+  Only nullable (`?`) fields may be omitted, and omitting one stores `null`, so items always
+  match the schema's shape even after a PUT.
 - Updates and deletes target the id in the last path segment (matched against the schema's
   top-level `id` field). Created items get an id injected even when the schema has no `id` field.
 - State is scoped to the workspace — the same "whoever has the link" model as saved presets.

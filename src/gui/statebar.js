@@ -44,16 +44,35 @@ function sampleFor(type) {
   return t('새 값', 'new value');
 }
 
-/** 현재 스키마에서 뽑은 예시 바디 — id·배열·중첩은 빼고 스칼라 필드 앞 두 개 */
+function setDeep(obj, path, value) {
+  const segs = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < segs.length - 1; i++) cur = (cur[segs[i]] ??= {});
+  cur[segs[segs.length - 1]] = value;
+}
+
+/**
+ * 현재 스키마에서 뽑은 예시 바디.
+ * POST/PATCH 는 스칼라 앞 두 필드만 (부분이 정상이니까), PUT 은 id 뺀 전 필드 —
+ * PUT 은 완전한 표현을 요구하므로 고스트가 곧 "통과하는 바디"여야 한다.
+ */
 function ghostBody() {
-  const picks = [];
+  const full = $('#oMethod').value === 'put';
+  const out = {};
+  let count = 0;
   for (const [name, type] of readState().fields) {
-    if (name === 'id' || name.endsWith('[]') || name.includes('.')) continue;
-    picks.push([name, sampleFor(type)]);
-    if (picks.length === 2) break;
+    if (name === 'id') continue;
+    const isArr = name.endsWith('[]');
+    const bare = isArr ? name.slice(0, -2) : name;
+    if (!full) {
+      if (isArr || bare.includes('.')) continue;
+      if (count >= 2) break;
+    }
+    const itemType = isArr ? type.replace(/:\d+$/, '') : type;
+    setDeep(out, bare, isArr ? [sampleFor(itemType)] : sampleFor(itemType));
+    count++;
   }
-  if (!picks.length) return null;
-  return JSON.stringify(Object.fromEntries(picks), null, 2);
+  return count ? JSON.stringify(out, null, 2) : null;
 }
 
 let ghost = null;
@@ -124,8 +143,8 @@ export function syncStateBar() {
   const HINTS = {
     post: t('JSON 바디를 보내면 진짜 생성됩니다 — 성공하면 GET 목록으로 전환해 보여드려요.',
             'Send a JSON body and it is really created — on success we switch to the GET list to show it.'),
-    put: t('통째로 교체합니다 — 안 보낸 필드는 사라져요. 부분 수정은 PATCH 를 쓰세요.',
-           'Replaces the whole item — fields you omit disappear. For partial edits use PATCH.'),
+    put: t('완전한 표현으로 통째로 교체합니다 — 전 필드 필수(빠지면 400), 부분 수정은 PATCH. Tab 이 전체 바디를 채워줘요.',
+           'Replaces the item with its complete representation — every field required (400 if missing); partial edits are PATCH. Tab fills the full body.'),
     patch: t('보낸 필드만 바뀝니다 — 목록 응답에서 고칠 아이템의 id 를 복사해 넣으세요.',
              "Only the fields you send change — copy the target item's id from a list response."),
     delete: t('목록 응답에서 지울 아이템의 id 를 복사해 넣으세요.',

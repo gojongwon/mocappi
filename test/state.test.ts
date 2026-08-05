@@ -96,19 +96,41 @@ describe('수정·삭제 → 목록 반영', () => {
     expect(after.data.some((d) => d.id === target.id)).toBe(false);
   });
 
-  it('PUT — 통째 교체: 안 보낸 필드가 사라진다 (PATCH 와 의미가 다르다)', async () => {
+  it('PUT — 완전한 표현 필수: 필드가 빠지면 400 + 목록 + PATCH 안내', async () => {
     const before = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
     const target = before.data[3];
     const res = await req(`/api/users/${target.id}?_s=${sid}`, { method: 'PUT', body: JSON.stringify({ name: '교체본' }) });
+    expect(res.status).toBe(400);
+    const b = await jsonOf<{ error: string; field: string; hint: string }>(res);
+    expect(b.error).toBe('Missing fields');
+    expect(b.field).toContain('age');
+    expect(b.hint).toContain('PATCH'); // 에러가 PUT/PATCH 차이를 가르친다
+  });
+
+  it('PUT — 전체를 보내면 통째로 교체되고 모양은 스키마와 일치', async () => {
+    const before = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
+    const target = before.data[3];
+    const res = await req(`/api/users/${target.id}?_s=${sid}`, { method: 'PUT', body: JSON.stringify({ name: '교체본', age: 44 }) });
     expect(res.status).toBe(200);
     const item = await jsonOf<Record<string, unknown>>(res);
-    expect(item.name).toBe('교체본');
-    expect(item.id).toBe(target.id); // 정체성은 유지
-    expect('age' in item).toBe(false); // 안 보낸 필드는 사라진다
+    expect(item).toEqual({ id: target.id, name: '교체본', age: 44 }); // 완전한 표현 그대로
 
     const after = await jsonOf<Env>(await req(`/api/users?_s=${sid}`));
-    const replaced = after.data.find((d) => d.id === target.id)!;
-    expect('age' in replaced).toBe(false);
+    expect(after.data.find((d) => d.id === target.id)).toEqual({ id: target.id, name: '교체본', age: 44 });
+  });
+
+  it('PUT — nullable(?) 필드만 생략 가능, 생략하면 null 로 저장', async () => {
+    const res = await req('/schema/save', {
+      method: 'POST',
+      body: JSON.stringify({ ws: 'team01demo', name: '메모', res: 'notes', query: 'id=uuid&title=lorem.word&memo=text:10?0.5&_total=3' }),
+    });
+    const nSid = (await jsonOf<{ sid: string }>(res)).sid;
+    const list = await jsonOf<Env>(await req(`/api/notes?_s=${nSid}`));
+    const put = await req(`/api/notes/${list.data[0].id}?_s=${nSid}`, { method: 'PUT', body: JSON.stringify({ title: '제목만' }) });
+    expect(put.status).toBe(200); // memo 는 nullable — 생략 허용
+    const item = await jsonOf<Record<string, unknown>>(put);
+    expect(item.title).toBe('제목만');
+    expect(item.memo).toBeNull(); // 생략 = null (필드가 "사라지지" 않는다)
   });
 
   it('PUT 뒤 PATCH — 패치는 교체본 위에 얹힌다', async () => {

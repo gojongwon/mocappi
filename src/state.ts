@@ -20,7 +20,7 @@
  */
 import type { FieldSpec, ParsedQuery } from './dsl';
 import { baseSeedOf, generateItem, windowItems } from './generate';
-import { DslError, uuidFromSeed } from './registry';
+import { DslError, NULLABLE_RE, uuidFromSeed } from './registry';
 import { hashString } from './rng';
 import { parseSid } from './store';
 
@@ -184,6 +184,49 @@ function validateBody(q: ParsedQuery, body: Record<string, unknown>): Record<str
   return walk(body, '');
 }
 
+/**
+ * PUT 완전성 검사 — PUT 은 "리소스의 완전한 표현"이다.
+ * id(경로에서 온다)를 뺀 전 필드가 있어야 하고, 빠지면 어떤 필드가 빠졌는지와
+ * "부분 수정은 PATCH" 를 함께 알려준다 — PUT/PATCH 의 차이를 에러가 가르친다.
+ * nullable(?) 필드만 생략 가능: 생략 = null 로 저장한다. 그래서 PUT 뒤에도
+ * 아이템 모양이 항상 스키마와 정확히 일치한다 (필드가 "사라지는" 일이 없다).
+ */
+function completeForPut(q: ParsedQuery, body: Record<string, unknown>): Record<string, unknown> {
+  const missing: string[] = [];
+  for (const f of q.fields) {
+    if (f.path.length === 1 && f.path[0] === 'id') continue;
+    let cur: unknown = body;
+    let present = true;
+    for (const seg of f.path) {
+      if (!cur || typeof cur !== 'object' || Array.isArray(cur) || (cur as Record<string, unknown>)[seg] === undefined) {
+        present = false;
+        break;
+      }
+      cur = (cur as Record<string, unknown>)[seg];
+    }
+    if (present) continue;
+    if (!f.isArray && NULLABLE_RE.test(f.typeRaw)) {
+      // 생략된 nullable → null — "없음"의 완전한 표현
+      let obj = body;
+      for (let i = 0; i < f.path.length - 1; i++) {
+        obj = (obj[f.path[i]] ??= {}) as Record<string, unknown>;
+      }
+      obj[f.path[f.path.length - 1]] = null;
+    } else {
+      missing.push(f.name);
+    }
+  }
+  if (missing.length > 0) {
+    throw new DslError({
+      error: 'Missing fields',
+      field: missing.join(', '),
+      hint: `PUT 은 리소스의 완전한 표현을 보냅니다 — 빠진 필드: ${missing.join(', ')}. 일부만 바꾸려면 PATCH 를 쓰세요.`,
+      hintEn: `PUT sends the complete representation of the resource — missing fields: ${missing.join(', ')}. To change only some fields, use PATCH.`,
+    });
+  }
+  return body;
+}
+
 /** 쓰기 바디 검증 — JSON 객체 + 크기 상한 */
 function checkBody(body: unknown): Record<string, unknown> {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -248,6 +291,9 @@ export function applyWrite(
   }
 
   const body = validateBody(q, checkBody(rawBody));
+  // POST 는 부분 허용 — 안 보낸 필드는 서버(목)가 채운다: 실제 API 의 기본값·생성 동작.
+  // PUT 은 완전한 표현을 요구한다 — 그래서 교체 뒤에도 모양이 스키마와 일치한다
+  if (method === 'PUT') completeForPut(q, body);
 
   if (method === 'POST') {
     if (rec.created.length >= MAX_CREATED) {
