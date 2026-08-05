@@ -61,6 +61,7 @@ i18n  pure  shared            (잎 — 아무것도 import 안 함)
 | `schema:changed` | 스키마·옵션을 바꾼 모든 곳 (10곳) | `preview.js` — 미리보기 + 주소창 갱신 · `statebar.js` — 상태 패널 표시/문구 동기화 |
 | `ws:changed` | `workspace.switchWs` | `save.refreshTeam` — 프리셋 목록 새로고침 |
 | `team:ready` | `save.refreshTeam` (저장소 응답 확인) | `workspace.syncWsUi` — 워크스페이스 버튼 상태 |
+| `preview:done` | `preview.js` (응답 도착·실패) | `statebar.js` — GET 상태 스트립 갱신 (응답의 X-Mock-State 가 근거라 도착 후에만 가능) |
 
 `preview.js` 는 **export 가 하나도 없다.** 순수 구독자라서다 — 이게 깨지면 순환이 돌아온 것.
 구독을 빠뜨려도 조용히 통과하므로 `test/gui-wiring.test.ts` 가 세 이벤트를 전부 확인한다.

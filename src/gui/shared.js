@@ -22,4 +22,6 @@ export const shared = {
   preloadSnapshot: null,
   /** 미리보기에 마지막으로 그린 원문 — 응답 복사 버튼이 쓴다 */
   lastPreviewText: '',
+  /** 마지막 미리보기 응답에 프리셋 상태가 병합돼 있었나 (X-Mock-State: applied) — 상태 스트립의 근거 */
+  stateApplied: false,
 };

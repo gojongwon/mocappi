@@ -11,12 +11,14 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import html from '../src/gui.generated.html';
 
 /** 워커 응답 흉내 — GUI 가 쓰는 것(ok/status/headers.get/json/text)만 */
-function fakeResponse(body: unknown, contentType = 'application/json') {
+function fakeResponse(body: unknown, contentType = 'application/json', extra: Record<string, string> = {}) {
   const text = JSON.stringify(body);
   return {
     ok: true,
     status: 200,
-    headers: { get: (k: string) => (k.toLowerCase() === 'content-type' ? contentType : null) },
+    headers: {
+      get: (k: string) => (k.toLowerCase() === 'content-type' ? contentType : extra[k.toLowerCase()] ?? null),
+    },
     json: async () => JSON.parse(text),
     text: async () => text,
   };
@@ -51,7 +53,10 @@ function boot(url: string): { window: SmokeWindow; calls: string[] } {
         if (u.includes('/schema/types')) return Promise.resolve(fakeResponse(TYPES));
         if (u.includes('/schema/saved/')) return Promise.resolve(fakeResponse(SAVED)); // 개별 조회 — 목록보다 먼저
         if (u.includes('/schema/saved')) return Promise.resolve(fakeResponse({ ws: null, items: [SAVED] }));
-        if (u.includes('/api/')) return Promise.resolve(fakeResponse(ENVELOPE));
+        if (u.includes('/api/')) {
+          // 프리셋(_s=) 호출에는 상태가 반영된 것처럼 — GET 상태 스트립 경로 검증용
+          return Promise.resolve(fakeResponse(ENVELOPE, 'application/json', u.includes('_s=') ? { 'x-mock-state': 'applied' } : {}));
+        }
         return Promise.resolve(fakeResponse({}));
       };
     },
@@ -121,7 +126,10 @@ describe('부팅 (한국어, 맨 주소)', () => {
     sel.dispatchEvent(new window.Event('change', { bubbles: true }));
     await sleep(500); // loadTeamPreset fetch + 미리보기 디바운스 300ms
     expect(calls.some((u) => u.includes('/api/users') && u.includes('_s=' + SID))).toBe(true);
+    // GET + 상태 반영(스텁이 X-Mock-State: applied) → 편집기 없는 스트립만 남는다
     expect($('#stateBar').style.display).toBe('block');
+    expect($('#stateSend').style.display).toBe('none');
+    expect($('#stateHint').textContent).toContain('반영');
   });
 
   it('쓰기 메서드 선택 → 바디 편집기에 스키마 기반 고스트가 뜬다', () => {

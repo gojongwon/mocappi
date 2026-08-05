@@ -17,6 +17,7 @@ const wsSid = () =>
   shared.loadedPreset && shared.loadedPreset.sid.includes('.') ? shared.loadedPreset.sid : null;
 
 on('schema:changed', syncStateBar);
+on('preview:done', syncStateBar); // GET 스트립은 응답의 X-Mock-State 를 봐야 알 수 있다 — 응답 도착 후 재동기화
 
 // 메시지는 "그 메서드의 결과"다 — 메서드를 바꾸면 지운다. 성공 메시지는 setMethod('get')
 // 뒤에 쓰므로 GET 전환은 살아남고, 이후 다른 메서드를 고르는 순간 사라진다
@@ -101,17 +102,19 @@ export function formatStateBody() {
 export function syncStateBar() {
   const bar = $('#stateBar');
   const sid = wsSid();
-  if (!sid || !shortApiUrl(readState())) {
+  const method = $('#oMethod').value;
+  const write = WRITES.has(method);
+  // GET 인데 반영된 상태도 없으면 패널 자체가 소음이다 — 숨긴다.
+  // 상태가 반영돼 있으면 "지금 목록은 쓴 상태가 섞인 것"임을 알리는 스트립으로 남는다
+  if (!sid || !shortApiUrl(readState()) || (!write && !shared.stateApplied)) {
     bar.style.display = 'none';
     return;
   }
   bar.style.display = 'block';
-  const method = $('#oMethod').value;
   if (msgMethod !== null && msgMethod !== method) {
     $('#stateMsg').textContent = '';
     msgMethod = null;
   }
-  const write = WRITES.has(method);
   $('#stateIdRow').style.display = write && method !== 'post' ? 'block' : 'none';
   const bodyOn = write && method !== 'delete';
   $('#stateBodyWrap').style.display = bodyOn ? 'block' : 'none';
@@ -130,8 +133,8 @@ export function syncStateBar() {
   };
   $('#stateHint').textContent = write
     ? HINTS[method]
-    : t('위 메서드에서 POST·PUT·PATCH·DELETE 를 고르면 여기서 실제로 보낼 수 있어요. 쓴 상태는 24시간 뒤 사라집니다.',
-        'Pick POST·PUT·PATCH·DELETE above to actually send one from here. Written state expires after 24h.');
+    : t('이 목록에는 쓴 상태가 반영돼 있어요 — 초기화하면 기본 데이터로 돌아갑니다 (24시간 뒤 자동).',
+        'This list includes your written state — reset to go back to the base data (auto after 24h).');
 }
 
 export async function sendStateWrite() {

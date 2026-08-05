@@ -1,4 +1,4 @@
-import { $, on } from './dom.js';
+import { $, emit, on } from './dom.js';
 import { LANG, t } from './i18n.js';
 import { highlightJson } from './pure.js';
 import { renderCsv, renderNdjson } from './render.js';
@@ -67,6 +67,8 @@ async function preview(url, method) {
     if (seq !== reqSeq) return; // 오래된 응답 무시
     clearTimeout(loadingTimer);
     setLoading(false);
+    // 이 응답에 프리셋 상태가 병합돼 있었나 — statebar 가 GET 상태 스트립을 띄우는 근거
+    shared.stateApplied = res.headers.get('x-mock-state') === 'applied';
     const ms = Math.round(performance.now() - t0);
     const cls = res.ok ? 'ok' : 'err';
     $('#statusLine').innerHTML = 'HTTP <span class="' + cls + '">' + res.status + '</span> · ' + ms + 'ms';
@@ -87,14 +89,17 @@ async function preview(url, method) {
       else $('#preview').textContent = body;
     }
     paintBody(); // 실패 바디 고스트는 이 응답에서 나온다 — 도착했으니 다시 칠한다
+    emit('preview:done'); // statebar 가 받아 GET 상태 스트립을 갱신한다
   } catch (e) {
     if (seq !== reqSeq) return;
     clearTimeout(loadingTimer);
     setLoading(false);
     $('#statusLine').innerHTML = '<span class="err">' + t('요청 실패', 'Request failed') + '</span>';
     shared.lastPreviewText = String(e);
+    shared.stateApplied = false;
     $('#preview').textContent = String(e);
     paintBody(); // 실패한 응답은 JSON 이 아니라 고스트가 사라진다
+    emit('preview:done');
   }
 }
 

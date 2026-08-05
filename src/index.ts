@@ -179,6 +179,7 @@ function streamResponse(q: ParsedQuery, preView?: Record<string, unknown>[] | nu
       'content-type': q.format === 'csv' ? 'text/csv; charset=utf-8' : 'application/x-ndjson; charset=utf-8',
       'cache-control': cacheHeader(q),
       'x-total-count': String(total),
+      ...(preView ? { 'x-mock-state': 'applied' } : {}),
       ...CORS_HEADERS,
     },
   });
@@ -570,9 +571,15 @@ export default {
           if (found) body = found;
         }
         // X-Total-Count 는 목록에만 — 단건(_wrap=one·쓰기 메서드)에는 셀 전체가 없다.
-        // 쓰기 모양 응답에는 X-Mock-State: stateless — 상태에 반영되지 않았음을 명시
+        // 쓰기 모양 응답에는 X-Mock-State: stateless, 상태가 병합된 GET 에는 applied —
+        // GUI 가 "이 목록에 쓴 상태가 반영돼 있는가"를 추가 요청 없이 알 수 있는 유일한 길
         const countHeader = list && q.wrap !== 'one' ? { 'x-total-count': String(list.total) } : undefined;
-        const extra = method === 'GET' ? countHeader : { ...countHeader, 'x-mock-state': 'stateless' };
+        const extra =
+          method === 'GET'
+            ? merged
+              ? { ...countHeader, 'x-mock-state': 'applied' }
+              : countHeader
+            : { ...countHeader, 'x-mock-state': 'stateless' };
         await sleep();
         return json(body, q.statusSet ? q.status : method === 'POST' ? 201 : 200, cache, extra);
       } catch (e) {

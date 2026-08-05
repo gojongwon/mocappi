@@ -351,7 +351,9 @@
   }
   #stateBar .sb-row button:disabled { opacity: .5; cursor: default; }
   #stateBar #stateReset { background: var(--bg); color: var(--muted); box-shadow: none; }
-  #stateBar #stateMsg { font-size: 12px; min-height: 1.2em; word-break: break-all; }
+  /* 메시지 왼쪽 · 보내기 오른쪽 — 행동 버튼은 흐름의 끝(오른쪽 아래)에 있어야 눈이 안 헤맨다 */
+  #stateBar #stateMsg { flex: 1; font-size: 12px; min-height: 1.2em; word-break: break-all; }
+  #stateBar #stateSend { margin-left: auto; }
   .url-actions { display: flex; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
   .url-actions button, .url-actions select {
     border: 1.5px solid var(--ink); border-radius: var(--radius-s); padding: 8px 15px; cursor: pointer;
