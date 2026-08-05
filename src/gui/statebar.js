@@ -18,10 +18,15 @@ const wsSid = () =>
 
 on('schema:changed', syncStateBar);
 
+// 메시지는 "그 메서드의 결과"다 — 메서드를 바꾸면 지운다. 성공 메시지는 setMethod('get')
+// 뒤에 쓰므로 GET 전환은 살아남고, 이후 다른 메서드를 고르는 순간 사라진다
+let msgMethod = null;
+
 function msg(text, ok) {
   const el = $('#stateMsg');
   el.textContent = text;
   el.style.color = ok === undefined ? 'var(--muted)' : ok ? 'var(--ok)' : 'var(--danger)';
+  msgMethod = $('#oMethod').value;
 }
 
 // ---- 바디 편집기 — 실패 바디(url-state.paintBody)와 같은 문법: 고스트·Tab·하이라이트·자동 정렬 ----
@@ -102,6 +107,10 @@ export function syncStateBar() {
   }
   bar.style.display = 'block';
   const method = $('#oMethod').value;
+  if (msgMethod !== null && msgMethod !== method) {
+    $('#stateMsg').textContent = '';
+    msgMethod = null;
+  }
   const write = WRITES.has(method);
   $('#stateIdRow').style.display = write && method !== 'post' ? 'block' : 'none';
   const bodyOn = write && method !== 'delete';
@@ -157,8 +166,10 @@ export async function sendStateWrite() {
         // 생성물의 id 를 채워 둔다 — 이어서 PATCH/DELETE 를 바로 해볼 수 있게
         try { $('#stateId').value = String((await res.json()).id ?? ''); } catch { /* 바디 없음 */ }
       }
-      msg('✓ ' + res.status + ' ' + t('반영됨 — 목록에서 확인하세요', 'applied — check the list'), true);
       setMethod('get'); // GET 으로 전환 → 미리보기가 refetch → 변화가 눈에 보인다
+      // 메시지는 전환 뒤에 — setMethod 의 schema:changed(동기)가 메서드 변경 시 메시지를
+      // 지우므로, 먼저 쓰면 방금 쓴 성공 메시지가 그 자리에서 지워진다
+      msg('✓ ' + res.status + ' ' + t('반영됨 — 목록에서 확인하세요', 'applied — check the list'), true);
     } else {
       const b = await res.json().catch(() => ({}));
       msg('✗ ' + res.status + ' ' + (b.hint || b.message || b.error || t('실패', 'failed')), false);
@@ -177,8 +188,8 @@ export async function resetStateNow() {
     const res = await fetch('/schema/state/' + sid, { method: 'DELETE', headers: { 'Accept-Language': LANG } });
     const b = await res.json().catch(() => ({}));
     if (res.ok) {
+      setMethod('get'); // 초기화 결과도 목록으로 바로 확인 — 메시지는 전환 뒤에 (sendStateWrite 와 같은 순서)
       msg('✓ ' + (b.hint || t('상태가 초기화되었습니다.', 'State reset.')), true);
-      setMethod('get'); // 초기화 결과도 목록으로 바로 확인
     } else {
       msg('✗ ' + (b.hint || b.error || t('초기화 실패', 'Reset failed')), false);
     }

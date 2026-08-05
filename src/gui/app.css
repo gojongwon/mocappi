@@ -341,12 +341,15 @@
     border: 1.5px solid var(--ink); border-radius: 6px; padding: 7px 9px; background: var(--bg);
   }
   #stateBar .sb-edit { margin-top: 6px; }
-  #stateBar button {
+  /* 보내기·초기화만 — 편집기 안의 { } 정렬 버튼은 code-edit(#stateBodyFmt) 스타일이 맡는다.
+     '#stateBar button' 처럼 넓게 잡으면 id 특이도가 편집기 규칙을 이겨 노란 배경 위에
+     호버 노란 글자가 얹힌다 (글자 실종) */
+  #stateBar .sb-row button, #stateBar .sb-head button {
     border: 1.5px solid var(--ink); border-radius: 6px; padding: 6px 12px; cursor: pointer;
     font-size: 12px; font-weight: 700; background: var(--accent); color: var(--accent-text);
     box-shadow: var(--btn-shadow); flex: none;
   }
-  #stateBar button:disabled { opacity: .5; cursor: default; }
+  #stateBar .sb-row button:disabled { opacity: .5; cursor: default; }
   #stateBar #stateReset { background: var(--bg); color: var(--muted); box-shadow: none; }
   #stateBar #stateMsg { font-size: 12px; min-height: 1.2em; word-break: break-all; }
   .url-actions { display: flex; gap: 8px; margin: 12px 0 6px; flex-wrap: wrap; }
