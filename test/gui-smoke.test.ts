@@ -118,6 +118,17 @@ describe('부팅 (한국어, 맨 주소)', () => {
     expect($('#urlBox').textContent).toContain('/api/products?');
   });
 
+  it('프리셋 없이 쓰기 메서드 선택 → 티저가 기능을 알린다 (저장 CTA)', () => {
+    // 사용법을 안 읽은 사용자도 "저장하면 쓰기가 진짜가 된다"를 그 자리에서 배운다
+    $('button[data-method="post"]').click();
+    expect($('#stateBar').style.display).toBe('block');
+    expect($('#stateHint').textContent).toContain('저장');
+    expect($('#stateSaveCta').style.display).toBe('inline-block');
+    expect($('#stateSend').style.display).toBe('none'); // 편집기·보내기는 아직 없다
+    $('button[data-method="get"]').click(); // 되돌리기 — 다음 테스트는 GET 에서 시작
+    expect($('#stateBar').style.display).toBe('none');
+  });
+
   it('팀 프리셋 로드 → 미리보기가 _s= 짧은 URL 로 요청하고 상태 패널이 나타난다', async () => {
     // v1.1.1 실사용 회귀: 미리보기가 전체 쿼리 URL(무상태)로 나가면
     // 상태 패널로 쓴 변화가 목록에 안 보인다 — _s= 경로만 상태를 얹는다

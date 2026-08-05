@@ -92,6 +92,7 @@ const EN = {
   save: 'Save',
   // 프리셋 상태 패널
   stateTitle: 'Preset state — try writes for real',
+  stateSaveCta: 'Save as preset to start',
   stateReset: 'Reset state',
   stateResetTitle: "Clear this preset's state and go back to the base data",
   phStateId: 'item id — copy from a list response (target of edit/delete)',

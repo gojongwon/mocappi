@@ -123,9 +123,31 @@ export function syncStateBar() {
   const sid = wsSid();
   const method = $('#oMethod').value;
   const write = WRITES.has(method);
+  const ready = sid !== null && shortApiUrl(readState()) !== null; // 상태 자격
+
+  // 티저 — 쓰기 메서드를 골랐는데 상태 자격이 없다: 기능이 가장 필요한 순간이
+  // 곧 기능을 알릴 순간이다. 문서를 안 읽어도 "저장하면 진짜가 된다"를 여기서 배운다
+  if (write && !ready) {
+    bar.style.display = 'block';
+    $('#stateHint').textContent = t(
+      `지금 이 ${method.toUpperCase()} 는 응답 모양만 목킹돼요. 프리셋으로 저장하면 쓰기가 기억되어 다음 GET 목록에 실제로 반영됩니다.`,
+      `Right now this ${method.toUpperCase()} only mocks the response shape. Save it as a preset and writes are remembered — they show up in the next GET list.`,
+    );
+    $('#stateReset').style.display = 'none';
+    $('#stateIdRow').style.display = 'none';
+    $('#stateBodyWrap').style.display = 'none';
+    $('#stateSend').style.display = 'none';
+    $('#stateSaveCta').style.display = 'inline-block';
+    $('#stateMsg').textContent = '';
+    msgMethod = null;
+    return;
+  }
+  $('#stateSaveCta').style.display = 'none';
+  $('#stateReset').style.display = '';
+
   // GET 인데 반영된 상태도 없으면 패널 자체가 소음이다 — 숨긴다.
   // 상태가 반영돼 있으면 "지금 목록은 쓴 상태가 섞인 것"임을 알리는 스트립으로 남는다
-  if (!sid || !shortApiUrl(readState()) || (!write && !shared.stateApplied)) {
+  if (!ready || (!write && !shared.stateApplied)) {
     bar.style.display = 'none';
     return;
   }
