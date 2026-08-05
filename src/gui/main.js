@@ -203,11 +203,6 @@ document.addEventListener('click', (e) => {
     }
     case 'welcomeClose': $('#welcome').style.display = 'none'; break;
     case 'copyBtn': copyIcon(apiUrl(readState()), btn); break;
-    case 'urlExpand': {
-      const open = $('#urlBox').classList.toggle('open');
-      btn.textContent = open ? '▴' : '▾';
-      break;
-    }
     case 'respCopyBtn': copyIcon(shared.lastPreviewText, btn); break;
     case 'saveBtn': openSave(); break;
     case 'wsBtn': syncWsUi(); openModal('wsModal'); break;

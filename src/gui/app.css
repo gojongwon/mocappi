@@ -308,11 +308,6 @@
     box-shadow: 0 0 0 3px var(--box-bg); /* 아래 텍스트와 분리돼 보이게 */
   }
   .box-copy:hover { background: var(--accent-soft); color: var(--ink); }
-  /* URL 접기 — 2줄(줄높이 1.7 × 12.5px ≈ 21px × 2 + 패딩 24px)이 기본.
-     복사는 항상 전체를 복사하므로 눈으로 다 볼 일은 드물다 — 남는 높이는 미리보기 몫 */
-  .urlbox.clamped:not(.open) { max-height: 67px; overflow: hidden; }
-  .box-expand { top: 44px; font-size: 11px; width: 30px; }
-  .urlbox::after { content: ''; float: right; clear: right; width: 34px; height: 28px; } /* 펼침 버튼 자리 (2줄째) */
   #shortLine {
     display: flex; align-items: center; gap: 8px; margin-top: 8px;
     font-family: var(--mono); font-size: 12.5px; color: var(--ink);
@@ -331,16 +326,14 @@
     display: inline-flex; align-items: center; justify-content: center; transition: all .1s ease;
   }
   #shortLine button:hover { background: var(--panel); color: var(--ink); }
-  /* 프리셋 상태 패널 — 짧은 URL 아래, 워크스페이스 프리셋일 때만 (statebar.js 토글).
-     세로 예산이 곧 미리보기 가시성이라 여백은 최소로 */
+  /* 프리셋 상태 패널 — 짧은 URL 아래, 워크스페이스 프리셋일 때만 (statebar.js 토글) */
   #stateBar {
-    margin-top: 8px; padding: 8px 10px;
+    margin-top: 8px; padding: 10px 12px;
     background: var(--panel); border: 1.5px solid var(--ink); border-radius: var(--radius-s);
   }
   #stateBar .sb-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   #stateBar .sb-head b { font-size: 12.5px; }
-  #stateBar .sb-hint { margin: 4px 0; font-size: 11.5px; color: var(--muted); }
-  #stateBar .ce-body > textarea { min-height: 48px; } /* 고스트 2필드 기준 — 내용만큼 자란다 */
+  #stateBar .sb-hint { margin: 6px 0; font-size: 12px; color: var(--muted); }
   #stateBar .sb-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
   /* id 입력만 — 바디는 실패 바디와 같은 .code-edit 이 스타일을 갖고 있다 */
   #stateBar .sb-row input {
@@ -422,8 +415,6 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     transition: opacity .2s ease;
   }
-  /* 내보내기·저장과 같은 행의 오른쪽 — 별도 줄을 없애 미리보기를 위로 올린다 */
-  .url-actions .status-line { margin: 0 0 0 auto; align-self: center; }
   .status-line .ok { color: var(--ok); font-weight: 700; }
   .status-line .err { color: var(--danger); font-weight: 700; }
 

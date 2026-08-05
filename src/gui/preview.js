@@ -20,16 +20,9 @@ function update() {
   // (닫힘은 프리셋 전환·URL 로드 같은 문맥 전환 시점에만 advActive 기준으로)
   if (advActive()) $('#optsAdv').open = true;
   const url = apiUrl(state);
-  const box = $('#urlBox');
-  box.innerHTML = '';
+  $('#urlBox').innerHTML = '';
   const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.textContent = url;
-  box.appendChild(a);
-  // 2줄 넘칠 때만 펼침 토글을 보인다 — 접은 상태 기준으로 재야 해서 잠깐 접었다 되돌린다
-  const wasOpen = box.classList.contains('open');
-  box.classList.remove('open');
-  const overflows = box.scrollHeight > box.clientHeight + 1;
-  if (wasOpen && overflows) box.classList.add('open');
-  $('#urlExpand').style.display = overflows ? '' : 'none';
+  $('#urlBox').appendChild(a);
   // 저장된 프리셋 기반이면 짧은 URL + 프리셋 이름 표시, 드롭다운 선택 상태도 동기화
   // (자리는 항상 유지 — visibility 로만 토글해 레이아웃 점프 방지)
   const short = shortApiUrl(state);
